@@ -14,6 +14,38 @@
   .hrow { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 8px; }
   .ptitle { font-size: 18px; font-weight: 600; color: #1a1a18; letter-spacing: -0.01em; }
   .location-tag { font-size: 12px; color: #888; }
+
+  .fetch-bar {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;
+    background: #fff; border: 1px solid #e8e8e6; border-radius: 10px; padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+  }
+  .fetch-status { font-size: 13px; color: #666; flex: 1; min-width: 0; }
+  .fetch-status.err { color: #c0392b; }
+  .refresh-btn {
+    padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+    background: #1a1a18; color: #fff; border: none; border-radius: 7px; font-family: inherit;
+    white-space: nowrap;
+  }
+  .refresh-btn:disabled { background: #ccc; cursor: default; }
+  .spinner {
+    display: inline-block; width: 13px; height: 13px; border: 2px solid #ddd;
+    border-top-color: #888; border-radius: 50%;
+    animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 4px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .game-row { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .game-btn {
+    flex: 1; min-width: 140px; padding: 0.7rem 1rem; border-radius: 10px;
+    border: 1px solid #e8e8e6; background: #fff; cursor: pointer; text-align: left;
+    font-family: inherit; transition: border-color 0.15s;
+  }
+  .game-btn.active { border-color: #1a1a18; background: #f3f3f1; }
+  .game-btn-name { font-size: 13px; font-weight: 600; color: #1a1a18; }
+  .game-btn-amt { font-size: 18px; font-weight: 700; color: #1a1a18; margin: 2px 0; }
+  .game-btn-sub { font-size: 11px; color: #888; }
+
   .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
   @media (max-width: 520px) { .input-grid { grid-template-columns: 1fr; } }
   .input-card { background: #fff; border-radius: 10px; border: 1px solid #e8e8e6; padding: 0.9rem 1rem; }
@@ -35,6 +67,7 @@
   }
   .unit-btn.active { background: #1a1a18; color: #fff; }
   .unit-btn:first-child { border-right: 1px solid #ddd; }
+
   .lump-row {
     display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap;
     background: #fff; border: 1px solid #e8e8e6; border-radius: 10px; padding: 0.75rem 1rem;
@@ -56,6 +89,7 @@
   input[type=range]::-moz-range-thumb {
     width: 16px; height: 16px; border-radius: 50%; background: #1a1a18; cursor: pointer; border: none;
   }
+
   .ctrl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
   .ctrl-lbl { font-size: 13px; color: #555; }
   .ctrl-row input[type=number] {
@@ -64,12 +98,14 @@
     background: #fff; color: #1a1a18; outline: none; font-family: inherit;
   }
   .ctrl-row input[type=number]:focus { border-color: #1a1a18; }
+
   .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
   .mc { background: #fff; border-radius: 10px; border: 1px solid #e8e8e6; padding: 0.9rem 1rem; }
   .ml { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
   .mv { font-size: 18px; font-weight: 600; color: #1a1a18; }
   .mv.red { color: #c0392b; }
   .mv.grn { color: #1a7c4a; }
+
   hr { border: none; border-top: 1px solid #e8e8e6; margin: 1.25rem 0; }
   .sec-title { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1.25rem; }
@@ -80,6 +116,7 @@
   td.neg { text-align: right; color: #c0392b; font-variant-numeric: tabular-nums; }
   td.pos { text-align: right; color: #1a7c4a; font-variant-numeric: tabular-nums; }
   tr.totrow td { font-weight: 600; border-top: 1.5px solid #ddd; border-bottom: none; padding-top: 10px; }
+
   .takehome {
     background: #1a1a18; border-radius: 12px; padding: 1.1rem 1.4rem;
     display: flex; align-items: center; justify-content: space-between;
@@ -90,6 +127,7 @@
   .th-rate { font-size: 22px; font-weight: 600; color: #ccc; }
   .empty { font-size: 13px; color: #aaa; padding: 0.5rem 0; grid-column: 1/-1; }
   .note { font-size: 11px; color: #bbb; line-height: 1.8; margin-top: 0.5rem; }
+  .data-source { font-size: 11px; color: #aaa; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -100,6 +138,27 @@
     <span class="location-tag">Outside NYC &amp; Yonkers</span>
   </div>
 
+  <!-- Fetch bar -->
+  <div class="fetch-bar">
+    <span class="fetch-status" id="fetch-status"><span class="spinner"></span> Looking up current jackpots&hellip;</span>
+    <button class="refresh-btn" id="refresh-btn" onclick="fetchJackpots()" disabled>Refresh</button>
+  </div>
+
+  <!-- Game selector cards -->
+  <div class="game-row" id="game-row" style="display:none">
+    <button class="game-btn active" id="btn-pb" onclick="selectGame('pb')">
+      <div class="game-btn-name">Powerball</div>
+      <div class="game-btn-amt" id="pb-amt">&mdash;</div>
+      <div class="game-btn-sub" id="pb-sub">Next draw: &mdash;</div>
+    </button>
+    <button class="game-btn" id="btn-mm" onclick="selectGame('mm')">
+      <div class="game-btn-name">Mega Millions</div>
+      <div class="game-btn-amt" id="mm-amt">&mdash;</div>
+      <div class="game-btn-sub" id="mm-sub">Next draw: &mdash;</div>
+    </button>
+  </div>
+
+  <!-- Manual inputs -->
   <div class="input-grid">
     <div class="input-card">
       <div class="input-label">Advertised Jackpot</div>
@@ -171,6 +230,7 @@
   </div>
 
   <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.5%. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge applies &mdash; those city-level taxes only affect residents of NYC and Yonkers. Lottery winnings are ordinary income; FICA does not apply. These are estimates &mdash; consult a CPA for your exact liability.</p>
+  <p class="data-source" id="data-source"></p>
 
 </div>
 <script>
@@ -178,10 +238,103 @@ var FED_WH=0.24, FED_TOP=0.37, NY_WH=0.105, NY_TOP=0.109;
 var lumpManual=false, lumpPct=0.60;
 var jUnit='M', lUnit='M';
 var _t=null;
+var gameData={pb:null, mm:null};
+var activeGame='pb';
+
 function dbc(fn){ clearTimeout(_t); _t=setTimeout(fn,80); }
 
-function setUnit(field, unit) {
-  if (field==='j') {
+// ── Live data fetch via Claude API ──────────────────────────────────────────
+async function fetchJackpots(){
+  var btn=document.getElementById('refresh-btn');
+  var status=document.getElementById('fetch-status');
+  btn.disabled=true;
+  status.className='fetch-status';
+  status.innerHTML='<span class="spinner"></span> Looking up current jackpots&hellip;';
+
+  try {
+    var results = await Promise.all([
+      askClaude('Search nylottery.ny.gov for the current Powerball jackpot. Return ONLY JSON with keys: jackpot (number in dollars), cashValue (number in dollars), nextDraw (string e.g. "Sat Jun 14"). No markdown, no explanation.'),
+      askClaude('Search nylottery.ny.gov for the current Mega Millions jackpot. Return ONLY JSON with keys: jackpot (number in dollars), cashValue (number in dollars), nextDraw (string e.g. "Tue Jun 17"). No markdown, no explanation.')
+    ]);
+
+    var pb=results[0], mm=results[1];
+    var now=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+
+    if(pb && !pb.error) {
+      gameData.pb=pb;
+      document.getElementById('pb-amt').textContent=fmtM(pb.jackpot);
+      document.getElementById('pb-sub').textContent='Cash: '+fmtM(pb.cashValue)+(pb.nextDraw ? ' \u00b7 Draw: '+pb.nextDraw : '');
+    }
+    if(mm && !mm.error) {
+      gameData.mm=mm;
+      document.getElementById('mm-amt').textContent=fmtM(mm.jackpot);
+      document.getElementById('mm-sub').textContent='Cash: '+fmtM(mm.cashValue)+(mm.nextDraw ? ' \u00b7 Draw: '+mm.nextDraw : '');
+    }
+
+    if((pb && !pb.error) || (mm && !mm.error)) {
+      document.getElementById('game-row').style.display='flex';
+      status.textContent='Updated at '+now+' \u2014 tap a game above or edit manually below';
+      document.getElementById('data-source').textContent='Jackpot data sourced live from nylottery.ny.gov';
+      selectGame(activeGame);
+    } else {
+      status.className='fetch-status err';
+      status.textContent='Could not retrieve jackpots \u2014 enter amounts manually below';
+    }
+  } catch(e) {
+    status.className='fetch-status err';
+    status.textContent='Fetch failed \u2014 enter amounts manually below';
+  }
+  btn.disabled=false;
+}
+
+async function askClaude(prompt){
+  var res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:300,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      system:'You are a data extraction assistant. Search the web and return ONLY a raw JSON object \u2014 no markdown fences, no explanation, no preamble. If data is unavailable return {"error":"not found"}.',
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  var data=await res.json();
+  var text=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+  var clean=text.replace(/```json|```/g,'').trim();
+  try{ return JSON.parse(clean); }catch(e){ return {error:'parse'}; }
+}
+
+function selectGame(g){
+  activeGame=g;
+  document.getElementById('btn-pb').className='game-btn'+(g==='pb'?' active':'');
+  document.getElementById('btn-mm').className='game-btn'+(g==='mm'?' active':'');
+  var gd=gameData[g];
+  if(!gd) return;
+  // Populate fields from live data
+  var j=gd.jackpot||0, cv=gd.cashValue||0;
+  lumpManual=false;
+  if(j>=1e9){
+    setUnit('j','B');
+    document.getElementById('jackpot-input').value=(j/1e9).toFixed(2).replace(/\.?0+$/,'');
+  } else {
+    setUnit('j','M');
+    document.getElementById('jackpot-input').value=Math.round(j/1e6);
+  }
+  if(cv>=1e9){
+    setUnit('l','B');
+    document.getElementById('lump-input').value=(cv/1e9).toFixed(2).replace(/\.?0+$/,'');
+  } else {
+    setUnit('l','M');
+    document.getElementById('lump-input').value=cv>0?Math.round(cv/1e6):'';
+  }
+  if(!cv) syncLump();
+  calc();
+}
+
+// ── Unit toggles ────────────────────────────────────────────────────────────
+function setUnit(field,unit){
+  if(field==='j'){
     jUnit=unit;
     document.getElementById('j-M').className='unit-btn'+(unit==='M'?' active':'');
     document.getElementById('j-B').className='unit-btn'+(unit==='B'?' active':'');
@@ -195,7 +348,8 @@ function setUnit(field, unit) {
   calc();
 }
 
-function parseField(id, unit) {
+// ── Input handlers ──────────────────────────────────────────────────────────
+function parseField(id,unit){
   var s=document.getElementById(id).value.trim();
   if(!s) return null;
   s=s.replace(/[$,\s]/g,'');
@@ -203,7 +357,7 @@ function parseField(id, unit) {
   if(!m) return null;
   var n=parseFloat(m[1]);
   if(isNaN(n)) return null;
-  var sf=m[2] ? m[2].toUpperCase() : unit;
+  var sf=m[2]?m[2].toUpperCase():unit;
   if(sf==='B') return n*1e9;
   return n*1e6;
 }
@@ -213,7 +367,7 @@ function fmt(n){
   return '$'+Math.round(n).toLocaleString('en-US');
 }
 function fmtM(n){
-  if(n===null||isNaN(n)) return '\u2014';
+  if(!n||isNaN(n)) return '\u2014';
   if(n>=1e9) return '$'+(n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B';
   if(n>=1e6) return '$'+(n/1e6).toFixed(0)+'M';
   return fmt(n);
@@ -233,20 +387,20 @@ function onLumpPct(v){
   if(!lumpManual) syncLump();
   calc();
 }
-
 function syncLump(){
-  var j=parseField('jackpot-input', jUnit);
+  var j=parseField('jackpot-input',jUnit);
   document.getElementById('lump-input').value='';
   document.getElementById('lump-hint').textContent=j
-    ? 'Auto-estimated: '+fmtM(j*lumpPct)
-    : 'Leave blank to auto-estimate';
+    ?'Auto-estimated: '+fmtM(j*lumpPct)
+    :'Leave blank to auto-estimate';
 }
 
+// ── Main calc ────────────────────────────────────────────────────────────────
 function calc(){
-  var jackpot=parseField('jackpot-input', jUnit);
-  var lumpRaw=lumpManual ? parseField('lump-input', lUnit) : null;
-  var lump=lumpRaw!==null ? lumpRaw : (jackpot ? jackpot*lumpPct : null);
-  var np=Math.max(1, parseInt(document.getElementById('npeople').value)||1);
+  var jackpot=parseField('jackpot-input',jUnit);
+  var lumpRaw=lumpManual?parseField('lump-input',lUnit):null;
+  var lump=lumpRaw!==null?lumpRaw:(jackpot?jackpot*lumpPct:null);
+  var np=Math.max(1,parseInt(document.getElementById('npeople').value)||1);
 
   if(!lump){
     document.getElementById('mgrid').innerHTML='<div class="empty">Enter a jackpot amount above to see the breakdown.</div>';
@@ -301,6 +455,9 @@ function tr(i,d,a,c){ return '<tr><td>'+i+'</td><td class="muted">'+d+'</td><td 
 function trbold(i,d,a,c){ return '<tr><td><strong>'+i+'</strong></td><td class="muted">'+d+'</td><td class="'+c+'">'+a+'</td></tr>'; }
 function trtot(i,d,a,c){ return '<tr class="totrow"><td>'+i+'</td><td class="muted">'+d+'</td><td class="'+c+'">'+a+'</td></tr>'; }
 function trspace(){ return '<tr style="height:6px"><td colspan="3"></td></tr>'; }
+
+// kick off on load
+fetchJackpots();
 </script>
 </body>
 </html>
