@@ -70,28 +70,6 @@
   .unit-btn.active { background: #1a1a18; color: #fff; }
   .unit-btn:first-child { border-right: 1px solid #ddd; }
 
-  .lump-row {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap;
-    background: #fff; border: 1px solid #e8e8e6; border-radius: 10px; padding: 0.75rem 1rem;
-  }
-  .lump-lbl { font-size: 12px; color: #666; white-space: nowrap; }
-  .lump-pct-badge {
-    font-size: 13px; font-weight: 600; color: #1a1a18;
-    background: #f3f3f1; border-radius: 6px; padding: 2px 10px;
-    min-width: 44px; text-align: center;
-  }
-  input[type=range] {
-    -webkit-appearance: none; appearance: none;
-    height: 4px; background: #ddd; border-radius: 2px; outline: none; cursor: pointer;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; appearance: none;
-    width: 16px; height: 16px; border-radius: 50%; background: #1a1a18; cursor: pointer;
-  }
-  input[type=range]::-moz-range-thumb {
-    width: 16px; height: 16px; border-radius: 50%; background: #1a1a18; cursor: pointer; border: none;
-  }
-
   .ctrl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
   .ctrl-lbl { font-size: 13px; color: #555; }
   .ctrl-row input[type=number] {
@@ -162,7 +140,7 @@
       <div class="input-label">Advertised Jackpot</div>
       <div class="input-wrap">
         <span class="input-prefix">$</span>
-        <input type="text" id="jackpot-input" inputmode="decimal" placeholder="325"
+        <input type="text" id="jackpot-input" inputmode="decimal" placeholder="238"
           oninput="onJackpot()" onkeyup="onJackpot()" onchange="onJackpot()" />
         <div class="unit-toggle">
           <button class="unit-btn active" id="j-M" onclick="setUnit('j','M')">M</button>
@@ -175,23 +153,15 @@
       <div class="input-label">Cash Value / Lump Sum</div>
       <div class="input-wrap">
         <span class="input-prefix">$</span>
-        <input type="text" id="lump-input" inputmode="decimal" placeholder="auto-estimated"
+        <input type="text" id="lump-input" inputmode="decimal" placeholder="106"
           oninput="onLump()" onkeyup="onLump()" onchange="onLump()" />
         <div class="unit-toggle">
           <button class="unit-btn active" id="l-M" onclick="setUnit('l','M')">M</button>
           <button class="unit-btn" id="l-B" onclick="setUnit('l','B')">B</button>
         </div>
       </div>
-      <div class="input-hint" id="lump-hint">Leave blank to auto-estimate</div>
+      <div class="input-hint" id="lump-hint">Auto-filled from jackpot data</div>
     </div>
-  </div>
-
-  <div class="lump-row">
-    <span class="lump-lbl">Cash value estimate:</span>
-    <span class="lump-pct-badge" id="lump-pct-display">60%</span>
-    <input type="range" min="50" max="70" value="60" step="1" id="lump-pct" style="width:110px"
-      oninput="onLumpPct(this.value)" onchange="onLumpPct(this.value)" />
-    <span class="lump-lbl">of jackpot</span>
   </div>
 
   <div class="ctrl-row">
@@ -202,7 +172,7 @@
   </div>
 
   <div class="metrics-grid" id="mgrid">
-    <div class="empty">Enter a jackpot amount above to see the breakdown.</div>
+    <div class="empty">Tap a game above or enter a jackpot amount to see the breakdown.</div>
   </div>
 
   <hr>
@@ -227,56 +197,49 @@
     </div>
   </div>
 
-  <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.5%. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge applies &mdash; those city-level taxes only affect residents of NYC and Yonkers. Lottery winnings are ordinary income; FICA does not apply. These are estimates &mdash; consult a CPA for your exact liability.</p>
+  <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.5%. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge &mdash; those only apply to residents of those cities. Lottery winnings are ordinary income; FICA does not apply. Estimates only &mdash; consult a CPA for exact liability. Jackpot data via usamega.com.</p>
 
 </div>
 <script>
 var WORKER = 'https://lottery-proxy.charlie-adams-176.workers.dev';
 var FED_WH=0.24, FED_TOP=0.37, NY_WH=0.105, NY_TOP=0.109;
-var lumpManual=false, lumpPct=0.60;
 var jUnit='M', lUnit='M';
 var gameData={pb:null, mm:null};
 var activeGame='pb';
 var _t=null;
 function dbc(fn){ clearTimeout(_t); _t=setTimeout(fn,80); }
 
-// ── Fetch jackpots from Worker ───────────────────────────────────────────────
 async function fetchJackpots(){
   var btn=document.getElementById('refresh-btn');
   var status=document.getElementById('fetch-status');
   btn.disabled=true;
   status.className='fetch-status';
   status.innerHTML='<span class="spinner"></span>Looking up current jackpots&hellip;';
-
   try {
     var res=await fetch(WORKER);
     var data=await res.json();
-
     if(data.error) throw new Error(data.error);
-
     var pb=data.pb, mm=data.mm;
     var now=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-
-    if(pb && pb.jackpot){
+    if(pb&&pb.jackpot){
       gameData.pb=pb;
       document.getElementById('pb-amt').textContent=fmtM(pb.jackpot);
       document.getElementById('pb-sub').textContent=
         'Cash: '+fmtM(pb.cashValue)+(pb.nextDraw?' \u00b7 '+pb.nextDraw:'');
     }
-    if(mm && mm.jackpot){
+    if(mm&&mm.jackpot){
       gameData.mm=mm;
       document.getElementById('mm-amt').textContent=fmtM(mm.jackpot);
       document.getElementById('mm-sub').textContent=
         'Cash: '+fmtM(mm.cashValue)+(mm.nextDraw?' \u00b7 '+mm.nextDraw:'');
     }
-
     if((pb&&pb.jackpot)||(mm&&mm.jackpot)){
       document.getElementById('game-row').style.display='flex';
       status.className='fetch-status ok';
       status.textContent='Updated '+now+' \u2014 tap a game or edit manually below';
       selectGame(activeGame);
     } else {
-      throw new Error('No jackpot data returned');
+      throw new Error('No data');
     }
   } catch(e) {
     status.className='fetch-status err';
@@ -285,43 +248,27 @@ async function fetchJackpots(){
   btn.disabled=false;
 }
 
-// ── Game selection ───────────────────────────────────────────────────────────
 function selectGame(g){
   activeGame=g;
   document.getElementById('btn-pb').className='game-btn'+(g==='pb'?' active':'');
   document.getElementById('btn-mm').className='game-btn'+(g==='mm'?' active':'');
   var gd=gameData[g];
   if(!gd||!gd.jackpot) return;
-  lumpManual=false;
   var j=gd.jackpot, cv=gd.cashValue||0;
-  if(j>=1e9){
-    setUnit('j','B');
-    document.getElementById('jackpot-input').value=+(j/1e9).toFixed(3);
-  } else {
-    setUnit('j','M');
-    document.getElementById('jackpot-input').value=Math.round(j/1e6);
-  }
-  if(cv>=1e9){
-    setUnit('l','B');
-    document.getElementById('lump-input').value=+(cv/1e9).toFixed(3);
-  } else if(cv>=1e6){
-    setUnit('l','M');
-    document.getElementById('lump-input').value=Math.round(cv/1e6);
-  } else {
-    document.getElementById('lump-input').value='';
-    syncLump();
-  }
+  if(j>=1e9){ setUnit('j','B'); document.getElementById('jackpot-input').value=+(j/1e9).toFixed(3); }
+  else       { setUnit('j','M'); document.getElementById('jackpot-input').value=Math.round(j/1e6); }
+  if(cv>=1e9){ setUnit('l','B'); document.getElementById('lump-input').value=+(cv/1e9).toFixed(3); }
+  else if(cv>0){ setUnit('l','M'); document.getElementById('lump-input').value=Math.round(cv/1e6); }
+  else { document.getElementById('lump-input').value=''; document.getElementById('lump-hint').textContent='Enter cash value manually'; }
   calc();
 }
 
-// ── Unit toggles ─────────────────────────────────────────────────────────────
 function setUnit(field,unit){
   if(field==='j'){
     jUnit=unit;
     document.getElementById('j-M').className='unit-btn'+(unit==='M'?' active':'');
     document.getElementById('j-B').className='unit-btn'+(unit==='B'?' active':'');
     document.getElementById('jackpot-hint').textContent=unit==='M'?'Millions \u2014 tap B for billions':'Billions \u2014 tap M for millions';
-    if(!lumpManual) syncLump();
   } else {
     lUnit=unit;
     document.getElementById('l-M').className='unit-btn'+(unit==='M'?' active':'');
@@ -330,7 +277,6 @@ function setUnit(field,unit){
   calc();
 }
 
-// ── Input parsing ────────────────────────────────────────────────────────────
 function parseField(id,unit){
   var s=document.getElementById(id).value.trim();
   if(!s) return null;
@@ -356,36 +302,18 @@ function fmtM(n){
 }
 function pct(r){ return (r*100).toFixed(1)+'%'; }
 
-function onJackpot(){ dbc(function(){ if(!lumpManual) syncLump(); calc(); }); }
-function onLump(){
-  var v=document.getElementById('lump-input').value.trim();
-  lumpManual=v.length>0;
-  if(!lumpManual) document.getElementById('lump-hint').textContent='Leave blank to auto-estimate';
-  dbc(calc);
-}
-function onLumpPct(v){
-  lumpPct=v/100;
-  document.getElementById('lump-pct-display').textContent=v+'%';
-  if(!lumpManual) syncLump();
-  calc();
-}
-function syncLump(){
-  var j=parseField('jackpot-input',jUnit);
-  document.getElementById('lump-input').value='';
-  document.getElementById('lump-hint').textContent=j
-    ?'Auto-estimated: '+fmtM(j*lumpPct)
-    :'Leave blank to auto-estimate';
-}
+function onJackpot(){ dbc(calc); }
+function onLump(){ dbc(calc); }
 
-// ── Main calculation ─────────────────────────────────────────────────────────
 function calc(){
+  var lump=parseField('lump-input',lUnit);
   var jackpot=parseField('jackpot-input',jUnit);
-  var lumpRaw=lumpManual?parseField('lump-input',lUnit):null;
-  var lump=lumpRaw!==null?lumpRaw:(jackpot?jackpot*lumpPct:null);
+  // fall back to 60% estimate only if no cash value at all
+  if(!lump && jackpot) lump=jackpot*0.60;
   var np=Math.max(1,parseInt(document.getElementById('npeople').value)||1);
 
   if(!lump){
-    document.getElementById('mgrid').innerHTML='<div class="empty">Enter a jackpot amount above to see the breakdown.</div>';
+    document.getElementById('mgrid').innerHTML='<div class="empty">Tap a game above or enter a jackpot amount to see the breakdown.</div>';
     document.getElementById('wtbody').innerHTML='';
     document.getElementById('rtbody').innerHTML='';
     document.getElementById('th-val').textContent='\u2014';
