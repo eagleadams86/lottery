@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NY Lottery After-Tax Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 14px; line-height: 1.5; background: #f9f9f8; color: #1a1a18; min-height: 100vh;
+  }
+  .page { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+  .hrow { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 8px; }
+  .ptitle { font-size: 18px; font-weight: 600; color: #1a1a18; letter-spacing: -0.01em; }
+  .location-tag { font-size: 12px; color: #888; }
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
+  @media (max-width: 520px) { .input-grid { grid-template-columns: 1fr; } }
+  .input-card { background: #fff; border-radius: 10px; border: 1px solid #e8e8e6; padding: 0.9rem 1rem; }
+  .input-label { font-size: 11px; font-weight: 500; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .input-wrap { display: flex; align-items: center; gap: 4px; border-bottom: 1.5px solid #e0e0de; padding-bottom: 4px; }
+  .input-wrap:focus-within { border-bottom-color: #1a1a18; }
+  .input-prefix { font-size: 15px; font-weight: 500; color: #aaa; flex-shrink: 0; }
+  .input-card input[type=text] {
+    flex: 1; min-width: 0; font-size: 16px; font-weight: 500;
+    background: transparent; border: none; padding: 2px 0;
+    color: #1a1a18; outline: none; font-family: inherit;
+  }
+  .input-card input[type=text]::placeholder { color: #bbb; font-weight: 400; }
+  .input-hint { font-size: 11px; color: #aaa; margin-top: 5px; min-height: 16px; }
+  .unit-toggle { display: flex; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
+  .unit-btn {
+    padding: 3px 9px; font-size: 12px; font-weight: 600; cursor: pointer;
+    background: #fff; color: #999; border: none; font-family: inherit;
+  }
+  .unit-btn.active { background: #1a1a18; color: #fff; }
+  .unit-btn:first-child { border-right: 1px solid #ddd; }
+  .lump-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap;
+    background: #fff; border: 1px solid #e8e8e6; border-radius: 10px; padding: 0.75rem 1rem;
+  }
+  .lump-lbl { font-size: 12px; color: #666; white-space: nowrap; }
+  .lump-pct-badge {
+    font-size: 13px; font-weight: 600; color: #1a1a18;
+    background: #f3f3f1; border-radius: 6px; padding: 2px 10px;
+    min-width: 44px; text-align: center;
+  }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    height: 4px; background: #ddd; border-radius: 2px; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%; background: #1a1a18; cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%; background: #1a1a18; cursor: pointer; border: none;
+  }
+  .ctrl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .ctrl-lbl { font-size: 13px; color: #555; }
+  .ctrl-row input[type=number] {
+    width: 60px; font-size: 14px; font-weight: 500;
+    border: 1px solid #ddd; border-radius: 7px; padding: 5px 8px;
+    background: #fff; color: #1a1a18; outline: none; font-family: inherit;
+  }
+  .ctrl-row input[type=number]:focus { border-color: #1a1a18; }
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .mc { background: #fff; border-radius: 10px; border: 1px solid #e8e8e6; padding: 0.9rem 1rem; }
+  .ml { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .mv { font-size: 18px; font-weight: 600; color: #1a1a18; }
+  .mv.red { color: #c0392b; }
+  .mv.grn { color: #1a7c4a; }
+  hr { border: none; border-top: 1px solid #e8e8e6; margin: 1.25rem 0; }
+  .sec-title { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1.25rem; }
+  th { text-align: left; font-size: 10px; font-weight: 600; color: #aaa; padding: 5px 8px; border-bottom: 1px solid #e8e8e6; text-transform: uppercase; letter-spacing: 0.06em; }
+  td { padding: 8px 8px; border-bottom: 1px solid #f0f0ee; color: #1a1a18; }
+  td.muted { color: #999; font-size: 12px; }
+  td.r { text-align: right; font-variant-numeric: tabular-nums; }
+  td.neg { text-align: right; color: #c0392b; font-variant-numeric: tabular-nums; }
+  td.pos { text-align: right; color: #1a7c4a; font-variant-numeric: tabular-nums; }
+  tr.totrow td { font-weight: 600; border-top: 1.5px solid #ddd; border-bottom: none; padding-top: 10px; }
+  .takehome {
+    background: #1a1a18; border-radius: 12px; padding: 1.1rem 1.4rem;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 1rem;
+  }
+  .th-lbl { font-size: 12px; color: #aaa; margin-bottom: 3px; }
+  .th-val { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+  .th-rate { font-size: 22px; font-weight: 600; color: #ccc; }
+  .empty { font-size: 13px; color: #aaa; padding: 0.5rem 0; grid-column: 1/-1; }
+  .note { font-size: 11px; color: #bbb; line-height: 1.8; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hrow">
+    <span class="ptitle">NY Lottery &mdash; After-Tax Calculator</span>
+    <span class="location-tag">Outside NYC &amp; Yonkers</span>
+  </div>
+
+  <div class="input-grid">
+    <div class="input-card">
+      <div class="input-label">Advertised Jackpot</div>
+      <div class="input-wrap">
+        <span class="input-prefix">$</span>
+        <input type="text" id="jackpot-input" inputmode="decimal" placeholder="325"
+          oninput="onJackpot()" onkeyup="onJackpot()" onchange="onJackpot()" />
+        <div class="unit-toggle">
+          <button class="unit-btn active" id="j-M" onclick="setUnit('j','M')">M</button>
+          <button class="unit-btn" id="j-B" onclick="setUnit('j','B')">B</button>
+        </div>
+      </div>
+      <div class="input-hint" id="jackpot-hint">Millions &mdash; tap B for billions</div>
+    </div>
+    <div class="input-card">
+      <div class="input-label">Cash Value / Lump Sum</div>
+      <div class="input-wrap">
+        <span class="input-prefix">$</span>
+        <input type="text" id="lump-input" inputmode="decimal" placeholder="auto-estimated"
+          oninput="onLump()" onkeyup="onLump()" onchange="onLump()" />
+        <div class="unit-toggle">
+          <button class="unit-btn active" id="l-M" onclick="setUnit('l','M')">M</button>
+          <button class="unit-btn" id="l-B" onclick="setUnit('l','B')">B</button>
+        </div>
+      </div>
+      <div class="input-hint" id="lump-hint">Leave blank to auto-estimate</div>
+    </div>
+  </div>
+
+  <div class="lump-row">
+    <span class="lump-lbl">Cash value estimate:</span>
+    <span class="lump-pct-badge" id="lump-pct-display">60%</span>
+    <input type="range" min="50" max="70" value="60" step="1" id="lump-pct" style="width:110px"
+      oninput="onLumpPct(this.value)" onchange="onLumpPct(this.value)" />
+    <span class="lump-lbl">of jackpot</span>
+  </div>
+
+  <div class="ctrl-row">
+    <span class="ctrl-lbl">Splitting among</span>
+    <input type="number" id="npeople" min="1" max="1000" value="1"
+      oninput="calc()" onchange="calc()" />
+    <span class="ctrl-lbl">winner(s)</span>
+  </div>
+
+  <div class="metrics-grid" id="mgrid">
+    <div class="empty">Enter a jackpot amount above to see the breakdown.</div>
+  </div>
+
+  <hr>
+  <p class="sec-title">Withheld at payment</p>
+  <table><thead><tr><th>Item</th><th>Rate</th><th style="text-align:right">Amount</th></tr></thead>
+  <tbody id="wtbody"></tbody></table>
+
+  <hr>
+  <p class="sec-title">Additional owed at next tax return</p>
+  <table><thead><tr><th>Item</th><th>Details</th><th style="text-align:right">Amount</th></tr></thead>
+  <tbody id="rtbody"></tbody></table>
+
+  <hr>
+  <div class="takehome">
+    <div>
+      <div class="th-lbl" id="th-lbl">Net take-home after all taxes</div>
+      <div class="th-val" id="th-val">&#8212;</div>
+    </div>
+    <div style="text-align:right">
+      <div class="th-lbl">Effective total tax rate</div>
+      <div class="th-rate" id="eff-rate">&#8212;</div>
+    </div>
+  </div>
+
+  <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.5%. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge applies &mdash; those city-level taxes only affect residents of NYC and Yonkers. Lottery winnings are ordinary income; FICA does not apply. These are estimates &mdash; consult a CPA for your exact liability.</p>
+
+</div>
+<script>
+var FED_WH=0.24, FED_TOP=0.37, NY_WH=0.105, NY_TOP=0.109;
+var lumpManual=false, lumpPct=0.60;
+var jUnit='M', lUnit='M';
+var _t=null;
+function dbc(fn){ clearTimeout(_t); _t=setTimeout(fn,80); }
+
+function setUnit(field, unit) {
+  if (field==='j') {
+    jUnit=unit;
+    document.getElementById('j-M').className='unit-btn'+(unit==='M'?' active':'');
+    document.getElementById('j-B').className='unit-btn'+(unit==='B'?' active':'');
+    document.getElementById('jackpot-hint').textContent=(unit==='M'?'Millions \u2014 tap B for billions':'Billions \u2014 tap M for millions');
+    if(!lumpManual) syncLump();
+  } else {
+    lUnit=unit;
+    document.getElementById('l-M').className='unit-btn'+(unit==='M'?' active':'');
+    document.getElementById('l-B').className='unit-btn'+(unit==='B'?' active':'');
+  }
+  calc();
+}
+
+function parseField(id, unit) {
+  var s=document.getElementById(id).value.trim();
+  if(!s) return null;
+  s=s.replace(/[$,\s]/g,'');
+  var m=s.match(/^([\d.]+)\s*([MmBb]?)$/);
+  if(!m) return null;
+  var n=parseFloat(m[1]);
+  if(isNaN(n)) return null;
+  var sf=m[2] ? m[2].toUpperCase() : unit;
+  if(sf==='B') return n*1e9;
+  return n*1e6;
+}
+
+function fmt(n){
+  if(n===null||isNaN(n)) return '\u2014';
+  return '$'+Math.round(n).toLocaleString('en-US');
+}
+function fmtM(n){
+  if(n===null||isNaN(n)) return '\u2014';
+  if(n>=1e9) return '$'+(n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(0)+'M';
+  return fmt(n);
+}
+function pct(r){ return (r*100).toFixed(1)+'%'; }
+
+function onJackpot(){ dbc(function(){ if(!lumpManual) syncLump(); calc(); }); }
+function onLump(){
+  var v=document.getElementById('lump-input').value.trim();
+  lumpManual=v.length>0;
+  if(!lumpManual) document.getElementById('lump-hint').textContent='Leave blank to auto-estimate';
+  dbc(calc);
+}
+function onLumpPct(v){
+  lumpPct=v/100;
+  document.getElementById('lump-pct-display').textContent=v+'%';
+  if(!lumpManual) syncLump();
+  calc();
+}
+
+function syncLump(){
+  var j=parseField('jackpot-input', jUnit);
+  document.getElementById('lump-input').value='';
+  document.getElementById('lump-hint').textContent=j
+    ? 'Auto-estimated: '+fmtM(j*lumpPct)
+    : 'Leave blank to auto-estimate';
+}
+
+function calc(){
+  var jackpot=parseField('jackpot-input', jUnit);
+  var lumpRaw=lumpManual ? parseField('lump-input', lUnit) : null;
+  var lump=lumpRaw!==null ? lumpRaw : (jackpot ? jackpot*lumpPct : null);
+  var np=Math.max(1, parseInt(document.getElementById('npeople').value)||1);
+
+  if(!lump){
+    document.getElementById('mgrid').innerHTML='<div class="empty">Enter a jackpot amount above to see the breakdown.</div>';
+    document.getElementById('wtbody').innerHTML='';
+    document.getElementById('rtbody').innerHTML='';
+    document.getElementById('th-val').textContent='\u2014';
+    document.getElementById('eff-rate').textContent='\u2014';
+    return;
+  }
+
+  var share=lump/np;
+  var fedWH=share*FED_WH, nyWH=share*NY_WH, totWH=fedWH+nyWH;
+  var afterWH=share-totWH;
+  var fedTrue=share*FED_TOP, nyTrue=share*NY_TOP;
+  var fedExtra=Math.max(0,fedTrue-fedWH), nyExtra=Math.max(0,nyTrue-nyWH);
+  var totExtra=fedExtra+nyExtra;
+  var totalTax=fedTrue+nyTrue;
+  var net=share-totalTax;
+  var effRate=totalTax/share;
+
+  document.getElementById('mgrid').innerHTML=
+    mc('Your lump share',fmtM(share),'')+
+    mc('Withheld upfront',fmtM(totWH),'red')+
+    mc('Owed at return',fmtM(totExtra),'red')+
+    mc('Net take-home',fmtM(net),'grn');
+
+  document.getElementById('wtbody').innerHTML=
+    tr(np>1?'Your lump sum share (1/'+np+' of '+fmtM(lump)+')':'Your lump sum (full)','',fmt(share),'r')+
+    tr('Federal withholding',pct(FED_WH)+' mandatory','\u2212'+fmt(fedWH),'neg')+
+    tr('NY State withholding',pct(NY_WH)+' mandatory','\u2212'+fmt(nyWH),'neg')+
+    tr('NYC / Yonkers surcharge','N/A \u2014 not NYC or Yonkers','$0','r')+
+    trtot('Received after withholding','',fmt(afterWH),'r');
+
+  document.getElementById('rtbody').innerHTML=
+    tr('Federal \u2014 true liability',pct(FED_TOP)+' top marginal','\u2212'+fmt(fedTrue),'neg')+
+    tr('Less: federal withheld','Paid at source','+'+fmt(fedWH),'pos')+
+    trbold('Additional federal due',pct(FED_TOP-FED_WH)+' gap','\u2212'+fmt(fedExtra),'neg')+
+    trspace()+
+    tr('NY State \u2014 true liability',pct(NY_TOP)+' top marginal','\u2212'+fmt(nyTrue),'neg')+
+    tr('Less: NY State withheld','Paid at source','+'+fmt(nyWH),'pos')+
+    trbold('Additional NY State due',pct(NY_TOP-NY_WH)+' gap','\u2212'+fmt(nyExtra),'neg')+
+    tr('NYC / Yonkers surcharge','N/A \u2014 not NYC or Yonkers','$0','r')+
+    trtot('Total additional owed','','\u2212'+fmt(totExtra),'neg');
+
+  document.getElementById('th-lbl').textContent=np>1?'Each winner\'s net take-home (1 of '+np+')':'Net take-home after all taxes';
+  document.getElementById('th-val').textContent=fmt(net);
+  document.getElementById('eff-rate').textContent=pct(effRate)+' effective rate';
+}
+
+function mc(l,v,c){ return '<div class="mc"><div class="ml">'+l+'</div><div class="mv '+c+'">'+v+'</div></div>'; }
+function tr(i,d,a,c){ return '<tr><td>'+i+'</td><td class="muted">'+d+'</td><td class="'+c+'">'+a+'</td></tr>'; }
+function trbold(i,d,a,c){ return '<tr><td><strong>'+i+'</strong></td><td class="muted">'+d+'</td><td class="'+c+'">'+a+'</td></tr>'; }
+function trtot(i,d,a,c){ return '<tr class="totrow"><td>'+i+'</td><td class="muted">'+d+'</td><td class="'+c+'">'+a+'</td></tr>'; }
+function trspace(){ return '<tr style="height:6px"><td colspan="3"></td></tr>'; }
+</script>
+</body>
+</html>
