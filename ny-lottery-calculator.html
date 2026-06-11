@@ -302,7 +302,7 @@ async function fetchJackpots(){
       document.getElementById('manual-inputs').classList.remove('open');
       document.getElementById('manual-chevron').classList.remove('open');
       st.className = 'fetch-status ok';
-      st.textContent = 'Updated '+now+' \u2014 tap a game above';
+      st.textContent = 'Updated '+now+' \u2014 tap a game below';
       selectGame(activeGame);
     } else { throw new Error('No data'); }
   } catch(e) {
