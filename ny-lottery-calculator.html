@@ -48,7 +48,20 @@
   .game-btn-amt { font-size: 22px; font-weight: 700; color: #1a1a18; margin-bottom: 2px; }
   .game-btn-sub { font-size: 11px; color: #888; }
 
-  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
+  /* Manual inputs — hidden by default, shown on fetch error */
+  .manual-section { margin-bottom: 1.25rem; }
+  .manual-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: #888; cursor: pointer; background: none;
+    border: none; font-family: inherit; padding: 0; margin-bottom: 0.75rem;
+  }
+  .manual-toggle:hover { color: #555; }
+  .manual-toggle-arrow { display: inline-block; transition: transform 0.2s; font-size: 10px; }
+  .manual-toggle-arrow.open { transform: rotate(90deg); }
+  .manual-inputs { display: none; }
+  .manual-inputs.open { display: block; }
+
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   @media (max-width: 520px) { .input-grid { grid-template-columns: 1fr; } }
   .input-card { background: #fff; border-radius: 10px; border: 1px solid #e8e8e6; padding: 0.9rem 1rem; }
   .input-label { font-size: 11px; font-weight: 500; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -79,12 +92,27 @@
   }
   .ctrl-row input[type=number]:focus { border-color: #1a1a18; }
 
-  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
   .mc { background: #fff; border-radius: 10px; border: 1px solid #e8e8e6; padding: 0.9rem 1rem; }
   .ml { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
   .mv { font-size: 18px; font-weight: 600; color: #1a1a18; }
   .mv.red { color: #c0392b; }
   .mv.grn { color: #1a7c4a; }
+
+  /* Details toggle */
+  .details-toggle {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 0.75rem 0; background: none; border: none;
+    border-top: 1px solid #e8e8e6; border-bottom: 1px solid #e8e8e6;
+    font-family: inherit; font-size: 12px; font-weight: 600; color: #888;
+    text-transform: uppercase; letter-spacing: 0.07em; cursor: pointer;
+    margin-bottom: 0; text-align: left;
+  }
+  .details-toggle:hover { color: #444; }
+  .details-arrow { display: inline-block; transition: transform 0.2s; margin-left: auto; font-size: 14px; color: #bbb; }
+  .details-arrow.open { transform: rotate(180deg); }
+  .details-body { display: none; padding-top: 1.25rem; }
+  .details-body.open { display: block; }
 
   hr { border: none; border-top: 1px solid #e8e8e6; margin: 1.25rem 0; }
   .sec-title { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
@@ -106,7 +134,7 @@
   .th-val { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
   .th-rate { font-size: 22px; font-weight: 600; color: #ccc; }
   .empty { font-size: 13px; color: #aaa; padding: 0.5rem 0; grid-column: 1/-1; }
-  .note { font-size: 11px; color: #bbb; line-height: 1.8; margin-top: 0.5rem; }
+  .note { font-size: 11px; color: #bbb; line-height: 1.8; margin-top: 1rem; }
 </style>
 </head>
 <body>
@@ -117,11 +145,13 @@
     <span class="location-tag">Outside NYC &amp; Yonkers</span>
   </div>
 
+  <!-- Status bar -->
   <div class="fetch-bar">
     <span class="fetch-status" id="fetch-status"><span class="spinner"></span>Looking up current jackpots&hellip;</span>
     <button class="refresh-btn" id="refresh-btn" onclick="fetchJackpots()" disabled>Refresh</button>
   </div>
 
+  <!-- Game cards -->
   <div class="game-row" id="game-row" style="display:none">
     <button class="game-btn active" id="btn-pb" onclick="selectGame('pb')">
       <div class="game-btn-name">Powerball</div>
@@ -135,35 +165,45 @@
     </button>
   </div>
 
-  <div class="input-grid">
-    <div class="input-card">
-      <div class="input-label">Advertised Jackpot</div>
-      <div class="input-wrap">
-        <span class="input-prefix">$</span>
-        <input type="text" id="jackpot-input" inputmode="decimal" placeholder="238"
-          oninput="onJackpot()" onkeyup="onJackpot()" onchange="onJackpot()" />
-        <div class="unit-toggle">
-          <button class="unit-btn active" id="j-M" onclick="setUnit('j','M')">M</button>
-          <button class="unit-btn" id="j-B" onclick="setUnit('j','B')">B</button>
+  <!-- Manual inputs (hidden unless fetch fails) -->
+  <div class="manual-section" id="manual-section" style="display:none">
+    <button class="manual-toggle" onclick="toggleManual()">
+      <span class="manual-toggle-arrow" id="manual-arrow">&#9654;</span>
+      Enter amounts manually
+    </button>
+    <div class="manual-inputs" id="manual-inputs">
+      <div class="input-grid">
+        <div class="input-card">
+          <div class="input-label">Advertised Jackpot</div>
+          <div class="input-wrap">
+            <span class="input-prefix">$</span>
+            <input type="text" id="jackpot-input" inputmode="decimal" placeholder="238"
+              oninput="onJackpot()" onkeyup="onJackpot()" onchange="onJackpot()" />
+            <div class="unit-toggle">
+              <button class="unit-btn active" id="j-M" onclick="setUnit('j','M')">M</button>
+              <button class="unit-btn" id="j-B" onclick="setUnit('j','B')">B</button>
+            </div>
+          </div>
+          <div class="input-hint" id="jackpot-hint">Millions &mdash; tap B for billions</div>
+        </div>
+        <div class="input-card">
+          <div class="input-label">Cash Value / Lump Sum</div>
+          <div class="input-wrap">
+            <span class="input-prefix">$</span>
+            <input type="text" id="lump-input" inputmode="decimal" placeholder="106"
+              oninput="onLump()" onkeyup="onLump()" onchange="onLump()" />
+            <div class="unit-toggle">
+              <button class="unit-btn active" id="l-M" onclick="setUnit('l','M')">M</button>
+              <button class="unit-btn" id="l-B" onclick="setUnit('l','B')">B</button>
+            </div>
+          </div>
+          <div class="input-hint" id="lump-hint">Leave blank to estimate at 60%</div>
         </div>
       </div>
-      <div class="input-hint" id="jackpot-hint">Millions &mdash; tap B for billions</div>
-    </div>
-    <div class="input-card">
-      <div class="input-label">Cash Value / Lump Sum</div>
-      <div class="input-wrap">
-        <span class="input-prefix">$</span>
-        <input type="text" id="lump-input" inputmode="decimal" placeholder="106"
-          oninput="onLump()" onkeyup="onLump()" onchange="onLump()" />
-        <div class="unit-toggle">
-          <button class="unit-btn active" id="l-M" onclick="setUnit('l','M')">M</button>
-          <button class="unit-btn" id="l-B" onclick="setUnit('l','B')">B</button>
-        </div>
-      </div>
-      <div class="input-hint" id="lump-hint">Auto-filled from jackpot data</div>
     </div>
   </div>
 
+  <!-- Winners -->
   <div class="ctrl-row">
     <span class="ctrl-lbl">Splitting among</span>
     <input type="number" id="npeople" min="1" max="1000" value="1"
@@ -171,22 +211,13 @@
     <span class="ctrl-lbl">winner(s)</span>
   </div>
 
+  <!-- Summary cards -->
   <div class="metrics-grid" id="mgrid">
-    <div class="empty">Tap a game above or enter a jackpot amount to see the breakdown.</div>
+    <div class="empty">Tap a game above to see the breakdown.</div>
   </div>
 
-  <hr>
-  <p class="sec-title">Withheld at payment</p>
-  <table><thead><tr><th>Item</th><th>Rate</th><th style="text-align:right">Amount</th></tr></thead>
-  <tbody id="wtbody"></tbody></table>
-
-  <hr>
-  <p class="sec-title">Additional owed at next tax return</p>
-  <table><thead><tr><th>Item</th><th>Details</th><th style="text-align:right">Amount</th></tr></thead>
-  <tbody id="rtbody"></tbody></table>
-
-  <hr>
-  <div class="takehome">
+  <!-- Take-home banner -->
+  <div class="takehome" id="takehome-banner" style="display:none">
     <div>
       <div class="th-lbl" id="th-lbl">Net take-home after all taxes</div>
       <div class="th-val" id="th-val">&#8212;</div>
@@ -195,6 +226,21 @@
       <div class="th-lbl">Effective total tax rate</div>
       <div class="th-rate" id="eff-rate">&#8212;</div>
     </div>
+  </div>
+
+  <!-- Collapsible details -->
+  <button class="details-toggle" id="details-toggle" onclick="toggleDetails()" style="display:none">
+    Tax breakdown details
+    <span class="details-arrow" id="details-arrow">&#9660;</span>
+  </button>
+  <div class="details-body" id="details-body">
+    <p class="sec-title">Withheld at payment</p>
+    <table><thead><tr><th>Item</th><th>Rate</th><th style="text-align:right">Amount</th></tr></thead>
+    <tbody id="wtbody"></tbody></table>
+    <hr>
+    <p class="sec-title">Additional owed at next tax return</p>
+    <table><thead><tr><th>Item</th><th>Details</th><th style="text-align:right">Amount</th></tr></thead>
+    <tbody id="rtbody"></tbody></table>
   </div>
 
   <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.5%. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge &mdash; those only apply to residents of those cities. Lottery winnings are ordinary income; FICA does not apply. Estimates only &mdash; consult a CPA for exact liability. Jackpot data via usamega.com.</p>
@@ -209,6 +255,32 @@ var activeGame='pb';
 var _t=null;
 function dbc(fn){ clearTimeout(_t); _t=setTimeout(fn,80); }
 
+// ── Toggle manual inputs ────────────────────────────────────────────────────
+function toggleManual(){
+  var inputs=document.getElementById('manual-inputs');
+  var arrow=document.getElementById('manual-arrow');
+  var open=inputs.classList.contains('open');
+  inputs.classList.toggle('open', !open);
+  arrow.classList.toggle('open', !open);
+}
+
+function showManual(){
+  document.getElementById('manual-section').style.display='block';
+  // auto-expand when shown due to error
+  document.getElementById('manual-inputs').classList.add('open');
+  document.getElementById('manual-arrow').classList.add('open');
+}
+
+// ── Toggle details ──────────────────────────────────────────────────────────
+function toggleDetails(){
+  var body=document.getElementById('details-body');
+  var arrow=document.getElementById('details-arrow');
+  var open=body.classList.contains('open');
+  body.classList.toggle('open', !open);
+  arrow.classList.toggle('open', !open);
+}
+
+// ── Fetch jackpots ──────────────────────────────────────────────────────────
 async function fetchJackpots(){
   var btn=document.getElementById('refresh-btn');
   var status=document.getElementById('fetch-status');
@@ -236,18 +308,20 @@ async function fetchJackpots(){
     if((pb&&pb.jackpot)||(mm&&mm.jackpot)){
       document.getElementById('game-row').style.display='flex';
       status.className='fetch-status ok';
-      status.textContent='Updated '+now+' \u2014 tap a game or edit manually below';
+      status.textContent='Updated '+now+' \u2014 tap a game above';
       selectGame(activeGame);
     } else {
       throw new Error('No data');
     }
   } catch(e) {
     status.className='fetch-status err';
-    status.textContent='Could not load jackpots \u2014 enter amounts manually below';
+    status.textContent='Could not load jackpots \u2014 enter amounts below';
+    showManual();
   }
   btn.disabled=false;
 }
 
+// ── Select game ─────────────────────────────────────────────────────────────
 function selectGame(g){
   activeGame=g;
   document.getElementById('btn-pb').className='game-btn'+(g==='pb'?' active':'');
@@ -259,10 +333,11 @@ function selectGame(g){
   else       { setUnit('j','M'); document.getElementById('jackpot-input').value=Math.round(j/1e6); }
   if(cv>=1e9){ setUnit('l','B'); document.getElementById('lump-input').value=+(cv/1e9).toFixed(3); }
   else if(cv>0){ setUnit('l','M'); document.getElementById('lump-input').value=Math.round(cv/1e6); }
-  else { document.getElementById('lump-input').value=''; document.getElementById('lump-hint').textContent='Enter cash value manually'; }
+  else { document.getElementById('lump-input').value=''; }
   calc();
 }
 
+// ── Unit toggles ─────────────────────────────────────────────────────────────
 function setUnit(field,unit){
   if(field==='j'){
     jUnit=unit;
@@ -277,6 +352,7 @@ function setUnit(field,unit){
   calc();
 }
 
+// ── Parse / format ────────────────────────────────────────────────────────────
 function parseField(id,unit){
   var s=document.getElementById(id).value.trim();
   if(!s) return null;
@@ -289,7 +365,6 @@ function parseField(id,unit){
   if(sf==='B') return n*1e9;
   return n*1e6;
 }
-
 function fmt(n){
   if(n===null||isNaN(n)) return '\u2014';
   return '$'+Math.round(n).toLocaleString('en-US');
@@ -305,19 +380,21 @@ function pct(r){ return (r*100).toFixed(1)+'%'; }
 function onJackpot(){ dbc(calc); }
 function onLump(){ dbc(calc); }
 
+// ── Main calc ─────────────────────────────────────────────────────────────────
 function calc(){
   var lump=parseField('lump-input',lUnit);
   var jackpot=parseField('jackpot-input',jUnit);
-  // fall back to 60% estimate only if no cash value at all
-  if(!lump && jackpot) lump=jackpot*0.60;
+  if(!lump&&jackpot) lump=jackpot*0.60;
   var np=Math.max(1,parseInt(document.getElementById('npeople').value)||1);
 
   if(!lump){
-    document.getElementById('mgrid').innerHTML='<div class="empty">Tap a game above or enter a jackpot amount to see the breakdown.</div>';
+    document.getElementById('mgrid').innerHTML='<div class="empty">Tap a game above to see the breakdown.</div>';
     document.getElementById('wtbody').innerHTML='';
     document.getElementById('rtbody').innerHTML='';
     document.getElementById('th-val').textContent='\u2014';
     document.getElementById('eff-rate').textContent='\u2014';
+    document.getElementById('takehome-banner').style.display='none';
+    document.getElementById('details-toggle').style.display='none';
     return;
   }
 
@@ -338,7 +415,7 @@ function calc(){
     mc('Net take-home',fmtM(net),'grn');
 
   document.getElementById('wtbody').innerHTML=
-    tr(np>1?'Your lump sum share (1/'+np+' of '+fmtM(lump)+')':'Your lump sum (full)','',fmt(share),'r')+
+    tr(np>1?'Your share (1/'+np+' of '+fmtM(lump)+')':'Full lump sum','',fmt(share),'r')+
     tr('Federal withholding',pct(FED_WH)+' mandatory','\u2212'+fmt(fedWH),'neg')+
     tr('NY State withholding',pct(NY_WH)+' mandatory','\u2212'+fmt(nyWH),'neg')+
     tr('NYC / Yonkers surcharge','N/A \u2014 not NYC or Yonkers','$0','r')+
@@ -358,6 +435,8 @@ function calc(){
   document.getElementById('th-lbl').textContent=np>1?'Each winner\'s net take-home (1 of '+np+')':'Net take-home after all taxes';
   document.getElementById('th-val').textContent=fmt(net);
   document.getElementById('eff-rate').textContent=pct(effRate)+' effective rate';
+  document.getElementById('takehome-banner').style.display='flex';
+  document.getElementById('details-toggle').style.display='flex';
 }
 
 function mc(l,v,c){ return '<div class="mc"><div class="ml">'+l+'</div><div class="mv '+c+'">'+v+'</div></div>'; }
