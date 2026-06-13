@@ -383,12 +383,12 @@ async function fetchJackpots(){
     if(pb&&pb.jackpot){
       gameData.pb=pb;
       document.getElementById('pb-amt').textContent=fmtM(pb.jackpot);
-      document.getElementById('pb-sub').textContent='Cash: '+fmtM(pb.cashValue)+(pb.nextDraw?' \u00b7 '+pb.nextDraw:'');
+      document.getElementById('pb-sub').textContent='Cash: '+fmtM(pb.cashValue);
     }
     if(mm&&mm.jackpot){
       gameData.mm=mm;
       document.getElementById('mm-amt').textContent=fmtM(mm.jackpot);
-      document.getElementById('mm-sub').textContent='Cash: '+fmtM(mm.cashValue)+(mm.nextDraw?' \u00b7 '+mm.nextDraw:'');
+      document.getElementById('mm-sub').textContent='Cash: '+fmtM(mm.cashValue);
     }
     if((pb&&pb.jackpot)||(mm&&mm.jackpot)){
       document.getElementById('game-row').style.display='flex';
