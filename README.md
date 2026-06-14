@@ -21,12 +21,14 @@ Live at: **[eagleadams86.github.io/lottery/ny-lottery-calculator.html](https://e
 
 Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to model what a lottery lump-sum would actually look like as a managed investment portfolio.
 
-- **Interactive sliders** — adjust take-home amount, annual spending, T-bill yield, muni yield, VTI/VXUS dividend yields, equity growth rate, and VTI/VXUS split in real time
+- **Interactive sliders with editable values** — adjust take-home amount, annual spending, T-bill yield, muni yield, VTI/VXUS dividend yields, equity growth rate, and VTI/VXUS split; click any displayed value to type a number directly
 - **Holdings breakdown table** — shows each holding (SPAXX, T-bills, Munis, VTI, VXUS), its allocation, percentage of portfolio, gross income, tax treatment, and after-tax income
 - **Summary metrics** — key portfolio-level numbers computed live from slider inputs
 - **Income waterfall** — visual breakdown of gross income to after-tax income across all holdings
 - **Charts** — stacked bar (income by holding with tax drag overlay), donut (portfolio allocation), and line chart (10-year equity growth projection for VTI + VXUS vs. total portfolio)
 - **Tax-aware math** — applies 37% federal, 10.9% NY State, 20% LTCG, and 3.8% NIIT rates depending on holding type
+- **Dark/light mode** — toggleable button in the upper right, defaults to dark, preference saved in `localStorage`
+- **Mobile-friendly** — portfolio breakdown table reflows to a card layout on narrow screens
 - **No build step** — plain HTML/CSS/JS, no dependencies beyond Chart.js (bundled inline)
 
 ---
