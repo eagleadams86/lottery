@@ -2,7 +2,8 @@
 
 A pair of lightweight single-page web tools for calculating **real after-tax lottery winnings** for New York State residents, with live jackpot data pulled automatically.
 
-Live at: **[eagleadams86.github.io/lottery/ny-lottery-calculator.html](https://eagleadams86.github.io/lottery/ny-lottery-calculator.html)**
+- **Calculator:** [eagleadams86.github.io/lottery/ny-lottery-calculator.html](https://eagleadams86.github.io/lottery/ny-lottery-calculator.html)
+- **Portfolio:** [eagleadams86.github.io/lottery/lottery-portfolio.html](https://eagleadams86.github.io/lottery/lottery-portfolio.html)
 
 ---
 
@@ -68,6 +69,8 @@ GitHub Pages (static hosting)
 
 All figures are for **New York State residents outside NYC and Yonkers** (no city surcharge).
 
+### Lottery winnings (Calculator)
+
 | Tax | Rate |
 |-----|------|
 | Federal withholding (at payment) | 24% |
@@ -76,6 +79,15 @@ All figures are for **New York State residents outside NYC and Yonkers** (no cit
 | NY State top rate (owed at filing) | 10.9% |
 
 The calculator shows both the net check you receive on day one and the estimated additional tax owed when you file.
+
+### Investment income (Portfolio)
+
+| Holding | Tax treatment | Effective rate |
+|---------|--------------|----------------|
+| SPAXX (money market) | Federal + NY ordinary income | 47.9% |
+| T-bills | Federal ordinary only (NY-exempt) | 37.0% |
+| NY Munis | Fully exempt (federal + state) | 0% |
+| VTI / VXUS dividends | LTCG (20%) + NIIT (3.8%) + NY (10.9%) | 34.7% |
 
 ---
 
