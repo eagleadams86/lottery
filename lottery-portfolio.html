@@ -111,10 +111,13 @@ h1 { font-size:22px; font-weight:600; letter-spacing:-0.3px; }
       <h1>Lottery Portfolio</h1>
       <p class="hdr-sub">Niagara County, NY &nbsp;·&nbsp; Outside NYC &nbsp;·&nbsp; 37% federal + 10.9% NY state</p>
     </div>
-    <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
-      <span class="theme-icon" id="theme-icon">&#9728;</span>
-      <span id="theme-label">Light</span>
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <a href="ny-lottery-calculator.html" class="theme-btn" style="text-decoration:none">← Calculator</a>
+      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+        <span class="theme-icon" id="theme-icon">&#9728;</span>
+        <span id="theme-label">Light</span>
+      </button>
+    </div>
   </div>
 
   <div class="section">
