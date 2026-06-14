@@ -355,7 +355,14 @@ function toggleTheme() {
 }
 // Restore saved preference, default to dark
 setTheme(localStorage.getItem('lottery-theme') || 'light');
-(function(){ var n=localStorage.getItem('lottery-npeople'); if(n) document.getElementById('npeople').value=n; })();
+(function(){
+  var n=localStorage.getItem('lottery-npeople'); if(n) document.getElementById('npeople').value=n;
+  var g=localStorage.getItem('lottery-game'); if(g) activeGame=g;
+  if(localStorage.getItem('lottery-details')==='1'){
+    document.getElementById('details-body').classList.add('open');
+    document.getElementById('details-chevron').classList.add('open');
+  }
+})();
 
 // ── Manual / details toggles ──────────────────────────────────────────────────
 function toggleManual(){
@@ -370,6 +377,7 @@ function openManual(){
 function toggleDetails(){
   var open = document.getElementById('details-body').classList.toggle('open');
   document.getElementById('details-chevron').classList.toggle('open', open);
+  localStorage.setItem('lottery-details', open ? '1' : '0');
 }
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
@@ -414,6 +422,7 @@ async function fetchJackpots(){
 // ── Game select ───────────────────────────────────────────────────────────────
 function selectGame(g){
   activeGame=g;
+  localStorage.setItem('lottery-game', g);
   document.getElementById('btn-pb').className='game-btn'+(g==='pb'?' active':'');
   document.getElementById('btn-mm').className='game-btn'+(g==='mm'?' active':'');
   var gd=gameData[g];
