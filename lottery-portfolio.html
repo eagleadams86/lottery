@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -15,21 +15,23 @@
   --amber:#92400e; --amber-bg:#fef3c7;
   --radius:10px; --radius-sm:6px;
 }
-@media (prefers-color-scheme:dark) {
-  :root {
-    --bg:#181816; --surface:#242422; --surface2:#2e2e2c;
-    --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
-    --text:#f0f0ec; --text2:#a0a09a; --text3:#606058;
-    --green:#6ee7b7; --green-bg:#064e3b;
-    --red:#fca5a5; --red-bg:#7f1d1d;
-    --amber:#fcd34d; --amber-bg:#78350f;
-  }
+[data-theme="dark"] {
+  --bg:#181816; --surface:#242422; --surface2:#2e2e2c;
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+  --text:#f0f0ec; --text2:#a0a09a; --text3:#606058;
+  --green:#6ee7b7; --green-bg:#064e3b;
+  --red:#fca5a5; --red-bg:#7f1d1d;
+  --amber:#fcd34d; --amber-bg:#78350f;
 }
+.theme-btn { display:flex; align-items:center; gap:6px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; background:var(--surface); color:var(--text2); border:1px solid var(--border2); border-radius:8px; font-family:inherit; transition:background 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
+.theme-btn:hover { color:var(--text); }
+.theme-icon { font-size:14px; line-height:1; }
+.hrow { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; }
 * { box-sizing:border-box; margin:0; padding:0; }
 body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif; font-size:14px; line-height:1.5; min-height:100vh; }
 .app { max-width:960px; margin:0 auto; padding:32px 24px 64px; }
 h1 { font-size:22px; font-weight:600; letter-spacing:-0.3px; }
-.hdr-sub { font-size:13px; color:var(--text3); margin-top:3px; margin-bottom:28px; }
+.hdr-sub { font-size:13px; color:var(--text3); margin-top:3px; }
 .sec-lbl { font-size:11px; font-weight:500; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:10px; }
 .section { margin-bottom:26px; }
 .sliders { display:grid; grid-template-columns:1fr 1fr; gap:10px 32px; }
@@ -104,8 +106,16 @@ h1 { font-size:22px; font-weight:600; letter-spacing:-0.3px; }
 </head>
 <body>
 <div class="app">
-  <h1>Lottery Portfolio</h1>
-  <p class="hdr-sub">Niagara County, NY &nbsp;·&nbsp; Outside NYC &nbsp;·&nbsp; 37% federal + 10.9% NY state</p>
+  <div class="hrow">
+    <div>
+      <h1>Lottery Portfolio</h1>
+      <p class="hdr-sub">Niagara County, NY &nbsp;·&nbsp; Outside NYC &nbsp;·&nbsp; 37% federal + 10.9% NY state</p>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+      <span class="theme-icon" id="theme-icon">&#9728;</span>
+      <span id="theme-label">Light</span>
+    </button>
+  </div>
 
   <div class="section">
     <p class="sec-lbl">Assumptions</p>
@@ -185,7 +195,19 @@ function pct(n) { return (n*100).toFixed(1)+'%'; }
 
 let c1=null, c2=null, c3=null;
 
-function isDark() { return window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches; }
+function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('lottery-theme', theme);
+  const icon = document.getElementById('theme-icon');
+  const lbl  = document.getElementById('theme-label');
+  if (icon) icon.textContent = theme === 'dark' ? '☀' : '☽';
+  if (lbl)  lbl.textContent  = theme === 'dark' ? 'Light' : 'Dark';
+  if (c1) render();
+}
+function toggleTheme() { setTheme(isDark() ? 'light' : 'dark'); }
+setTheme(localStorage.getItem('lottery-theme') || 'dark');
 function tc() { return isDark() ? '#a0a09a' : '#9a9a94'; }
 function gc() { return isDark() ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'; }
 
