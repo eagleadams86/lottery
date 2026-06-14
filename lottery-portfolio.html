@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -207,7 +207,7 @@ function setTheme(theme) {
   if (c1) render();
 }
 function toggleTheme() { setTheme(isDark() ? 'light' : 'dark'); }
-setTheme(localStorage.getItem('lottery-theme') || 'dark');
+setTheme(localStorage.getItem('lottery-theme') || 'light');
 function tc() { return isDark() ? '#a0a09a' : '#9a9a94'; }
 function gc() { return isDark() ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'; }
 
