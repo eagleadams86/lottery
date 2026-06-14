@@ -37,7 +37,8 @@ h1 { font-size:22px; font-weight:600; letter-spacing:-0.3px; }
 .sl-row { display:flex; align-items:center; gap:8px; }
 .sl-row label { font-size:12px; color:var(--text2); width:145px; flex-shrink:0; }
 .sl-row input[type=range] { flex:1; min-width:0; accent-color:var(--text); cursor:pointer; }
-.sl-val { font-size:12px; font-weight:500; color:var(--text); width:56px; text-align:right; flex-shrink:0; }
+.sl-val { font-size:12px; font-weight:500; color:var(--text); width:62px; text-align:right; flex-shrink:0; background:none; border:none; border-bottom:1px solid transparent; outline:none; padding:1px 2px; cursor:text; font-family:inherit; border-radius:2px; }
+.sl-val:focus { border-bottom-color:var(--border2); background:var(--surface2); }
 .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
 @media (max-width:580px) { .metrics { grid-template-columns:1fr 1fr; } }
 .met { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
@@ -88,14 +89,14 @@ h1 { font-size:22px; font-weight:600; letter-spacing:-0.3px; }
   <div class="section">
     <p class="sec-lbl">Assumptions</p>
     <div class="sliders">
-      <div class="sl-row"><label>Take-home (lump sum)</label><input type="range" min="1" max="500" step="1" value="5" id="sl-tot" oninput="render()"><span class="sl-val" id="o-tot">$5M</span></div>
-      <div class="sl-row"><label>Annual spending</label><input type="range" min="50" max="5000" step="10" value="125" id="sl-sp" oninput="render()"><span class="sl-val" id="o-sp">$125K</span></div>
-      <div class="sl-row"><label>T-bill yield</label><input type="range" min="2" max="7" step="0.1" value="4.3" id="sl-tb" oninput="render()"><span class="sl-val" id="o-tb">4.3%</span></div>
-      <div class="sl-row"><label>Muni yield (stated)</label><input type="range" min="1.5" max="6" step="0.1" value="3.5" id="sl-mu" oninput="render()"><span class="sl-val" id="o-mu">3.5%</span></div>
-      <div class="sl-row"><label>VTI dividend yield</label><input type="range" min="0.5" max="3" step="0.1" value="1.4" id="sl-vti" oninput="render()"><span class="sl-val" id="o-vti">1.4%</span></div>
-      <div class="sl-row"><label>VXUS dividend yield</label><input type="range" min="1" max="5" step="0.1" value="3.1" id="sl-vx" oninput="render()"><span class="sl-val" id="o-vx">3.1%</span></div>
-      <div class="sl-row"><label>VTI/VXUS growth rate</label><input type="range" min="3" max="14" step="0.5" value="8" id="sl-gr" oninput="render()"><span class="sl-val" id="o-gr">8.0%</span></div>
-      <div class="sl-row"><label>VTI / VXUS split</label><input type="range" min="40" max="80" step="5" value="60" id="sl-split" oninput="render()"><span class="sl-val" id="o-split">60/40</span></div>
+      <div class="sl-row"><label>Take-home (lump sum)</label><input type="range" min="1" max="500" step="1" value="5" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" onchange="syncSlider(this,'sl-tot',1,500)"></div>
+      <div class="sl-row"><label>Annual spending</label><input type="range" min="50" max="5000" step="10" value="125" id="sl-sp" oninput="render()"><input type="text" class="sl-val" id="o-sp" value="$125K" onchange="syncSlider(this,'sl-sp',50,5000)"></div>
+      <div class="sl-row"><label>T-bill yield</label><input type="range" min="2" max="7" step="0.1" value="4.3" id="sl-tb" oninput="render()"><input type="text" class="sl-val" id="o-tb" value="4.3%" onchange="syncSlider(this,'sl-tb',2,7)"></div>
+      <div class="sl-row"><label>Muni yield (stated)</label><input type="range" min="1.5" max="6" step="0.1" value="3.5" id="sl-mu" oninput="render()"><input type="text" class="sl-val" id="o-mu" value="3.5%" onchange="syncSlider(this,'sl-mu',1.5,6)"></div>
+      <div class="sl-row"><label>VTI dividend yield</label><input type="range" min="0.5" max="3" step="0.1" value="1.4" id="sl-vti" oninput="render()"><input type="text" class="sl-val" id="o-vti" value="1.4%" onchange="syncSlider(this,'sl-vti',0.5,3)"></div>
+      <div class="sl-row"><label>VXUS dividend yield</label><input type="range" min="1" max="5" step="0.1" value="3.1" id="sl-vx" oninput="render()"><input type="text" class="sl-val" id="o-vx" value="3.1%" onchange="syncSlider(this,'sl-vx',1,5)"></div>
+      <div class="sl-row"><label>VTI/VXUS growth rate</label><input type="range" min="3" max="14" step="0.5" value="8" id="sl-gr" oninput="render()"><input type="text" class="sl-val" id="o-gr" value="8.0%" onchange="syncSlider(this,'sl-gr',3,14)"></div>
+      <div class="sl-row"><label>VTI / VXUS split</label><input type="range" min="40" max="80" step="5" value="60" id="sl-split" oninput="render()"><input type="text" class="sl-val" id="o-split" value="60/40" onchange="syncSlider(this,'sl-split',40,80)"></div>
     </div>
   </div>
 
@@ -167,6 +168,19 @@ function isDark() { return window.matchMedia && window.matchMedia('(prefers-colo
 function tc() { return isDark() ? '#a0a09a' : '#9a9a94'; }
 function gc() { return isDark() ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'; }
 
+function setVal(id, v) {
+  const el = document.getElementById(id);
+  if (document.activeElement !== el) el.value = v;
+}
+
+function syncSlider(el, sliderId, min, max) {
+  const v = parseFloat(el.value.replace(/[$MmKk%]/g,'').split('/')[0]);
+  if (!isNaN(v)) {
+    document.getElementById(sliderId).value = Math.min(max, Math.max(min, v));
+  }
+  render();
+}
+
 function render() {
   const total = parseFloat(document.getElementById('sl-tot').value)*1e6;
   const spend = parseFloat(document.getElementById('sl-sp').value)*1e3;
@@ -177,14 +191,14 @@ function render() {
   const grY   = parseFloat(document.getElementById('sl-gr').value)/100;
   const split = parseFloat(document.getElementById('sl-split').value)/100;
 
-  document.getElementById('o-tot').textContent   = fm(total);
-  document.getElementById('o-sp').textContent    = fm(spend);
-  document.getElementById('o-tb').textContent    = pct(tbY);
-  document.getElementById('o-mu').textContent    = pct(muY);
-  document.getElementById('o-vti').textContent   = pct(vtiY);
-  document.getElementById('o-vx').textContent    = pct(vxY);
-  document.getElementById('o-gr').textContent    = pct(grY);
-  document.getElementById('o-split').textContent = Math.round(split*100)+'/'+(100-Math.round(split*100));
+  setVal('o-tot',   fm(total));
+  setVal('o-sp',    fm(spend));
+  setVal('o-tb',    pct(tbY));
+  setVal('o-mu',    pct(muY));
+  setVal('o-vti',   pct(vtiY));
+  setVal('o-vx',    pct(vxY));
+  setVal('o-gr',    pct(grY));
+  setVal('o-split', Math.round(split*100)+'/'+(100-Math.round(split*100)));
 
   const spaxx  = spend;
   const tbill  = spend * 3;
