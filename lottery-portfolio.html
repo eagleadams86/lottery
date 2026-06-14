@@ -394,10 +394,29 @@ function render() {
     }
   });
 
+  saveSliders();
   document.getElementById('note').textContent = 'VTI and VXUS dividends paid to cash (no reinvestment). Qualified dividends: 20% LTCG + 3.8% NIIT + 10.9% NY = 34.7%. T-bill interest NY-exempt (saves 10.9%). Muni interest fully tax-free at both levels. SPAXX taxed as ordinary income at 47.9% combined. Growth projection assumes a fixed annual return with no withdrawals from the equity bucket.';
 }
 
-window.addEventListener('load', render);
+const SLIDER_IDS = ['sl-tot','sl-sp','sl-tb','sl-mu','sl-vti','sl-vx','sl-gr','sl-split'];
+
+function saveSliders() {
+  const vals = {};
+  SLIDER_IDS.forEach(id => vals[id] = document.getElementById(id).value);
+  localStorage.setItem('lottery-portfolio-sliders', JSON.stringify(vals));
+}
+
+function loadSliders() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('lottery-portfolio-sliders'));
+    if (!saved) return;
+    SLIDER_IDS.forEach(id => {
+      if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+    });
+  } catch(e) {}
+}
+
+window.addEventListener('load', () => { loadSliders(); render(); });
 </script>
 </body>
 </html>
