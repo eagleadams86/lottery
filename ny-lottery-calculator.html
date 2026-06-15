@@ -228,7 +228,7 @@
   <div class="hrow">
     <div class="hrow-left">
       <span class="ptitle">NY Lottery &mdash; After-Tax Calculator</span>
-      <span class="location-tag">Outside NYC &amp; Yonkers</span>
+      <span class="location-tag">Outside NYC &nbsp;&middot;&nbsp; 37% federal + 10.9% NY state</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
       <a href="lottery-portfolio.html" class="theme-btn" style="text-decoration:none">Portfolio →</a>
@@ -535,7 +535,6 @@ function calc(){
     tr(np>1?'Your share (1/'+np+' of '+fmtM(lump)+')':'Full lump sum','',fmt(share),'r')+
     tr('Federal withholding',pct(FED_WH)+' mandatory','\u2212'+fmt(fedWH),'neg')+
     tr('NY State withholding',pct(NY_WH)+' mandatory','\u2212'+fmt(nyWH),'neg')+
-    tr('NYC / Yonkers surcharge','N/A \u2014 not NYC/Yonkers','$0','r')+
     trtot('Received after withholding','',fmt(afterWH),'r');
 
   document.getElementById('rtbody').innerHTML=
@@ -546,7 +545,6 @@ function calc(){
     tr('NY State \u2014 true liability',pct(NY_TOP)+' top marginal','\u2212'+fmt(nyTrue),'neg')+
     tr('Less: NY State withheld','Paid at source','+'+fmt(nyWH),'pos')+
     trbold('Additional NY State due',pct(NY_TOP-NY_WH)+' gap','\u2212'+fmt(nyX),'neg')+
-    tr('NYC / Yonkers surcharge','N/A \u2014 not NYC/Yonkers','$0','r')+
     trtot('Total additional owed','','\u2212'+fmt(fedX+nyX),'neg');
 
   document.getElementById('th-lbl').textContent=np>1?'Each winner\'s net take-home (1 of '+np+')':'Net take-home after all taxes';
