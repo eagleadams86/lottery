@@ -121,6 +121,7 @@
   .game-btn-name { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
   .game-btn-amt  { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
   .game-btn-sub  { font-size: 11px; color: var(--text-secondary); }
+  .game-btn-draw { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
   /* Manual inputs */
   .manual-wrap { margin-bottom: 1.25rem; }
@@ -248,11 +249,13 @@
       <div class="game-btn-name">Powerball</div>
       <div class="game-btn-amt" id="pb-amt">&mdash;</div>
       <div class="game-btn-sub" id="pb-sub">&mdash;</div>
+      <div class="game-btn-draw" id="pb-draw"></div>
     </button>
     <button class="game-btn" id="btn-mm" onclick="selectGame('mm')">
       <div class="game-btn-name">Mega Millions</div>
       <div class="game-btn-amt" id="mm-amt">&mdash;</div>
       <div class="game-btn-sub" id="mm-sub">&mdash;</div>
+      <div class="game-btn-draw" id="mm-draw"></div>
     </button>
   </div>
 
@@ -337,6 +340,25 @@
 var WORKER = 'https://lottery-proxy.charlie-adams-176.workers.dev';
 var FED_WH=0.24, FED_TOP=0.37, NY_WH=0.105, NY_TOP=0.109;
 var jUnit='M', lUnit='M';
+// Powerball: Mon(1) Wed(3) Sat(6) · Mega Millions: Tue(2) Fri(5)
+function nextDraw(drawDays) {
+  var now = new Date();
+  var etOffset = now.getTimezoneOffset() === 300 ? -5 : -4; // EST/EDT
+  var etNow = new Date(now.getTime() + (now.getTimezoneOffset() + etOffset * -60) * 60000);
+  var today = etNow.getDay();
+  var hour  = etNow.getHours();
+  var diffs = drawDays.map(function(d) {
+    var diff = (d - today + 7) % 7;
+    if (diff === 0 && hour >= 23) diff = 7; // tonight's draw has passed
+    return diff;
+  });
+  var min = Math.min.apply(null, diffs);
+  if (min === 0) return 'Tonight';
+  if (min === 1) return 'Tomorrow';
+  var d = new Date(etNow); d.setDate(etNow.getDate() + min);
+  return 'Next draw ' + d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 var gameData={pb:null, mm:null};
 var activeGame='pb';
 var _t=null;
@@ -362,6 +384,8 @@ setTheme(localStorage.getItem('lottery-theme') || 'light');
     document.getElementById('details-body').classList.add('open');
     document.getElementById('details-chevron').classList.add('open');
   }
+  document.getElementById('pb-draw').textContent = nextDraw([1,3,6]);
+  document.getElementById('mm-draw').textContent = nextDraw([2,5]);
 })();
 
 // ── Manual / details toggles ──────────────────────────────────────────────────
