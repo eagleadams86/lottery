@@ -28,20 +28,26 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Income waterfall** — visual breakdown of gross income to after-tax income across all holdings
 - **Charts** — stacked bar (income by holding with tax drag overlay), donut (portfolio allocation), and line chart (10-year equity growth projection for VTI + VXUS vs. total portfolio)
 - **Tax-aware math** — applies 37% federal, 10.9% NY State, 20% LTCG, and 3.8% NIIT rates depending on holding type
-- **Dark/light mode** — toggleable button in the upper right, defaults to dark, preference saved in `localStorage`
+- **Dark/light mode** — toggleable button in the upper right, defaults to light, preference saved in `localStorage`
+- **Remembers your settings** — slider values restored on revisit via `localStorage`; take-home slider auto-populated from the calculator's last net take-home
 - **Mobile-friendly** — portfolio breakdown table reflows to a card layout on narrow screens
+- **Cross-page navigation** — button to jump directly to the calculator
 - **No build step** — plain HTML/CSS/JS, no dependencies beyond Chart.js (bundled inline)
 
 ---
 
 ### NY Lottery Calculator
 - **Live jackpot data** — auto-fetches current Powerball and Mega Millions jackpots from `usamega.com` (with `lotteryusa.com` as fallback), via a Cloudflare Worker proxy
+- **Next draw dates** — shows upcoming draw date for each game (Powerball: Mon/Wed/Sat, Mega Millions: Tue/Fri), computed client-side in ET
 - **Lump sum vs. annuity** — calculates take-home for both payout options
 - **Full NY tax breakdown** — federal withholding (24%), federal top marginal (37%), NY State withholding (10.5%), and NY State top rate (10.9%); shows both withheld at payment and additional owed at filing
 - **Split among winners** — supports dividing the jackpot among multiple people
 - **Shorthand input** — accepts `325M`, `1.2B`, etc.
-- **Dark/light mode** — toggleable, preference saved in `localStorage`
+- **Dark/light mode** — toggleable, defaults to light, preference saved in `localStorage`
 - **Collapsible tax tables** — detailed breakdown hidden by default, expandable on demand
+- **Remembers your settings** — game selection, winner count, and tax breakdown state all restored on revisit
+- **Feeds the portfolio** — net take-home is saved to `localStorage` and used to pre-fill the portfolio's take-home slider
+- **Cross-page navigation** — button to jump directly to the portfolio
 - **iOS compatible** — tested for mobile Safari quirks
 
 ---
