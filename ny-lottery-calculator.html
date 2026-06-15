@@ -551,6 +551,7 @@ function calc(){
 
   document.getElementById('th-lbl').textContent=np>1?'Each winner\'s net take-home (1 of '+np+')':'Net take-home after all taxes';
   document.getElementById('th-val').textContent=fmt(net);
+  localStorage.setItem('lottery-net-takehome', Math.round(net));
   document.getElementById('eff-rate').textContent=pct(eff)+' effective rate';
   document.getElementById('results-section').style.display='block';
 }

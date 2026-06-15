@@ -412,10 +412,19 @@ function saveSliders() {
 function loadSliders() {
   try {
     const saved = JSON.parse(localStorage.getItem('lottery-portfolio-sliders'));
-    if (!saved) return;
-    SLIDER_IDS.forEach(id => {
-      if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
-    });
+    if (saved) {
+      SLIDER_IDS.forEach(id => {
+        if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+      });
+      return;
+    }
+    // No saved state — seed take-home from calculator if available
+    const net = parseInt(localStorage.getItem('lottery-net-takehome'));
+    if (net > 0) {
+      const millions = Math.round(net / 1e6);
+      const clamped  = Math.min(500, Math.max(1, millions));
+      document.getElementById('sl-tot').value = clamped;
+    }
   } catch(e) {}
 }
 
