@@ -364,7 +364,7 @@ function nextDraw(drawDays) {
   if (min === 0) return 'Tonight';
   if (min === 1) return 'Tomorrow';
   var d = new Date(etNow); d.setDate(etNow.getDate() + min);
-  return 'Next draw ' + d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 var gameData={pb:null, mm:null};
