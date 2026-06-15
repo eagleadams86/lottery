@@ -352,9 +352,7 @@ var FED_WH=0.24, FED_TOP=0.37, NY_WH=0.105, NY_TOP=0.109;
 var jUnit='M', lUnit='M';
 // Powerball: Mon(1) Wed(3) Sat(6) · Mega Millions: Tue(2) Fri(5)
 function nextDraw(drawDays) {
-  var now = new Date();
-  var etOffset = now.getTimezoneOffset() === 300 ? -5 : -4; // EST/EDT
-  var etNow = new Date(now.getTime() + (now.getTimezoneOffset() + etOffset * -60) * 60000);
+  var etNow = new Date(new Date().toLocaleString('en-US', {timeZone: 'America/New_York'}));
   var today = etNow.getDay();
   var hour  = etNow.getHours();
   var diffs = drawDays.map(function(d) {
