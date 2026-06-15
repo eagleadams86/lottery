@@ -416,13 +416,11 @@ function loadSliders() {
       SLIDER_IDS.forEach(id => {
         if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
       });
-      return;
     }
-    // No saved state — seed take-home from calculator if available
+    // Always seed sl-tot from calculator net take-home if available
     const net = parseInt(localStorage.getItem('lottery-net-takehome'));
     if (net > 0) {
-      const millions = Math.round(net / 1e6);
-      const clamped  = Math.min(500, Math.max(1, millions));
+      const clamped = Math.min(500, Math.max(1, Math.round(net / 1e6)));
       document.getElementById('sl-tot').value = clamped;
     }
   } catch(e) {}
