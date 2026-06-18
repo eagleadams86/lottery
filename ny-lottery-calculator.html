@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <link rel="icon" href="favicon.ico">
@@ -418,7 +418,7 @@ function toggleTheme() {
   setTheme(current === 'dark' ? 'light' : 'dark');
 }
 // Restore saved preference, default to dark
-setTheme(localStorage.getItem('lottery-theme') || 'light');
+setTheme(localStorage.getItem('lottery-theme') || 'dark');
 (function(){
   var n=localStorage.getItem('lottery-npeople'); if(n) document.getElementById('npeople').value=n;
   var g=localStorage.getItem('lottery-game'); if(g) activeGame=g;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <link rel="icon" href="favicon.ico">
@@ -211,7 +211,7 @@ function setTheme(theme) {
   if (c1) render();
 }
 function toggleTheme() { setTheme(isDark() ? 'light' : 'dark'); }
-setTheme(localStorage.getItem('lottery-theme') || 'light');
+setTheme(localStorage.getItem('lottery-theme') || 'dark');
 function tc() { return isDark() ? '#888882' : '#767672'; }
 function gc() { return isDark() ? '#2e2e2b' : '#e0e0dd'; }
 
