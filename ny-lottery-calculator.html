@@ -221,6 +221,28 @@
 
   .empty { font-size: 13px; color: var(--text-muted); padding: 0.5rem 0; grid-column: 1/-1; }
   .note  { font-size: 11px; color: var(--text-hint); line-height: 1.8; margin-top: 1.5rem; }
+
+  /* Winning numbers */
+  .wn-wrap { margin-top: 1.5rem; }
+  .wn-body { display: none; padding-top: 1.1rem; }
+  .wn-body.open { display: block; }
+  .wn-game { margin-bottom: 1.25rem; }
+  .wn-game:last-child { margin-bottom: 0; }
+  .wn-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 4px; }
+  .wn-name { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .wn-date { font-size: 12px; color: var(--text-muted); }
+  .wn-balls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ball {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 50%;
+    font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums;
+    background: var(--bg-card); border: 1.5px solid var(--border-strong); color: var(--text-primary);
+    flex-shrink: 0;
+  }
+  .ball.pb  { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+  .ball.mb  { background: #d4a017; border-color: #d4a017; color: #111; }
+  .wn-mult  { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 4px; }
+  .wn-loading { font-size: 13px; color: var(--text-muted); }
 </style>
 </head>
 <body>
@@ -344,7 +366,18 @@
     </div>
   </div>
 
-  <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.5%. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge &mdash; those only apply to residents of those cities. Lottery winnings are ordinary income; FICA does not apply. Estimates only &mdash; consult a CPA for exact liability. Jackpot data via usamega.com.</p>
+  <div class="wn-wrap">
+    <button class="details-btn" onclick="toggleWinning()">
+      Latest winning numbers
+      <span class="details-chevron" id="wn-chevron">&#9660;</span>
+    </button>
+    <div class="wn-body" id="wn-body">
+      <div class="wn-loading" id="wn-loading"><span class="spinner"></span>Loading latest results&hellip;</div>
+      <div id="wn-content"></div>
+    </div>
+  </div>
+
+  <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.5%. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge &mdash; those only apply to residents of those cities. Lottery winnings are ordinary income; FICA does not apply. Estimates only &mdash; consult a CPA for exact liability. Jackpot data via usamega.com. Winning numbers via data.ny.gov.</p>
 </div>
 
 <script>
@@ -393,6 +426,10 @@ setTheme(localStorage.getItem('lottery-theme') || 'light');
     document.getElementById('details-body').classList.add('open');
     document.getElementById('details-chevron').classList.add('open');
   }
+  if(localStorage.getItem('lottery-winning')==='1'){
+    document.getElementById('wn-body').classList.add('open');
+    document.getElementById('wn-chevron').classList.add('open');
+  }
   document.getElementById('pb-draw').textContent = nextDraw([1,3,6]);
   document.getElementById('mm-draw').textContent = nextDraw([2,5]);
 })();
@@ -411,6 +448,62 @@ function toggleDetails(){
   var open = document.getElementById('details-body').classList.toggle('open');
   document.getElementById('details-chevron').classList.toggle('open', open);
   localStorage.setItem('lottery-details', open ? '1' : '0');
+}
+var _wnLoaded=false;
+function toggleWinning(){
+  var open = document.getElementById('wn-body').classList.toggle('open');
+  document.getElementById('wn-chevron').classList.toggle('open', open);
+  localStorage.setItem('lottery-winning', open ? '1' : '0');
+  if(open && !_wnLoaded) fetchWinning();
+}
+
+// ── Winning numbers ───────────────────────────────────────────────────────────
+var PB_URL='https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=1';
+var MM_URL='https://data.ny.gov/resource/5xaw-6ayf.json?$order=draw_date%20DESC&$limit=1';
+function fmtDrawDate(s){
+  var d=new Date(s.slice(0,10)+'T00:00:00');
+  return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+}
+function ball(n,cls){ return '<div class="ball'+(cls?' '+cls:'')+'">'+n+'</div>'; }
+function pbBlock(r){
+  var nums=r.winning_numbers.trim().split(/\s+/);
+  var whites=nums.slice(0,5), power=nums[5];
+  var html='<div class="wn-balls">';
+  whites.forEach(function(n){ html+=ball(n); });
+  html+=ball(power,'pb');
+  if(r.multiplier) html+='<span class="wn-mult">Power Play &times;'+r.multiplier+'</span>';
+  html+='</div>';
+  return '<div class="wn-game"><div class="wn-head"><span class="wn-name">Powerball</span>'+
+    '<span class="wn-date">'+fmtDrawDate(r.draw_date)+'</span></div>'+html+'</div>';
+}
+function mmBlock(r){
+  var whites=r.winning_numbers.trim().split(/\s+/).slice(0,5);
+  var html='<div class="wn-balls">';
+  whites.forEach(function(n){ html+=ball(n); });
+  html+=ball(r.mega_ball,'mb');
+  html+='</div>';
+  return '<div class="wn-game"><div class="wn-head"><span class="wn-name">Mega Millions</span>'+
+    '<span class="wn-date">'+fmtDrawDate(r.draw_date)+'</span></div>'+html+'</div>';
+}
+async function fetchWinning(){
+  var loading=document.getElementById('wn-loading');
+  var content=document.getElementById('wn-content');
+  loading.style.display='block';
+  try {
+    var results=await Promise.all([
+      fetch(PB_URL).then(function(r){return r.json();}),
+      fetch(MM_URL).then(function(r){return r.json();})
+    ]);
+    var html='';
+    if(results[0]&&results[0][0]) html+=pbBlock(results[0][0]);
+    if(results[1]&&results[1][0]) html+=mmBlock(results[1][0]);
+    if(!html) throw new Error('No data');
+    content.innerHTML=html;
+    loading.style.display='none';
+    _wnLoaded=true;
+  } catch(e) {
+    loading.innerHTML='Could not load winning numbers.';
+  }
 }
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
@@ -560,6 +653,7 @@ function trtot(i,d,a,c){ return '<tr class="totrow"><td>'+i+'</td><td class="mut
 function trspace(){ return '<tr style="height:6px"><td colspan="3"></td></tr>'; }
 
 fetchJackpots();
+if(document.getElementById('wn-body').classList.contains('open')) fetchWinning();
 </script>
 </body>
 </html>
