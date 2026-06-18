@@ -485,22 +485,28 @@ function mmBlock(r){
   return '<div class="wn-game"><div class="wn-head"><span class="wn-name">Mega Millions</span>'+
     '<span class="wn-date">'+fmtDrawDate(r.draw_date)+'</span></div>'+html+'</div>';
 }
+var winData={pb:null, mm:null};
+function renderWinning(){
+  if(!_wnLoaded) return;
+  var content=document.getElementById('wn-content');
+  var r=winData[activeGame];
+  if(!r){ content.innerHTML='<div class="wn-loading">No recent results for this game.</div>'; return; }
+  content.innerHTML = activeGame==='pb' ? pbBlock(r) : mmBlock(r);
+}
 async function fetchWinning(){
   var loading=document.getElementById('wn-loading');
-  var content=document.getElementById('wn-content');
   loading.style.display='block';
   try {
     var results=await Promise.all([
       fetch(PB_URL).then(function(r){return r.json();}),
       fetch(MM_URL).then(function(r){return r.json();})
     ]);
-    var html='';
-    if(results[0]&&results[0][0]) html+=pbBlock(results[0][0]);
-    if(results[1]&&results[1][0]) html+=mmBlock(results[1][0]);
-    if(!html) throw new Error('No data');
-    content.innerHTML=html;
+    winData.pb = (results[0]&&results[0][0]) || null;
+    winData.mm = (results[1]&&results[1][0]) || null;
+    if(!winData.pb && !winData.mm) throw new Error('No data');
     loading.style.display='none';
     _wnLoaded=true;
+    renderWinning();
   } catch(e) {
     loading.innerHTML='Could not load winning numbers.';
   }
@@ -551,6 +557,7 @@ function selectGame(g){
   localStorage.setItem('lottery-game', g);
   document.getElementById('btn-pb').className='game-btn'+(g==='pb'?' active':'');
   document.getElementById('btn-mm').className='game-btn'+(g==='mm'?' active':'');
+  renderWinning();
   var gd=gameData[g];
   if(!gd||!gd.jackpot) return;
   var j=gd.jackpot, cv=gd.cashValue||0;
