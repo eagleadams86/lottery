@@ -204,7 +204,7 @@
   }
   .details-btn:hover { color: var(--text-primary); border-color: var(--border-strong); background: var(--bg-card); }
   .details-chevron { transition: transform 0.2s; font-size: 15px; color: var(--text-muted); }
-  .details-chevron.open { transform: rotate(180deg); }
+  .details-chevron.open { transform: rotate(90deg); }
   .details-body { display: none; padding-top: 1.1rem; }
   .details-body.open { display: block; }
 
@@ -353,7 +353,7 @@
 
     <button class="details-btn" onclick="toggleDetails()">
       Tax breakdown details
-      <span class="details-chevron" id="details-chevron">&#9660;</span>
+      <span class="details-chevron" id="details-chevron">&#9654;</span>
     </button>
     <div class="details-body" id="details-body">
       <p class="sec-title">Withheld at payment</p>
@@ -369,7 +369,7 @@
   <div class="wn-wrap">
     <button class="details-btn" onclick="toggleWinning()">
       Latest winning numbers
-      <span class="details-chevron" id="wn-chevron">&#9660;</span>
+      <span class="details-chevron" id="wn-chevron">&#9654;</span>
     </button>
     <div class="wn-body" id="wn-body">
       <div class="wn-loading" id="wn-loading"><span class="spinner"></span>Loading latest results&hellip;</div>
