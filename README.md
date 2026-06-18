@@ -1,6 +1,6 @@
 # 🎰 NY Lottery Take-Home Calculator
 
-A pair of lightweight single-page web tools for calculating **real after-tax lottery winnings** for New York State residents, with live jackpot data pulled automatically.
+A pair of lightweight single-page web tools for calculating **real after-tax lottery winnings** for New York State residents, with live jackpot data and recent winning numbers pulled automatically.
 
 - **Calculator:** [eagleadams86.github.io/lottery/ny-lottery-calculator.html](https://eagleadams86.github.io/lottery/ny-lottery-calculator.html)
 - **Portfolio:** [eagleadams86.github.io/lottery/lottery-portfolio.html](https://eagleadams86.github.io/lottery/lottery-portfolio.html)
@@ -39,6 +39,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 ### NY Lottery Calculator
 - **Live jackpot data** — auto-fetches current Powerball and Mega Millions jackpots from `usamega.com` (with `lotteryusa.com` as fallback), via a Cloudflare Worker proxy
 - **Next draw dates** — shows upcoming draw date for each game (Powerball: Mon/Wed/Sat, Mega Millions: Tue/Fri), computed client-side in ET
+- **Latest winning numbers** — collapsible section showing the most recent draw results, fetched live from NY's open data portal (`data.ny.gov`); displays color-coded balls (red Powerball, gold Mega Ball) and the Power Play multiplier, and tracks the game selected at the top. Collapsed by default; open/closed state remembered via `localStorage`
 - **Lump sum vs. annuity** — calculates take-home for both payout options
 - **Full NY tax breakdown** — federal withholding (24%), federal top marginal (37%), NY State withholding (10.5%), and NY State top rate (10.9%); shows both withheld at payment and additional owed at filing
 - **Split among winners** — supports dividing the jackpot among multiple people
