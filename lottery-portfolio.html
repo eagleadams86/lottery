@@ -34,7 +34,11 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
 h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
 .hdr-sub { font-size:12px; color:var(--text3); margin-top:3px; }
 .rate-src { font-size:10px; font-weight:400; color:var(--text3); text-transform:none; letter-spacing:0; margin-left:6px; }
-.sec-lbl { font-size:11px; font-weight:500; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:10px; }
+.sec-lbl { font-size:11px; font-weight:500; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:10px; cursor:pointer; user-select:none; display:flex; align-items:center; gap:8px; width:fit-content; transition:color 0.15s; }
+.sec-lbl:hover { color:var(--text2); }
+.sec-chevron { font-size:9px; color:var(--text3); transition:transform 0.2s; display:inline-block; }
+.sec-chevron.open { transform:rotate(90deg); }
+.sec-body.collapsed { display:none; }
 .section { margin-bottom:26px; }
 .sliders { display:grid; grid-template-columns:1fr 1fr; gap:10px 32px; }
 @media (max-width:600px) { .sliders { grid-template-columns:1fr; } }
@@ -123,7 +127,8 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
   </div>
 
   <div class="section">
-    <p class="sec-lbl">Assumptions</p>
+    <p class="sec-lbl" onclick="toggleSection('assumptions')"><span class="sec-chevron open" id="chev-assumptions">&#9654;</span>Assumptions</p>
+    <div class="sec-body" id="body-assumptions">
     <div class="sliders">
       <div class="sl-row"><label>Take-home (lump sum)</label><input type="range" min="1" max="500" step="1" value="5" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" onchange="syncSlider(this,'sl-tot',1,500)"></div>
       <div class="sl-row"><label>Annual spending</label><input type="range" min="50" max="5000" step="10" value="125" id="sl-sp" oninput="render()"><input type="text" class="sl-val" id="o-sp" value="$125K" onchange="syncSlider(this,'sl-sp',50,5000)"></div>
@@ -134,15 +139,19 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
       <div class="sl-row"><label>VTI/VXUS growth rate</label><input type="range" min="3" max="14" step="0.5" value="8" id="sl-gr" oninput="render()"><input type="text" class="sl-val" id="o-gr" value="8.0%" onchange="syncSlider(this,'sl-gr',3,14)"></div>
       <div class="sl-row"><label>VTI / VXUS split</label><input type="range" min="40" max="80" step="5" value="60" id="sl-split" oninput="render()"><input type="text" class="sl-val" id="o-split" value="60/40" onchange="syncSlider(this,'sl-split',40,80)"></div>
     </div>
+    </div>
   </div>
 
   <div class="section">
-    <p class="sec-lbl">Summary</p>
+    <p class="sec-lbl" onclick="toggleSection('summary')"><span class="sec-chevron open" id="chev-summary">&#9654;</span>Summary</p>
+    <div class="sec-body" id="body-summary">
     <div class="metrics" id="metrics"></div>
+    </div>
   </div>
 
   <div class="section">
-    <p class="sec-lbl">Portfolio breakdown</p>
+    <p class="sec-lbl" onclick="toggleSection('breakdown')"><span class="sec-chevron open" id="chev-breakdown">&#9654;</span>Portfolio breakdown</p>
+    <div class="sec-body" id="body-breakdown">
     <div class="card">
       <div class="tbl-head">
         <span>Holding</span><span>Allocation</span><span>% total</span>
@@ -150,15 +159,19 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
       </div>
       <div id="tbl-body"></div>
     </div>
+    </div>
   </div>
 
   <div class="section">
-    <p class="sec-lbl">Income waterfall</p>
+    <p class="sec-lbl" onclick="toggleSection('waterfall')"><span class="sec-chevron open" id="chev-waterfall">&#9654;</span>Income waterfall</p>
+    <div class="sec-body" id="body-waterfall">
     <div class="wf" id="waterfall"></div>
+    </div>
   </div>
 
   <div class="section">
-    <p class="sec-lbl">Charts</p>
+    <p class="sec-lbl" onclick="toggleSection('charts')"><span class="sec-chevron open" id="chev-charts">&#9654;</span>Charts</p>
+    <div class="sec-body" id="body-charts">
     <div class="chart-grid">
       <div class="chart-card">
         <h3>Income by holding</h3>
@@ -171,13 +184,16 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
         <div style="position:relative;height:190px"><canvas id="c2" role="img" aria-label="Donut chart showing portfolio allocation across SPAXX, T-bills, Munis, VTI, VXUS">Allocation breakdown.</canvas></div>
       </div>
     </div>
+    </div>
   </div>
 
   <div class="section">
-    <p class="sec-lbl">10-year growth projection (equity bucket)</p>
+    <p class="sec-lbl" onclick="toggleSection('growth')"><span class="sec-chevron open" id="chev-growth">&#9654;</span>10-year growth projection (equity bucket)</p>
+    <div class="sec-body" id="body-growth">
     <div class="chart-card">
       <div class="legend" id="leg3"></div>
       <div style="position:relative;height:210px"><canvas id="c3" role="img" aria-label="Line chart showing VTI plus VXUS and total portfolio growth over 10 years">10-year growth projection.</canvas></div>
+    </div>
     </div>
   </div>
 
@@ -458,7 +474,32 @@ async function fetchTbillYield(){
   } catch(e) { /* keep manual/default value */ }
 }
 
-window.addEventListener('load', () => { loadSliders(); render(); fetchTbillYield(); });
+// ── Collapsible sections ───────────────────────────────────────────────────────
+const SECTION_KEYS = ['assumptions','summary','breakdown','waterfall','charts','growth'];
+function saveSectionStates() {
+  const st = {};
+  SECTION_KEYS.forEach(k => st[k] = document.getElementById('body-'+k).classList.contains('collapsed'));
+  localStorage.setItem('lottery-portfolio-sections', JSON.stringify(st));
+}
+function loadSectionStates() {
+  try {
+    const st = JSON.parse(localStorage.getItem('lottery-portfolio-sections'));
+    if (!st) return;
+    SECTION_KEYS.forEach(k => {
+      const collapsed = !!st[k];
+      document.getElementById('body-'+k).classList.toggle('collapsed', collapsed);
+      document.getElementById('chev-'+k).classList.toggle('open', !collapsed);
+    });
+  } catch(e) {}
+}
+function toggleSection(key) {
+  const collapsed = document.getElementById('body-'+key).classList.toggle('collapsed');
+  document.getElementById('chev-'+key).classList.toggle('open', !collapsed);
+  saveSectionStates();
+  if (!collapsed) render(); // redraw charts that were hidden while collapsed
+}
+
+window.addEventListener('load', () => { loadSliders(); loadSectionStates(); render(); fetchTbillYield(); });
 </script>
 </body>
 </html>
