@@ -601,6 +601,12 @@ function fmtM(n){
   if(n>=1e6) return '$'+(n/1e6).toFixed(0)+'M';
   return fmt(n);
 }
+function fmtM1(n){
+  if(!n||isNaN(n)) return '—';
+  if(n>=1e9) return '$'+(n/1e9).toFixed(1)+'B';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(1)+'M';
+  return fmt(n);
+}
 function pct(r){ return (r*100).toFixed(1)+'%'; }
 function onJ(){ dbc(calc); }
 function onL(){ dbc(calc); }
@@ -625,10 +631,10 @@ function calc(){
   var net=share-(fedTrue+nyTrue), eff=(fedTrue+nyTrue)/share;
 
   document.getElementById('mgrid').innerHTML=
-    mc('Your lump share',fmtM(share),'')+
-    mc('Withheld upfront',fmtM(totWH),'red')+
-    mc('Owed at return',fmtM(fedX+nyX),'red')+
-    mc('Net take-home',fmtM(net),'grn');
+    mc('Your lump share',fmtM1(share),'')+
+    mc('Withheld upfront',fmtM1(totWH),'red')+
+    mc('Owed at return',fmtM1(fedX+nyX),'red')+
+    mc('Net take-home',fmtM1(net),'grn');
 
   document.getElementById('wtbody').innerHTML=
     tr(np>1?'Your share (1/'+np+' of '+fmtM(lump)+')':'Full lump sum','',fmt(share),'r')+
