@@ -194,19 +194,19 @@
 
   /* Details toggle */
   .details-btn {
-    display: flex; align-items: center; justify-content: flex-start; gap: 10px;
-    width: 100%; margin-top: 1.25rem; padding: 0.7rem 0.9rem;
-    background: var(--bg-card-alt); border: 1px solid var(--border);
-    border-radius: 8px;
-    font-family: inherit; font-size: 12px; font-weight: 600;
-    color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.07em;
-    cursor: pointer; transition: color 0.15s, background 0.15s, border-color 0.15s;
+    display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+    width: fit-content; margin-top: 1.25rem; padding: 0 0 10px 0;
+    background: none; border: none;
+    font-family: inherit; font-size: 11px; font-weight: 600;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em;
+    cursor: pointer; transition: color 0.15s;
   }
-  .details-btn:hover { color: var(--text-primary); border-color: var(--border-strong); background: var(--bg-card); }
-  .details-chevron { transition: transform 0.2s; font-size: 15px; color: var(--text-muted); }
+  .details-btn:hover { color: var(--text-primary); }
+  .details-chevron { transition: transform 0.2s; font-size: 10px; color: var(--text-muted); }
   .details-chevron.open { transform: rotate(90deg); }
-  .details-body { display: none; padding-top: 1.1rem; }
+  .details-body { display: none; padding: 1.1rem 1.2rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
   .details-body.open { display: block; }
+  .details-body table:last-child { margin-bottom: 0; }
 
   hr { border: none; border-top: 1px solid var(--border); margin: 1.1rem 0; }
   .sec-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
@@ -224,7 +224,7 @@
 
   /* Winning numbers */
   .wn-wrap { margin-top: 1.25rem; }
-  .wn-body { display: none; padding-top: 1.1rem; }
+  .wn-body { display: none; padding: 1.1rem 1.2rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
   .wn-body.open { display: block; }
   .wn-game { margin-bottom: 1.25rem; }
   .wn-game:last-child { margin-bottom: 0; }
