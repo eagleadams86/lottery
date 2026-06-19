@@ -33,6 +33,7 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
 .app { max-width:960px; margin:0 auto; padding:32px 24px 64px; }
 h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
 .hdr-sub { font-size:12px; color:var(--text3); margin-top:3px; }
+.rate-src { font-size:10px; font-weight:400; color:var(--text3); text-transform:none; letter-spacing:0; margin-left:6px; }
 .sec-lbl { font-size:11px; font-weight:500; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:10px; }
 .section { margin-bottom:26px; }
 .sliders { display:grid; grid-template-columns:1fr 1fr; gap:10px 32px; }
@@ -126,7 +127,7 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
     <div class="sliders">
       <div class="sl-row"><label>Take-home (lump sum)</label><input type="range" min="1" max="500" step="1" value="5" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" onchange="syncSlider(this,'sl-tot',1,500)"></div>
       <div class="sl-row"><label>Annual spending</label><input type="range" min="50" max="5000" step="10" value="125" id="sl-sp" oninput="render()"><input type="text" class="sl-val" id="o-sp" value="$125K" onchange="syncSlider(this,'sl-sp',50,5000)"></div>
-      <div class="sl-row"><label>T-bill yield</label><input type="range" min="2" max="7" step="0.1" value="4.3" id="sl-tb" oninput="render()"><input type="text" class="sl-val" id="o-tb" value="4.3%" onchange="syncSlider(this,'sl-tb',2,7)"></div>
+      <div class="sl-row"><label>T-bill yield <span class="rate-src" id="tb-src"></span></label><input type="range" min="2" max="7" step="0.1" value="4.3" id="sl-tb" oninput="render()"><input type="text" class="sl-val" id="o-tb" value="4.3%" onchange="syncSlider(this,'sl-tb',2,7)"></div>
       <div class="sl-row"><label>Muni yield (stated)</label><input type="range" min="1.5" max="6" step="0.1" value="3.5" id="sl-mu" oninput="render()"><input type="text" class="sl-val" id="o-mu" value="3.5%" onchange="syncSlider(this,'sl-mu',1.5,6)"></div>
       <div class="sl-row"><label>VTI dividend yield</label><input type="range" min="0.5" max="3" step="0.1" value="1.4" id="sl-vti" oninput="render()"><input type="text" class="sl-val" id="o-vti" value="1.4%" onchange="syncSlider(this,'sl-vti',0.5,3)"></div>
       <div class="sl-row"><label>VXUS dividend yield</label><input type="range" min="1" max="5" step="0.1" value="3.1" id="sl-vx" oninput="render()"><input type="text" class="sl-val" id="o-vx" value="3.1%" onchange="syncSlider(this,'sl-vx',1,5)"></div>
@@ -427,7 +428,37 @@ function loadSliders() {
   } catch(e) {}
 }
 
-window.addEventListener('load', () => { loadSliders(); render(); });
+// ── Live T-bill yield (US Treasury daily par yield curve, 1-year) ──────────────
+function tbXmlUrl(ym){ return 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve&field_tdr_date_value_month=' + ym; }
+function ymStr(d){ return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0'); }
+function parseLatest1yr(xml){
+  var dates = (xml.match(/<d:NEW_DATE[^>]*>([^<]+)/g) || []).map(function(s){ return s.replace(/.*>/, ''); });
+  var y1    = (xml.match(/<d:BC_1YEAR[^>]*>([^<]+)/g) || []).map(function(s){ return parseFloat(s.replace(/.*>/, '')); });
+  if (!dates.length || !y1.length) return null;
+  var i = Math.min(dates.length, y1.length) - 1;
+  if (isNaN(y1[i])) return null;
+  return { rate: y1[i], date: dates[i] };
+}
+async function fetchTbillYield(){
+  try {
+    var now = new Date();
+    var xml = await fetch(tbXmlUrl(ymStr(now))).then(function(r){ return r.text(); });
+    var latest = parseLatest1yr(xml);
+    if (!latest) { // early in the month the current sheet may be empty — try previous month
+      var prev = new Date(now.getFullYear(), now.getMonth()-1, 1);
+      xml = await fetch(tbXmlUrl(ymStr(prev))).then(function(r){ return r.text(); });
+      latest = parseLatest1yr(xml);
+    }
+    if (!latest) return;
+    var clamped = Math.min(7, Math.max(2, Math.round(latest.rate*10)/10));
+    document.getElementById('sl-tb').value = clamped;
+    var d = new Date(latest.date.slice(0,10) + 'T00:00:00');
+    document.getElementById('tb-src').textContent = 'live · ' + d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    render();
+  } catch(e) { /* keep manual/default value */ }
+}
+
+window.addEventListener('load', () => { loadSliders(); render(); fetchTbillYield(); });
 </script>
 </body>
 </html>
