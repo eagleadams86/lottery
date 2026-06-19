@@ -30,6 +30,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Charts** — stacked bar (income by holding with tax drag overlay), donut (portfolio allocation), and line chart (10-year equity growth projection for VTI + VXUS vs. total portfolio)
 - **Tax-aware math** — applies 37% federal, 10.9% NY State, 20% LTCG, and 3.8% NIIT rates depending on holding type
 - **Dark/light mode** — toggleable button in the upper right, defaults to dark, preference saved in `localStorage`
+- **Collapsible sections** — every section (Assumptions, Summary, Portfolio breakdown, Income waterfall, Charts, 10-year growth projection) can be collapsed by clicking its header; open/closed state is remembered across visits via `localStorage`
 - **Remembers your settings** — slider values restored on revisit via `localStorage`; take-home slider auto-populated from the calculator's last net take-home
 - **Mobile-friendly** — portfolio breakdown table reflows to a card layout on narrow screens
 - **Cross-page navigation** — button to jump directly to the calculator
