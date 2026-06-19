@@ -5,59 +5,9 @@
 <link rel="icon" href="favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NY Lottery After-Tax Calculator</title>
+<link rel="stylesheet" href="theme.css">
 <style>
-  /* ── WCAG-compliant color tokens ─────────────────────────────────────────────
-     Light: all text on bg meets AA (4.5:1 normal, 3:1 large/bold)
-     Dark:  same guarantee
-  ──────────────────────────────────────────────────────────────────────────── */
-  :root {
-    --bg:           #f5f5f3;
-    --bg-card:      #ffffff;
-    --bg-card-alt:  #f0f0ee;
-    --border:       #e0e0dd;
-    --border-strong:#c8c8c4;
-    --text-primary: #111110;   /* 16.7:1 on #fff */
-    --text-secondary:#555551;  /* 5.9:1 on #fff  */
-    --text-muted:   #767672;   /* 4.6:1 on #fff  */
-    --text-hint:    #909090;   /* 3.0:1 — used only for large/bold */
-    --green:        #1a6e3c;   /* 5.2:1 on #fff  */
-    --red:          #b91c1c;   /* 5.5:1 on #fff  */
-    --ok:           #166534;   /* 6.2:1 on #fff  */
-    --err:          #991b1b;   /* 6.6:1 on #fff  */
-    --btn-bg:       #111110;
-    --btn-text:     #ffffff;
-    --unit-active-bg:  #111110;
-    --unit-active-txt: #ffffff;
-    --spinner-track:#e0e0dd;
-    --spinner-head: #767672;
-    --input-border: #c8c8c4;
-    --focus-border: #111110;
-  }
-
-  [data-theme="dark"] {
-    --bg:           #13151b;
-    --bg-card:      #1c1f27;
-    --bg-card-alt:  #262a33;
-    --border:       #2d313b;
-    --border-strong:#3d424e;
-    --text-primary: #eef0f5;   /* 14.8:1 on #1c1f27 */
-    --text-secondary:#adb1bd;  /* 6.8:1 on #1c1f27  */
-    --text-muted:   #888d9a;   /* 4.5:1 on #1c1f27  */
-    --text-hint:    #696e7c;   /* 3.1:1 — large/bold only */
-    --green:        #4ade80;   /* 8.4:1 on #1c1f27  */
-    --red:          #f87171;   /* 6.9:1 on #1c1f27  */
-    --ok:           #4ade80;
-    --err:          #f87171;
-    --btn-bg:       #eef0f5;
-    --btn-text:     #13151b;
-    --unit-active-bg:  #eef0f5;
-    --unit-active-txt: #13151b;
-    --spinner-track:#2d313b;
-    --spinner-head: #888d9a;
-    --input-border: #3d424e;
-    --focus-border: #eef0f5;
-  }
-
+  /* Color tokens + theme live in the shared theme.css (linked above). */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif;
