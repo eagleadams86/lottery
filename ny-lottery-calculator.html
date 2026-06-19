@@ -194,7 +194,7 @@
 
   /* Details toggle */
   .details-btn {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: flex-start; gap: 10px;
     width: 100%; margin-top: 1.25rem; padding: 0.7rem 0.9rem;
     background: var(--bg-card-alt); border: 1px solid var(--border);
     border-radius: 8px;
@@ -352,8 +352,8 @@
     </div>
 
     <button class="details-btn" onclick="toggleDetails()">
-      Tax breakdown details
       <span class="details-chevron" id="details-chevron">&#9654;</span>
+      Tax breakdown details
     </button>
     <div class="details-body" id="details-body">
       <p class="sec-title">Withheld at payment</p>
@@ -368,8 +368,8 @@
 
   <div class="wn-wrap">
     <button class="details-btn" onclick="toggleWinning()">
-      Latest winning numbers
       <span class="details-chevron" id="wn-chevron">&#9654;</span>
+      Latest winning numbers
     </button>
     <div class="wn-body" id="wn-body">
       <div class="wn-loading" id="wn-loading"><span class="spinner"></span>Loading latest results&hellip;</div>
