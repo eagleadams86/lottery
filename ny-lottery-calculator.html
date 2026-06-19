@@ -141,6 +141,8 @@
   .th-lbl  { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
   .th-val  { font-size: 26px; font-weight: 700; color: var(--green); letter-spacing: -0.02em; }
   .th-rate { font-size: 22px; font-weight: 600; color: var(--text-primary); }
+  .th-right { text-align: right; }
+  @media (max-width: 520px) { .th-right { text-align: left; } }
 
   /* Details toggle */
   .details-btn {
@@ -295,7 +297,7 @@
         <div class="th-lbl" id="th-lbl">Net take-home after all taxes</div>
         <div class="th-val" id="th-val">&#8212;</div>
       </div>
-      <div style="text-align:right">
+      <div class="th-right">
         <div class="th-lbl">Effective total tax rate</div>
         <div class="th-rate" id="eff-rate">&#8212;</div>
       </div>
