@@ -13,6 +13,7 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 |------|-------------|
 | `ny-lottery-calculator.html` | Main lottery take-home calculator |
 | `lottery-portfolio.html` | Portfolio / holdings tracker |
+| `theme.css` | Shared color tokens + light/dark palette, linked by both pages (single source of truth for the theme) |
 
 ---
 
@@ -34,7 +35,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Remembers your settings** — slider values restored on revisit via `localStorage`; take-home slider auto-populated from the calculator's last net take-home
 - **Mobile-friendly** — portfolio breakdown table reflows to a card layout on narrow screens
 - **Cross-page navigation** — button to jump directly to the calculator
-- **No build step** — plain HTML/CSS/JS, no dependencies beyond Chart.js (bundled inline)
+- **No build step** — plain HTML/CSS/JS, no dependencies beyond Chart.js (bundled inline); shares `theme.css` with the calculator for a unified palette
 
 ---
 
@@ -104,4 +105,4 @@ The calculator shows both the net check you receive on day one and the estimated
 
 - **Hosting:** GitHub Pages (this repo, `main` branch)
 - **Proxy:** Cloudflare Workers (free tier) — handles CORS and server-side scraping
-- **No build step** — plain HTML/CSS/JS, no dependencies or bundler required
+- **No build step** — plain HTML/CSS/JS, no dependencies or bundler required; both pages share a single `theme.css` for color tokens and the light/dark palette
