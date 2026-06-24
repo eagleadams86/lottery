@@ -205,10 +205,16 @@ let c1=null, c2=null, c3=null;
 let lastAfterTax = 0;
 
 // Set annual spending equal to after-tax income, bringing the surplus to 0.
+// The cash/bond buckets scale with spending, so after-tax income also moves —
+// it's a fixed point. Iterate to convergence.
 function zeroSurplus() {
-  const k = Math.min(5000, Math.max(50, lastAfterTax/1e3));
-  document.getElementById('sl-sp').value = k;
-  render();
+  const sp = document.getElementById('sl-sp');
+  for (let i = 0; i < 30; i++) {
+    const target = Math.min(5000, Math.max(50, lastAfterTax/1e3));
+    if (Math.abs(target - parseFloat(sp.value)) < 1e-4) break;
+    sp.value = target;
+    render();
+  }
   saveSliders();
 }
 
