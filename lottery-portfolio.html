@@ -35,6 +35,8 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
 .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
 @media (max-width:580px) { .metrics { grid-template-columns:1fr 1fr; } }
 .met { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
+.met-click { cursor:pointer; transition:border-color 0.15s, background 0.15s; }
+.met-click:hover { border-color:var(--border2); background:var(--surface2); }
 .met .ml { font-size:11px; color:var(--text3); margin-bottom:3px; }
 .met .mv { font-size:19px; font-weight:600; letter-spacing:-0.4px; }
 .met .ms { font-size:11px; color:var(--text3); margin-top:2px; }
@@ -116,7 +118,7 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
     <div class="sec-body" id="body-assumptions">
     <div class="sliders">
       <div class="sl-row"><label>Take-home (lump sum)</label><input type="range" min="1" max="500" step="1" value="5" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" onchange="syncSlider(this,'sl-tot',1,500)"></div>
-      <div class="sl-row"><label>Annual spending</label><input type="range" min="50" max="5000" step="10" value="125" id="sl-sp" oninput="render()"><input type="text" class="sl-val" id="o-sp" value="$125K" onchange="syncSlider(this,'sl-sp',50,5000)"></div>
+      <div class="sl-row"><label>Annual spending</label><input type="range" min="50" max="5000" step="any" value="125" id="sl-sp" oninput="render()"><input type="text" class="sl-val" id="o-sp" value="$125K" onchange="syncSlider(this,'sl-sp',50,5000)"></div>
       <div class="sl-row"><label>T-bill yield <span class="rate-src" id="tb-src"></span></label><input type="range" min="2" max="7" step="0.1" value="4.3" id="sl-tb" oninput="render()"><input type="text" class="sl-val" id="o-tb" value="4.3%" onchange="syncSlider(this,'sl-tb',2,7)"></div>
       <div class="sl-row"><label>Muni yield (stated)</label><input type="range" min="1.5" max="6" step="0.1" value="3.5" id="sl-mu" oninput="render()"><input type="text" class="sl-val" id="o-mu" value="3.5%" onchange="syncSlider(this,'sl-mu',1.5,6)"></div>
       <div class="sl-row"><label>VTI dividend yield</label><input type="range" min="0.5" max="3" step="0.1" value="1.4" id="sl-vti" oninput="render()"><input type="text" class="sl-val" id="o-vti" value="1.4%" onchange="syncSlider(this,'sl-vti',0.5,3)"></div>
@@ -200,6 +202,15 @@ function fm(n) {
 function pct(n) { return (n*100).toFixed(1)+'%'; }
 
 let c1=null, c2=null, c3=null;
+let lastAfterTax = 0;
+
+// Set annual spending equal to after-tax income, bringing the surplus to 0.
+function zeroSurplus() {
+  const k = Math.min(5000, Math.max(50, lastAfterTax/1e3));
+  document.getElementById('sl-sp').value = k;
+  render();
+  saveSliders();
+}
 
 function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 
@@ -266,13 +277,14 @@ function render() {
   const totA   = spaxxA+tbA+muA+vtiA+vxusA;
   const surplus = totA - spend;
   const effRate = totG > 0 ? (totG-totA)/totG*100 : 0;
+  lastAfterTax = totA;
 
   // ── Metrics ──
   document.getElementById('metrics').innerHTML = `
     <div class="met"><div class="ml">Total portfolio</div><div class="mv">${fm(total)}</div><div class="ms">After lottery taxes</div></div>
     <div class="met"><div class="ml">Gross income / yr</div><div class="mv">${fm(totG)}</div><div class="ms">Before taxes</div></div>
     <div class="met"><div class="ml">After-tax income / yr</div><div class="mv" style="color:var(--green)">${fm(totA)}</div><div class="ms">Spendable cash</div></div>
-    <div class="met"><div class="ml">Surplus vs spending</div><div class="mv" style="color:${surplus>=0?'var(--green)':'var(--red)'}">${surplus>=0?'+':''}${fm(surplus)}</div><div class="ms">${surplus>=0?'Reinvest or donate':'Draw from principal'}</div></div>
+    <div class="met met-click" onclick="zeroSurplus()" title="Click to set annual spending to your after-tax income (surplus → 0)"><div class="ml">Surplus vs spending</div><div class="mv" style="color:${surplus>=0?'var(--green)':'var(--red)'}">${surplus>=0?'+':''}${fm(surplus)}</div><div class="ms">${surplus>=0?'Reinvest or donate':'Draw from principal'}</div></div>
   `;
 
   const rows = [
