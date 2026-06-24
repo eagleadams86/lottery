@@ -117,7 +117,7 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
     <p class="sec-lbl" onclick="toggleSection('assumptions')"><span class="sec-chevron open" id="chev-assumptions">&#9654;</span>Assumptions</p>
     <div class="sec-body" id="body-assumptions">
     <div class="sliders">
-      <div class="sl-row"><label>Take-home (lump sum)</label><input type="range" min="1" max="500" step="1" value="5" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" onchange="syncSlider(this,'sl-tot',1,500)"></div>
+      <div class="sl-row"><label>Take-home (lump sum)</label><input type="range" min="1" max="500" step="any" value="5" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" onchange="syncSlider(this,'sl-tot',1,500)"></div>
       <div class="sl-row"><label>Annual spending</label><input type="range" min="50" max="5000" step="any" value="125" id="sl-sp" oninput="render()"><input type="text" class="sl-val" id="o-sp" value="$125K" onchange="syncSlider(this,'sl-sp',50,5000)"></div>
       <div class="sl-row"><label>T-bill yield <span class="rate-src" id="tb-src"></span></label><input type="range" min="2" max="7" step="0.1" value="4.3" id="sl-tb" oninput="render()"><input type="text" class="sl-val" id="o-tb" value="4.3%" onchange="syncSlider(this,'sl-tb',2,7)"></div>
       <div class="sl-row"><label>Muni yield (stated)</label><input type="range" min="1.5" max="6" step="0.1" value="3.5" id="sl-mu" oninput="render()"><input type="text" class="sl-val" id="o-mu" value="3.5%" onchange="syncSlider(this,'sl-mu',1.5,6)"></div>
@@ -199,6 +199,14 @@ function fm(n) {
   if (a>=1000) return s+'$'+Math.round(a/1000)+'K';
   return s+'$'+Math.round(a);
 }
+// Like fm() but a single decimal place for M/B (used for the take-home value).
+function fm1(n) {
+  const a=Math.abs(n), s=n<0?'-':'';
+  if (a>=1e9)  return s+'$'+(a/1e9).toFixed(1)+'B';
+  if (a>=1e6)  return s+'$'+(a/1e6).toFixed(1)+'M';
+  if (a>=1000) return s+'$'+Math.round(a/1000)+'K';
+  return s+'$'+Math.round(a);
+}
 function pct(n) { return (n*100).toFixed(1)+'%'; }
 
 let c1=null, c2=null, c3=null;
@@ -257,7 +265,7 @@ function render() {
   const grY   = parseFloat(document.getElementById('sl-gr').value)/100;
   const split = parseFloat(document.getElementById('sl-split').value)/100;
 
-  setVal('o-tot',   fm(total));
+  setVal('o-tot',   fm1(total));
   setVal('o-sp',    fm(spend));
   setVal('o-tb',    pct(tbY));
   setVal('o-mu',    pct(muY));
@@ -441,7 +449,7 @@ function loadSliders() {
     // Always seed sl-tot from calculator net take-home if available
     const net = parseInt(localStorage.getItem('lottery-net-takehome'));
     if (net > 0) {
-      const clamped = Math.min(500, Math.max(1, Math.round(net / 1e6)));
+      const clamped = Math.min(500, Math.max(1, net / 1e6));
       document.getElementById('sl-tot').value = clamped;
     }
   } catch(e) {}
