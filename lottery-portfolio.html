@@ -293,12 +293,18 @@ function render() {
   const effRate = totG > 0 ? (totG-totA)/totG*100 : 0;
   lastAfterTax = totA;
 
+  // Treat a surplus that rounds to $0 as exactly zero (avoids "-$0" in red)
+  const surplusZero = Math.abs(surplus) < 0.5;
+  const surplusColor = (surplusZero || surplus > 0) ? 'var(--green)' : 'var(--red)';
+  const surplusText  = surplusZero ? '$0' : (surplus > 0 ? '+' : '') + fm(surplus);
+  const surplusMs    = (surplusZero || surplus > 0) ? 'Reinvest or donate' : 'Draw from principal';
+
   // ── Metrics ──
   document.getElementById('metrics').innerHTML = `
     <div class="met"><div class="ml">Total portfolio</div><div class="mv">${fm(total)}</div><div class="ms">After lottery taxes</div></div>
     <div class="met"><div class="ml">Gross income / yr</div><div class="mv">${fm(totG)}</div><div class="ms">Before taxes</div></div>
     <div class="met"><div class="ml">After-tax income / yr</div><div class="mv" style="color:var(--green)">${fm(totA)}</div><div class="ms">Spendable cash</div></div>
-    <div class="met met-click" onclick="zeroSurplus()" title="Click to set annual spending to your after-tax income (surplus → 0)"><div class="ml">Surplus vs spending</div><div class="mv" style="color:${surplus>=0?'var(--green)':'var(--red)'}">${surplus>=0?'+':''}${fm(surplus)}</div><div class="ms">${surplus>=0?'Reinvest or donate':'Draw from principal'}</div></div>
+    <div class="met met-click" onclick="zeroSurplus()" title="Click to set annual spending to your after-tax income (surplus → 0)"><div class="ml">Surplus vs spending</div><div class="mv" style="color:${surplusColor}">${surplusText}</div><div class="ms">${surplusMs}</div></div>
   `;
 
   const rows = [
