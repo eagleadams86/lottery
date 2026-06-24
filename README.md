@@ -1,4 +1,4 @@
-# 🎰 NY Lottery Take-Home Calculator
+# NY Lottery Take-Home Calculator & Portfolio
 
 A pair of lightweight single-page web tools for calculating **real after-tax lottery winnings** for New York State residents, with live jackpot data and recent winning numbers pulled automatically.
 
