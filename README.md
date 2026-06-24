@@ -26,7 +26,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Interactive sliders with editable values** — adjust take-home amount, annual spending, T-bill yield, muni yield, VTI/VXUS dividend yields, equity growth rate, and VTI/VXUS split; click any displayed value to type a number directly
 - **Live T-bill yield** — the T-bill yield slider auto-fills from the US Treasury's daily par yield curve (1-year maturity), fetched on page load with an "as of" date shown next to the label; falls back to the default if the feed is unreachable, and can still be dragged to override
 - **Holdings breakdown table** — shows each holding (SPAXX, T-bills, Munis, VTI, VXUS), its allocation, percentage of portfolio, gross income, tax treatment, and after-tax income
-- **Summary metrics** — key portfolio-level numbers computed live from slider inputs
+- **Summary metrics** — key portfolio-level numbers computed live from slider inputs; click the **Surplus vs spending** tile to raise annual spending to your after-tax income, zeroing the surplus (iterates to a fixed point since the cash/bond buckets scale with spending)
 - **Income waterfall** — visual breakdown of gross income to after-tax income across all holdings
 - **Charts** — stacked bar (income by holding with tax drag overlay), donut (portfolio allocation), and line chart (10-year equity growth projection for VTI + VXUS vs. total portfolio)
 - **Tax-aware math** — applies 37% federal, 10.9% NY State, 20% LTCG, and 3.8% NIIT rates depending on holding type
