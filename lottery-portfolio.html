@@ -331,13 +331,14 @@ function render() {
   // ── Waterfall ──
   const maxWF = totG || 1;
   function wfrow(lbl, val, color, indent) {
+    if (Math.abs(val) < 0.5) val = 0; // snap near-zero (avoids "−$0")
     const w = Math.round((Math.abs(val)/maxWF)*100);
     const neg = val < 0;
     const isSurplus = lbl === 'Surplus';
     return `<div class="wfr">
       <span class="wfl" style="padding-left:${indent?10:0}px;font-size:${indent?11:12}px;color:${neg?'var(--red)':'var(--text2)'}">${lbl}</span>
       <div class="wfb"><div class="wfbi" style="width:${w}%;background:${neg?'rgba(153,27,27,0.4)':color}"></div></div>
-      <span class="wfv" style="color:${neg?'var(--red)':isSurplus&&val>0?'var(--green)':'var(--text)'}">${neg?'−':isSurplus&&val>0?'+':''}${fm(Math.abs(val))}</span>
+      <span class="wfv" style="color:${neg?'var(--red)':isSurplus&&val>=0?'var(--green)':'var(--text)'}">${neg?'−':isSurplus&&val>0?'+':''}${fm(Math.abs(val))}</span>
     </div>`;
   }
   document.getElementById('waterfall').innerHTML =
