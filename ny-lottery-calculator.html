@@ -218,7 +218,7 @@
     <span class="fetch-status" id="fetch-status">
       <span class="spinner"></span>Looking up current jackpots&hellip;
     </span>
-    <button class="refresh-btn" id="refresh-btn" onclick="fetchJackpots()" disabled>Refresh</button>
+    <button class="refresh-btn" id="refresh-btn" onclick="fetchJackpots(true)" disabled>Refresh</button>
   </div>
 
   <div class="game-row" id="game-row" style="display:none">
@@ -465,9 +465,49 @@ async function fetchWinning(){
 }
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
-async function fetchJackpots(){
+var JACKPOT_TTL = 6*60*60*1000; // 6 hours — jackpots only change after draws
+
+// Render jackpot data into the UI; returns true if at least one game had data.
+function applyJackpots(data, ts){
+  var pb=data.pb, mm=data.mm, ok=false;
+  if(pb&&pb.jackpot){
+    gameData.pb=pb;
+    document.getElementById('pb-amt').textContent=fmtM(pb.jackpot);
+    document.getElementById('pb-sub').textContent='Cash: '+fmtM(pb.cashValue);
+    ok=true;
+  }
+  if(mm&&mm.jackpot){
+    gameData.mm=mm;
+    document.getElementById('mm-amt').textContent=fmtM(mm.jackpot);
+    document.getElementById('mm-sub').textContent='Cash: '+fmtM(mm.cashValue);
+    ok=true;
+  }
+  if(!ok) return false;
+  document.getElementById('game-row').style.display='flex';
+  document.getElementById('manual-wrap').style.display='block';
+  document.getElementById('manual-inputs').classList.remove('open');
+  document.getElementById('manual-chevron').classList.remove('open');
+  var t=new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  var st=document.getElementById('fetch-status');
+  st.className='fetch-status ok';
+  st.textContent='Updated '+t+' — tap a game below';
+  selectGame(activeGame);
+  return true;
+}
+
+async function fetchJackpots(force){
   var btn=document.getElementById('refresh-btn');
   var st=document.getElementById('fetch-status');
+  // Use cached data if it's fresh and this isn't a manual refresh
+  if(!force){
+    try {
+      var c=JSON.parse(localStorage.getItem('lottery-jackpot-cache'));
+      if(c && c.ts && (Date.now()-c.ts)<JACKPOT_TTL && applyJackpots(c.data, c.ts)){
+        btn.disabled=false;
+        return;
+      }
+    } catch(e){}
+  }
   btn.disabled=true;
   st.className='fetch-status';
   st.innerHTML='<span class="spinner"></span>Looking up current jackpots&hellip;';
@@ -475,25 +515,9 @@ async function fetchJackpots(){
     var res=await fetch(WORKER);
     var data=await res.json();
     if(data.error) throw new Error(data.error);
-    var pb=data.pb, mm=data.mm, now=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    if(pb&&pb.jackpot){
-      gameData.pb=pb;
-      document.getElementById('pb-amt').textContent=fmtM(pb.jackpot);
-      document.getElementById('pb-sub').textContent='Cash: '+fmtM(pb.cashValue);
-    }
-    if(mm&&mm.jackpot){
-      gameData.mm=mm;
-      document.getElementById('mm-amt').textContent=fmtM(mm.jackpot);
-      document.getElementById('mm-sub').textContent='Cash: '+fmtM(mm.cashValue);
-    }
-    if((pb&&pb.jackpot)||(mm&&mm.jackpot)){
-      document.getElementById('game-row').style.display='flex';
-      document.getElementById('manual-wrap').style.display='block';
-      document.getElementById('manual-inputs').classList.remove('open');
-      document.getElementById('manual-chevron').classList.remove('open');
-      st.className='fetch-status ok';
-      st.textContent='Updated '+now+' — tap a game below';
-      selectGame(activeGame);
+    var ts=Date.now();
+    if(applyJackpots(data, ts)){
+      localStorage.setItem('lottery-jackpot-cache', JSON.stringify({ts:ts, data:{pb:data.pb, mm:data.mm}}));
     } else { throw new Error('No data'); }
   } catch(e) {
     st.className='fetch-status err';
