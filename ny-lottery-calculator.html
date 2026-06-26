@@ -445,8 +445,20 @@ function renderWinning(){
   if(!r){ content.innerHTML='<div class="wn-loading">No recent results for this game.</div>'; return; }
   content.innerHTML = activeGame==='pb' ? pbBlock(r) : mmBlock(r);
 }
+var WINNING_TTL = 6*60*60*1000; // 6 hours — results only change after draws
 async function fetchWinning(){
   var loading=document.getElementById('wn-loading');
+  // Use cached results if fresh
+  try {
+    var c=JSON.parse(localStorage.getItem('lottery-winning-cache'));
+    if(c && c.ts && (Date.now()-c.ts)<WINNING_TTL && (c.pb||c.mm)){
+      winData.pb=c.pb; winData.mm=c.mm;
+      loading.style.display='none';
+      _wnLoaded=true;
+      renderWinning();
+      return;
+    }
+  } catch(e){}
   loading.style.display='block';
   try {
     var results=await Promise.all([
@@ -456,6 +468,7 @@ async function fetchWinning(){
     winData.pb = (results[0]&&results[0][0]) || null;
     winData.mm = (results[1]&&results[1][0]) || null;
     if(!winData.pb && !winData.mm) throw new Error('No data');
+    localStorage.setItem('lottery-winning-cache', JSON.stringify({ts:Date.now(), pb:winData.pb, mm:winData.mm}));
     loading.style.display='none';
     _wnLoaded=true;
     renderWinning();
