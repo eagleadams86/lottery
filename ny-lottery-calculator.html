@@ -362,15 +362,27 @@ var _t=null;
 function dbc(fn){ clearTimeout(_t); _t=setTimeout(fn,80); }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
+var THEMES = [
+  { id:'light',     label:'Light',     icon:'\u2600' },
+  { id:'dark',      label:'Dark',      icon:'\u263E' },
+  { id:'midnight',  label:'Midnight',  icon:'\u2726' },
+  { id:'forest',    label:'Forest',    icon:'\uD83C\uDF32' },
+  { id:'synthwave', label:'Synthwave', icon:'\uD83C\uDF06' },
+  { id:'solarized', label:'Solarized', icon:'\uD83C\uDF17' },
+  { id:'sepia',     label:'Sepia',     icon:'\uD83D\uDCDC' },
+];
 function setTheme(theme) {
+  if (!THEMES.some(function(t){ return t.id === theme; })) theme = 'dark';
+  var t = THEMES.filter(function(x){ return x.id === theme; })[0];
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('lottery-theme', theme);
-  document.getElementById('theme-icon').textContent  = theme === 'dark' ? '\u2600' : '\u263D';
-  document.getElementById('theme-label').textContent = theme === 'dark' ? 'Light' : 'Dark';
+  document.getElementById('theme-icon').textContent  = t.icon;
+  document.getElementById('theme-label').textContent = t.label;
 }
 function toggleTheme() {
   var current = document.documentElement.getAttribute('data-theme');
-  setTheme(current === 'dark' ? 'light' : 'dark');
+  var i = THEMES.map(function(t){ return t.id; }).indexOf(current);
+  setTheme(THEMES[(i + 1) % THEMES.length].id);
 }
 // Restore saved preference, default to dark
 setTheme(localStorage.getItem('lottery-theme') || 'dark');

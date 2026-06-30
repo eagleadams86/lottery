@@ -224,21 +224,35 @@ function zeroSurplus() {
   saveSliders();
 }
 
-function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
-
+const THEMES = [
+  { id:'light',     label:'Light',     icon:'☀' },   // ☀
+  { id:'dark',      label:'Dark',      icon:'☾' },   // ☾
+  { id:'midnight',  label:'Midnight',  icon:'✦' },   // ✦
+  { id:'forest',    label:'Forest',    icon:'🌲' }, // 🌲
+  { id:'synthwave', label:'Synthwave', icon:'🌆' }, // 🌆
+  { id:'solarized', label:'Solarized', icon:'🌗' }, // 🌗
+  { id:'sepia',     label:'Sepia',     icon:'📜' }, // 📜
+];
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function setTheme(theme) {
+  if (!THEMES.some(t => t.id === theme)) theme = 'dark';
+  const t = THEMES.find(x => x.id === theme);
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('lottery-theme', theme);
   const icon = document.getElementById('theme-icon');
   const lbl  = document.getElementById('theme-label');
-  if (icon) icon.textContent = theme === 'dark' ? '☀' : '☽';
-  if (lbl)  lbl.textContent  = theme === 'dark' ? 'Light' : 'Dark';
+  if (icon) icon.textContent = t.icon;
+  if (lbl)  lbl.textContent  = t.label;
   if (c1) render();
 }
-function toggleTheme() { setTheme(isDark() ? 'light' : 'dark'); }
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  let i = THEMES.findIndex(t => t.id === cur);
+  setTheme(THEMES[(i + 1) % THEMES.length].id);
+}
 setTheme(localStorage.getItem('lottery-theme') || 'dark');
-function tc() { return isDark() ? '#888882' : '#767672'; }
-function gc() { return isDark() ? '#2e2e2b' : '#e0e0dd'; }
+function tc() { return cssVar('--chart-tick'); }
+function gc() { return cssVar('--chart-grid'); }
 
 function setVal(id, v) {
   const el = document.getElementById(id);
@@ -395,7 +409,7 @@ function render() {
     type: 'doughnut',
     data: {
       labels: rows.map(r => r.name),
-      datasets: [{ data:rows.map(r => Math.round(r.alloc)), backgroundColor:rows.map(r => r.color), borderWidth:2, borderColor: isDark()?'#242422':'#ffffff' }]
+      datasets: [{ data:rows.map(r => Math.round(r.alloc)), backgroundColor:rows.map(r => r.color), borderWidth:2, borderColor: cssVar('--bg-card') }]
     },
     options: {
       responsive:true, maintainAspectRatio:false, cutout:'64%',
