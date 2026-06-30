@@ -473,7 +473,22 @@ function parseLatest1yr(xml){
   if (isNaN(y1[i])) return null;
   return { rate: y1[i], date: dates[i] };
 }
+var TBILL_TTL = 6*60*60*1000; // 6 hours — Treasury yields update once per business day
+function applyTbill(rate, dateStr){
+  document.getElementById('sl-tb').value = Math.min(7, Math.max(2, Math.round(rate*10)/10));
+  var d = new Date(dateStr.slice(0,10) + 'T00:00:00');
+  document.getElementById('tb-src').textContent = 'live · ' + d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  render();
+}
 async function fetchTbillYield(){
+  // Use cached yield if fresh
+  try {
+    var c = JSON.parse(localStorage.getItem('lottery-tbill-cache'));
+    if (c && c.ts && (Date.now()-c.ts)<TBILL_TTL && c.rate){
+      applyTbill(c.rate, c.date);
+      return;
+    }
+  } catch(e){}
   try {
     var now = new Date();
     var xml = await fetch(tbXmlUrl(ymStr(now))).then(function(r){ return r.text(); });
@@ -484,11 +499,8 @@ async function fetchTbillYield(){
       latest = parseLatest1yr(xml);
     }
     if (!latest) return;
-    var clamped = Math.min(7, Math.max(2, Math.round(latest.rate*10)/10));
-    document.getElementById('sl-tb').value = clamped;
-    var d = new Date(latest.date.slice(0,10) + 'T00:00:00');
-    document.getElementById('tb-src').textContent = 'live · ' + d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
-    render();
+    localStorage.setItem('lottery-tbill-cache', JSON.stringify({ts:Date.now(), rate:latest.rate, date:latest.date}));
+    applyTbill(latest.rate, latest.date);
   } catch(e) { /* keep manual/default value */ }
 }
 
