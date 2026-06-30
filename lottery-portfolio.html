@@ -529,7 +529,13 @@ function toggleSection(key) {
   if (!collapsed) render(); // redraw charts that were hidden while collapsed
 }
 
-window.addEventListener('load', () => { loadSliders(); loadSectionStates(); render(); fetchTbillYield(); });
+// Populate synchronously (this script is at the end of <body>, so all elements
+// exist) so the first paint already has content — avoids layout shift (CLS)
+// from filling empty sections after load.
+loadSliders(); loadSectionStates(); render();
+// The live T-bill yield only nudges a slider value (no layout change), so it can
+// run after first paint without causing shift.
+fetchTbillYield();
 </script>
 </body>
 </html>
