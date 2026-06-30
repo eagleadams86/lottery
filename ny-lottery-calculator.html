@@ -221,7 +221,7 @@
     <button class="refresh-btn" id="refresh-btn" onclick="refreshAll()" disabled>Refresh</button>
   </div>
 
-  <div class="game-row" id="game-row" style="display:none">
+  <div class="game-row" id="game-row">
     <button class="game-btn active" id="btn-pb" onclick="selectGame('pb')">
       <div class="game-btn-header">
         <div class="game-btn-name">Powerball</div>
@@ -244,7 +244,7 @@
     </button>
   </div>
 
-  <div class="manual-wrap" id="manual-wrap" style="display:none">
+  <div class="manual-wrap" id="manual-wrap">
     <button class="manual-toggle" onclick="toggleManual()">
       <span class="chevron" id="manual-chevron">&#9654;</span>
       Enter amounts manually
@@ -288,10 +288,13 @@
   </div>
 
   <div class="metrics-grid" id="mgrid">
-    <div class="empty">Tap a game above to see the breakdown.</div>
+    <div class="mc"><div class="ml">Your lump share</div><div class="mv">&mdash;</div></div>
+    <div class="mc"><div class="ml">Withheld upfront</div><div class="mv">&mdash;</div></div>
+    <div class="mc"><div class="ml">Owed at return</div><div class="mv">&mdash;</div></div>
+    <div class="mc"><div class="ml">Net take-home</div><div class="mv">&mdash;</div></div>
   </div>
 
-  <div id="results-section" style="display:none">
+  <div id="results-section">
     <div class="takehome">
       <div>
         <div class="th-lbl" id="th-lbl">Net take-home after all taxes</div>
