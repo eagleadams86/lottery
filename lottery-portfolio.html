@@ -197,6 +197,14 @@ function fm1(n) {
   if (a>=1000) return s+'$'+Math.round(a/1000)+'K';
   return s+'$'+Math.round(a);
 }
+// Like fm() but drops trailing zeros ("$28.00M" → "$28M", "$27.60M" → "$27.6M").
+function fmShort(n) {
+  const a=Math.abs(n), s=n<0?'-':'';
+  if (a>=1e9)  return s+'$'+(a/1e9).toFixed(2).replace(/\.?0+$/,'')+'B';
+  if (a>=1e6)  return s+'$'+(a/1e6).toFixed(2).replace(/\.?0+$/,'')+'M';
+  if (a>=1000) return s+'$'+Math.round(a/1000)+'K';
+  return s+'$'+Math.round(a);
+}
 function pct(n) { return (n*100).toFixed(1)+'%'; }
 
 let c1=null, c2=null, c3=null;
@@ -420,7 +428,7 @@ function render() {
       plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${fm(c.raw)}` }}},
       scales: {
         x: { grid:{display:false}, ticks:{ font:{size:11}, color:tc() }},
-        y: { grid:{color:gc()},    ticks:{ font:{size:10}, color:tc(), callback: v => fm(v) }}
+        y: { grid:{color:gc()},    ticks:{ font:{size:10}, color:tc(), callback: v => fmShort(v) }}
       }
     }
   });
