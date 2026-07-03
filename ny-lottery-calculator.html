@@ -33,7 +33,12 @@
     white-space: nowrap; flex-shrink: 0;
   }
   .theme-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
-  .theme-icon { font-size: 14px; line-height: 1; }
+  .theme-select {
+    -webkit-appearance: none; appearance: none;
+    padding-right: 26px;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23888'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
 
   /* Status bar */
   .fetch-bar {
@@ -207,10 +212,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
       <a href="lottery-portfolio.html" class="theme-btn" style="text-decoration:none">Portfolio →</a>
-      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
-        <span class="theme-icon" id="theme-icon">&#9788;</span>
-        <span id="theme-label">Light</span>
-      </button>
+      <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme"></select>
     </div>
   </div>
 
@@ -371,18 +373,14 @@ var THEMES = [
   { id:'solarized', label:'Solarized', icon:'\uD83C\uDF17' },
   { id:'sepia',     label:'Sepia',     icon:'\uD83D\uDCDC' },
 ];
+document.getElementById('theme-select').innerHTML = THEMES.map(function(t){
+  return '<option value="'+t.id+'">'+t.icon+' '+t.label+'</option>';
+}).join('');
 function setTheme(theme) {
   if (!THEMES.some(function(t){ return t.id === theme; })) theme = 'dark';
-  var t = THEMES.filter(function(x){ return x.id === theme; })[0];
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('lottery-theme', theme);
-  document.getElementById('theme-icon').textContent  = t.icon;
-  document.getElementById('theme-label').textContent = t.label;
-}
-function toggleTheme() {
-  var current = document.documentElement.getAttribute('data-theme');
-  var i = THEMES.map(function(t){ return t.id; }).indexOf(current);
-  setTheme(THEMES[(i + 1) % THEMES.length].id);
+  document.getElementById('theme-select').value = theme;
 }
 // Restore saved preference, default to dark
 setTheme(localStorage.getItem('lottery-theme') || 'dark');

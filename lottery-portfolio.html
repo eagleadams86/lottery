@@ -11,7 +11,7 @@
 /* Color tokens + theme live in the shared theme.css (linked above). */
 .theme-btn { display:flex; align-items:center; gap:6px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; background:var(--surface); color:var(--text2); border:1px solid var(--border2); border-radius:8px; font-family:inherit; transition:background 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
 .theme-btn:hover { color:var(--text); border-color:var(--border2); }
-.theme-icon { font-size:14px; line-height:1; }
+.theme-select { -webkit-appearance:none; appearance:none; padding-right:26px; background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23888'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
 .hrow { display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; flex-wrap:wrap; gap:8px; }
 * { box-sizing:border-box; margin:0; padding:0; }
 body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Helvetica,Arial,sans-serif; font-size:14px; line-height:1.5; min-height:100vh; transition:background 0.2s,color 0.2s; }
@@ -96,10 +96,7 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
       <a href="ny-lottery-calculator.html" class="theme-btn" style="text-decoration:none">← Calculator</a>
-      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
-        <span class="theme-icon" id="theme-icon">&#9728;</span>
-        <span id="theme-label">Light</span>
-      </button>
+      <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme"></select>
     </div>
   </div>
 
@@ -234,21 +231,15 @@ const THEMES = [
   { id:'sepia',     label:'Sepia',     icon:'📜' }, // 📜
 ];
 function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+document.getElementById('theme-select').innerHTML = THEMES.map(t =>
+  `<option value="${t.id}">${t.icon} ${t.label}</option>`
+).join('');
 function setTheme(theme) {
   if (!THEMES.some(t => t.id === theme)) theme = 'dark';
-  const t = THEMES.find(x => x.id === theme);
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('lottery-theme', theme);
-  const icon = document.getElementById('theme-icon');
-  const lbl  = document.getElementById('theme-label');
-  if (icon) icon.textContent = t.icon;
-  if (lbl)  lbl.textContent  = t.label;
-  if (c1) render();
-}
-function toggleTheme() {
-  const cur = document.documentElement.getAttribute('data-theme');
-  let i = THEMES.findIndex(t => t.id === cur);
-  setTheme(THEMES[(i + 1) % THEMES.length].id);
+  document.getElementById('theme-select').value = theme;
+  if (c1) render(); // redraw charts with the new theme's colors
 }
 setTheme(localStorage.getItem('lottery-theme') || 'dark');
 function tc() { return cssVar('--chart-tick'); }
