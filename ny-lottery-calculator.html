@@ -576,9 +576,9 @@ function selectGame(g){
   if(!gd||!gd.jackpot) return;
   var j=gd.jackpot, cv=gd.cashValue||0;
   if(j>=1e9){  setUnit('j','B'); document.getElementById('jackpot-input').value=+(j/1e9).toFixed(3); }
-  else        { setUnit('j','M'); document.getElementById('jackpot-input').value=Math.round(j/1e6); }
+  else        { setUnit('j','M'); document.getElementById('jackpot-input').value=+(j/1e6).toFixed(1); }
   if(cv>=1e9){ setUnit('l','B'); document.getElementById('lump-input').value=+(cv/1e9).toFixed(3); }
-  else if(cv>0){ setUnit('l','M'); document.getElementById('lump-input').value=Math.round(cv/1e6); }
+  else if(cv>0){ setUnit('l','M'); document.getElementById('lump-input').value=+(cv/1e6).toFixed(1); }
   else { document.getElementById('lump-input').value=''; }
   calc();
 }
@@ -612,7 +612,7 @@ function fmt(n){ if(n===null||isNaN(n)) return '\u2014'; return '$'+Math.round(n
 function fmtM(n){
   if(!n||isNaN(n)) return '\u2014';
   if(n>=1e9) return '$'+(n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B';
-  if(n>=1e6) return '$'+(n/1e6).toFixed(0)+'M';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';
   return fmt(n);
 }
 function fmtM1(n){
