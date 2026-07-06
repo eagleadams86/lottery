@@ -425,24 +425,33 @@ function toggleWinning(){
 // ── Winning numbers ───────────────────────────────────────────────────────────
 var PB_URL='https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=1';
 var MM_URL='https://data.ny.gov/resource/5xaw-6ayf.json?$order=draw_date%20DESC&$limit=1';
+// API fields below are untrusted before they reach innerHTML: only render
+// values that match the expected shape (digits for balls/multiplier,
+// YYYY-MM-DD for dates); anything else is dropped.
 function fmtDrawDate(s){
-  var d=new Date(s.slice(0,10)+'T00:00:00');
+  if(!/^\d{4}-\d{2}-\d{2}/.test(String(s))) return '';
+  var d=new Date(String(s).slice(0,10)+'T00:00:00');
   return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 }
-function ball(n,cls){ return '<div class="ball'+(cls?' '+cls:'')+'">'+n+'</div>'; }
+function ball(n,cls){
+  n=String(n==null?'':n).trim();
+  if(!/^\d{1,2}$/.test(n)) return '';
+  return '<div class="ball'+(cls?' '+cls:'')+'">'+n+'</div>';
+}
 function pbBlock(r){
-  var nums=r.winning_numbers.trim().split(/\s+/);
+  var nums=String(r.winning_numbers||'').trim().split(/\s+/);
   var whites=nums.slice(0,5), power=nums[5];
   var html='<div class="wn-balls">';
   whites.forEach(function(n){ html+=ball(n); });
   html+=ball(power,'pb');
-  if(r.multiplier) html+='<span class="wn-mult">Power Play &times;'+r.multiplier+'</span>';
+  var mult=parseInt(r.multiplier,10);
+  if(mult>0) html+='<span class="wn-mult">Power Play &times;'+mult+'</span>';
   html+='</div>';
   return '<div class="wn-game"><div class="wn-head"><span class="wn-name">Powerball</span>'+
     '<span class="wn-date">'+fmtDrawDate(r.draw_date)+'</span></div>'+html+'</div>';
 }
 function mmBlock(r){
-  var whites=r.winning_numbers.trim().split(/\s+/).slice(0,5);
+  var whites=String(r.winning_numbers||'').trim().split(/\s+/).slice(0,5);
   var html='<div class="wn-balls">';
   whites.forEach(function(n){ html+=ball(n); });
   html+=ball(r.mega_ball,'mb');
