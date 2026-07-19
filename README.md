@@ -15,6 +15,7 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 | `lottery-portfolio.html` | What-if model of investing the lump sum as a tax-aware portfolio |
 | `theme.css` | Shared color tokens + 7 theme palettes, linked by both pages (single source of truth for the theme) |
 | `favicon.ico` | Shared favicon |
+| `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
 
 ---
 
