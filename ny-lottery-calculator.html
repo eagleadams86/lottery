@@ -353,6 +353,8 @@
 .changelog a:hover{color:var(--text)}
 </style>
 <script>
+// "Recent changes" box — lazily loads this file's last 10 commit subjects
+// from the GitHub API the first time the box is expanded.
 (function(){
   var box=document.getElementById('cl-box'),loaded=false;
   box.addEventListener('toggle',function(){
@@ -379,9 +381,13 @@
 </script>
 
 <script>
+// Jackpot proxy (Cloudflare Worker; source in worker.js). Its CORS policy only
+// allows the live GitHub Pages origin, so this fetch fails from localhost.
 var WORKER = 'https://lottery-proxy.charlie-adams-176.workers.dev';
+// _WH = withheld at payment; _TOP = top marginal rate (true liability).
+// The gap between the two is what's still owed at the next tax return.
 var FED_WH=0.24, FED_TOP=0.37, NY_WH=0.105, NY_TOP=0.109;
-var jUnit='M', lUnit='M';
+var jUnit='M', lUnit='M'; // current unit (Millions/Billions) for the two manual inputs
 // Powerball: Mon(1) Wed(3) Sat(6) · Mega Millions: Tue(2) Fri(5)
 function nextDraw(drawDays) {
   var etNow = new Date(new Date().toLocaleString('en-US', {timeZone: 'America/New_York'}));
@@ -402,6 +408,7 @@ function nextDraw(drawDays) {
 var gameData={pb:null, mm:null};
 var activeGame='pb';
 var _t=null;
+// Debounce: while typing, recalculate at most once per 80ms
 function dbc(fn){ clearTimeout(_t); _t=setTimeout(fn,80); }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
@@ -425,6 +432,8 @@ function setTheme(theme) {
 }
 // Restore saved preference, default to midnight
 setTheme(localStorage.getItem('lottery-theme') || 'midnight');
+// Restore the rest of the persisted UI state: winner count, selected game,
+// and which collapsible sections were left open last visit.
 (function(){
   var n=localStorage.getItem('lottery-npeople'); if(n) document.getElementById('npeople').value=n;
   var g=localStorage.getItem('lottery-game'); if(g) activeGame=g;
@@ -649,6 +658,8 @@ function setUnit(f,u){
 }
 
 // ── Parse / format ────────────────────────────────────────────────────────────
+// Parse a manual input like "238", "1.5B", "106m". A typed M/B suffix overrides
+// the unit toggle. Returns dollars, or null if empty/invalid.
 function parseField(id,unit){
   var s=document.getElementById(id).value.trim().replace(/[$,\s]/g,'');
   if(!s) return null;
@@ -659,12 +670,14 @@ function parseField(id,unit){
   return sf==='B'?n*1e9:n*1e6;
 }
 function fmt(n){ if(n===null||isNaN(n)) return '\u2014'; return '$'+Math.round(n).toLocaleString('en-US'); }
+// Compact currency, trailing zeros trimmed ($1.5B, $238M)
 function fmtM(n){
   if(!n||isNaN(n)) return '\u2014';
   if(n>=1e9) return '$'+(n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B';
   if(n>=1e6) return '$'+(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';
   return fmt(n);
 }
+// Compact currency, always one decimal ($238.0M) — keeps the metric cards uniform
 function fmtM1(n){
   if(!n||isNaN(n)) return '—';
   if(n>=1e9) return '$'+(n/1e9).toFixed(1)+'B';
@@ -679,7 +692,7 @@ function onL(){ dbc(calc); }
 function calc(){
   var lump=parseField('lump-input',lUnit);
   var jack=parseField('jackpot-input',jUnit);
-  if(!lump&&jack) lump=jack*0.60;
+  if(!lump&&jack) lump=jack*0.60; // no cash value entered — estimate lump at 60% of advertised
   var np=Math.max(1,parseInt(document.getElementById('npeople').value)||1);
 
   if(!lump){
@@ -688,6 +701,8 @@ function calc(){
     return;
   }
 
+  // Withheld at payment vs. true liability at the top marginal rate;
+  // fedX/nyX is the extra owed when filing the return.
   var share=lump/np;
   var fedWH=share*FED_WH, nyWH=share*NY_WH, totWH=fedWH+nyWH, afterWH=share-totWH;
   var fedTrue=share*FED_TOP, nyTrue=share*NY_TOP;
@@ -718,6 +733,7 @@ function calc(){
 
   document.getElementById('th-lbl').textContent=np>1?'Each winner\'s net take-home (1 of '+np+')':'Net take-home after all taxes';
   document.getElementById('th-val').textContent=fmt(net);
+  // Shared with lottery-portfolio.html, which seeds its portfolio size from it
   localStorage.setItem('lottery-net-takehome', Math.round(net));
   document.getElementById('eff-rate').textContent=pct(eff);
   document.getElementById('results-section').style.display='block';
@@ -729,6 +745,7 @@ function trbold(i,d,a,c){ return '<tr><td><strong>'+i+'</strong></td><td class="
 function trtot(i,d,a,c){ return '<tr class="totrow"><td>'+i+'</td><td class="muted">'+d+'</td><td class="'+c+'">'+a+'</td></tr>'; }
 function trspace(){ return '<tr style="height:6px"><td colspan="3"></td></tr>'; }
 
+// Initial load: jackpots always; winning numbers only if that section was left open
 fetchJackpots();
 if(document.getElementById('wn-body').classList.contains('open')) fetchWinning();
 </script>
