@@ -16,6 +16,7 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 | `theme.css` | Shared color tokens + 7 theme palettes, linked by both pages (single source of truth for the theme) |
 | `favicon.ico` | Shared favicon |
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
+| `IOS_PORT_PLAN.md` | Blueprint for porting both pages to a native iOS app (SwiftUI, planned as a separate repo) |
 
 ---
 
