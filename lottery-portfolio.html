@@ -173,7 +173,48 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
 
   <p class="note" id="note"></p>
   <p class="footer">Planning purposes only — not financial advice. Consult a fee-only fiduciary CFP before investing.</p>
+
+  <details class="changelog" id="cl-box">
+    <summary>Recent changes</summary>
+    <ol id="cl-list"><li>Loading&hellip;</li></ol>
+  </details>
 </div>
+
+<style>
+.changelog{margin:18px 0 4px;font-size:12.5px;color:var(--text-muted)}
+.changelog summary{cursor:pointer;user-select:none;opacity:.75}
+.changelog summary:hover{opacity:1}
+.changelog ol{list-style:none;margin:10px 0 0;padding:0}
+.changelog li{display:flex;gap:10px;padding:3px 0;align-items:baseline}
+.cl-date{white-space:nowrap;opacity:.65;font-variant-numeric:tabular-nums;flex-shrink:0}
+.changelog a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--border)}
+.changelog a:hover{color:var(--text)}
+</style>
+<script>
+(function(){
+  var box=document.getElementById('cl-box'),loaded=false;
+  box.addEventListener('toggle',function(){
+    if(!box.open||loaded)return;loaded=true;
+    var list=document.getElementById('cl-list');
+    fetch('https://api.github.com/repos/eagleadams86/lottery/commits?path=lottery-portfolio.html&per_page=5')
+      .then(function(r){if(!r.ok)throw new Error('http');return r.json();})
+      .then(function(cs){
+        list.innerHTML='';
+        if(!cs.length){list.innerHTML='<li>No changes recorded yet.</li>';return;}
+        cs.forEach(function(c){
+          var li=document.createElement('li');
+          var d=document.createElement('span');d.className='cl-date';
+          d.textContent=new Date(c.commit.author.date).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+          var a=document.createElement('a');
+          a.href=c.html_url;a.target='_blank';a.rel='noopener';
+          a.textContent=c.commit.message.split('\n')[0];
+          li.appendChild(d);li.appendChild(a);list.appendChild(li);
+        });
+      })
+      .catch(function(){list.innerHTML='<li>Changelog unavailable right now (offline?).</li>';});
+  });
+})();
+</script>
 
 <script>
 const FED=0.37, NY=0.109, LTCG=0.20, NIIT=0.038;
