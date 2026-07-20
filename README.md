@@ -17,8 +17,8 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 | `favicon.ico` | Shared favicon |
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
 | `IOS_PORT_PLAN.md` | Blueprint for porting both pages to a native iOS app (SwiftUI, planned as a separate repo) |
-| `IOS_PORT_PLAN_CALC_ONLY.md` | Smaller alternative blueprint: calculator-only iOS app, portfolio addable later (execute one plan, not both) |
-| `ANDROID_PORT_PLAN_CALC_ONLY.md` | Android counterpart to the calculator-only blueprint (Kotlin/Compose; behavior spec referenced from the iOS plan) |
+| `IOS_PORT_PLAN_CALC_ONLY.md` | Smaller alternative blueprint: calculator-only iOS app, portfolio addable later (execute one plan, not both); §6 addendum carries over the shipped Android app's layout/widget decisions |
+| `ANDROID_PORT_PLAN_CALC_ONLY.md` | Android counterpart to the calculator-only blueprint — built and shipped as [lottery-android](https://github.com/eagleadams86/lottery-android) |
 
 ---
 

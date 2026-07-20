@@ -94,3 +94,60 @@ prerequisites (Xcode 16+, Apple ID), fidelity rules (the HTML is the spec; numbe
 formatting via `fmt`/`fmtM`; ball styling from the page CSS), and repo/commit conventions:
 all identical to `IOS_PORT_PLAN.md` §8–§9. Read that plan's §5 Worker gotcha in full
 before writing `JackpotService`.
+
+---
+
+## 6. Addendum (2026-07-20): carry over the shipped Android app's changes
+
+The Android port (`~/claude-lottery-android`, github.com/eagleadams86/lottery-android) is
+complete — all five phases plus the widget stretch goal — and its post-plan commits made
+layout decisions the user is happy with. **For everything below, the Android app is the
+spec and supersedes the web HTML where they differ.** The HTML remains the spec for
+behavior and math (tax engine, parsing, caching, persistence keys — nothing there changed).
+
+### 6a. Calculator layout (differs from the web page)
+
+- **Game cards side by side**, one per game, each card's info stacked vertically inside,
+  content centered — both cards fit on any phone width instead of the web page's wider
+  layout.
+- **Take-home card**: net amount and effective tax rate side by side; the tax-rate column
+  vertically centered against the taller net-amount column; the bold dollar values shrink
+  on narrow screens rather than wrap (SwiftUI: `.minimumScaleFactor` + `.lineLimit(1)`).
+- **Metric cards**: content centered.
+- **Winning numbers card**: content centered; the draw date sits *below* the row of balls,
+  not beside it; the Power Play badge wraps as one unit, never mid-badge (keep badge text
+  on one line inside a fixed group).
+
+### 6b. Keyboard dismissal
+
+The manual-entry number fields trap focus without help. Match the Android fix: a Done
+button on the keyboard (toolbar `ToolbarItemGroup(placement: .keyboard)`) and tap-outside
+clears focus (`@FocusState` + a background tap gesture or
+`.scrollDismissesKeyboard(.interactively)`).
+
+### 6c. Widget — promoted from stretch goal to Phase 6
+
+The widget turned out to be arguably the best part of the product; build it, not as a
+maybe. WidgetKit **medium (4×2-equivalent)** widget named "Jackpots":
+
+- Two columns, **Powerball left, Mega Millions right**, columns pinned to fill the
+  widget's height. Per column, text centered: game name, jackpot (largest type), cash
+  value stacked under it (not beside — beside didn't fit), next draw date (muted, smallest).
+- Reads the same 6-hour jackpot cache as the app; if the network is down, stale cache at
+  any age still displays (next-draw dates are computed locally, so they're always right).
+- Tapping anywhere opens the app.
+- Colors follow the app's selected theme, and the app pushes a widget refresh after every
+  successful fetch **and every theme change** — on iOS that's
+  `WidgetCenter.shared.reloadAllTimelines()`, cheap and synchronous to call. Android
+  needed a battery-optimization exemption to make this prompt; iOS needs no equivalent.
+
+**Plan-level consequence — do this in Phase 1, not Phase 6:** the widget extension can't
+read the app's standard `UserDefaults`. Create an **App Group** (e.g.
+`group.com.eagleadams86.lotterycalc`) at project setup and put *all* the §2 persistence
+keys in `UserDefaults(suiteName:)` from the start, so the widget sees the theme and
+jackpot cache for free and no key migration is ever needed. This amends §2's UserDefaults
+bullet; the key names themselves are unchanged.
+
+### 6d. Remaining stretch goal
+
+Only the draw-night notification ("Powerball tonight — $XXX M") is still a stretch goal.
