@@ -10,7 +10,10 @@ export default {
       const [pb, mm] = await Promise.all([ scrape('powerball'), scrape('mega-millions') ]);
       return cors(JSON.stringify({ pb, mm }), 200);
     } catch(e) {
-      return cors(JSON.stringify({ error: e.message }), 500);
+      // Don't echo the internal exception text back to callers — the page only
+      // needs to know the lookup failed, and it already handles that.
+      console.error('jackpot lookup failed:', e);
+      return cors(JSON.stringify({ error: 'lookup failed' }), 500);
     }
   }
 };
