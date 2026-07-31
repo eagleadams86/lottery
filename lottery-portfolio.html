@@ -2,6 +2,14 @@
 <html lang="en" data-theme="midnight">
 <head>
 <meta charset="UTF-8">
+<!-- Content Security Policy. GitHub Pages can't set response headers, so this
+     meta tag is the only place to declare one. 'unsafe-inline' is unavoidable
+     here: the whole app (including the bundled Chart.js) is inline script and
+     style, by design — there's no build step to generate hashes. The real value
+     is connect-src, which pins network access to the three feeds this page
+     actually uses, plus default-src 'none' and base-uri 'none'.
+     Note: frame-ancestors is ignored in a meta tag; it needs a real header. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://home.treasury.gov https://api.github.com; base-uri 'none'; form-action 'none'">
 <link rel="icon" href="favicon.ico">
 <!-- No maximum-scale: pinch-zoom must stay available (WCAG 1.4.4) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,8 +54,10 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
 @media (max-width:580px) { .metrics { grid-template-columns:1fr 1fr; } }
 .met { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
-/* A <button> so it's keyboard-reachable, reset to sit flush with the other cards */
+/* A <button> so it's keyboard-reachable, reset to sit flush with the other cards.
+   Its children are spans (a <button> may not contain <div>), so restore stacking. */
 .met-click { cursor:pointer; transition:border-color 0.15s, background 0.15s; width:100%; text-align:left; font-family:inherit; color:inherit; display:block; }
+.met-click .ml, .met-click .mv, .met-click .ms { display:block; }
 .met-click:hover { border-color:var(--border2); background:var(--surface2); }
 .met .ml { font-size:11px; color:var(--text3); margin-bottom:3px; }
 .met .mv { font-size:19px; font-weight:600; letter-spacing:-0.4px; }
@@ -116,8 +126,8 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
     <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('assumptions')" aria-expanded="true" aria-controls="body-assumptions"><span class="sec-chevron open" id="chev-assumptions" aria-hidden="true">&#9654;</span>Assumptions</button></h2>
     <div class="sec-body" id="body-assumptions">
     <div class="sliders">
-      <div class="sl-row"><label for="sl-tot">Take-home (lump sum)</label><input type="range" min="1" max="500" step="any" value="5" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" aria-label="Take-home (lump sum) value" onchange="syncSlider(this,'sl-tot',1,500)"></div>
-      <div class="sl-row"><label for="sl-sp">Annual spending</label><input type="range" min="50" max="5000" step="any" value="125" id="sl-sp" oninput="render()"><input type="text" class="sl-val" id="o-sp" value="$125K" aria-label="Annual spending value" onchange="syncSlider(this,'sl-sp',50,5000)"></div>
+      <div class="sl-row"><label for="sl-tot">Take-home (lump sum)</label><input type="range" min="1" max="500" step="any" value="5" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" aria-label="Take-home (lump sum) value" onchange="syncSlider(this,'sl-tot',1,500,1e6)"></div>
+      <div class="sl-row"><label for="sl-sp">Annual spending</label><input type="range" min="50" max="5000" step="any" value="125" id="sl-sp" oninput="render()"><input type="text" class="sl-val" id="o-sp" value="$125K" aria-label="Annual spending value" onchange="syncSlider(this,'sl-sp',50,5000,1e3)"></div>
       <div class="sl-row"><label for="sl-tb">T-bill yield <span class="rate-src" id="tb-src"></span></label><input type="range" min="2" max="7" step="0.1" value="4.3" id="sl-tb" oninput="render()"><input type="text" class="sl-val" id="o-tb" value="4.3%" aria-label="T-bill yield value" onchange="syncSlider(this,'sl-tb',2,7)"></div>
       <div class="sl-row"><label for="sl-mu">Muni yield (stated)</label><input type="range" min="1.5" max="6" step="0.1" value="3.5" id="sl-mu" oninput="render()"><input type="text" class="sl-val" id="o-mu" value="3.5%" aria-label="Muni yield value" onchange="syncSlider(this,'sl-mu',1.5,6)"></div>
       <div class="sl-row"><label for="sl-vti">VTI dividend yield</label><input type="range" min="0.5" max="3" step="0.1" value="1.4" id="sl-vti" oninput="render()"><input type="text" class="sl-val" id="o-vti" value="1.4%" aria-label="VTI dividend yield value" onchange="syncSlider(this,'sl-vti',0.5,3)"></div>
@@ -266,7 +276,10 @@ function fmShort(n) {
 }
 function pct(n) { return (n*100).toFixed(1)+'%'; }
 
-let c1=null, c2=null, c3=null;
+// Charts are built once and then fed new numbers. Rebuilding all three on every
+// slider `input` event was what made dragging feel heavy. Only a theme change
+// needs a genuine rebuild, since the axis/grid colours are baked into options.
+let c1=null, c2=null, c3=null, _chartsTheme=null;
 
 // Read the current slider values (in dollars / fractions).
 function readAssumptions() {
@@ -354,19 +367,37 @@ setTheme(localStorage.getItem('lottery-theme') || 'midnight');
 function tc() { return cssVar('--chart-tick'); }
 function gc() { return cssVar('--chart-grid'); }
 
-// Update a text field unless the user is editing it (don't clobber typing)
+// Update a text field unless the user is editing it (don't clobber typing).
+// _forceField overrides that for the one box syncSlider just handled, so junk
+// input gets replaced by the real value instead of sitting there looking valid.
+let _forceField = null;
 function setVal(id, v) {
   const el = document.getElementById(id);
-  if (document.activeElement !== el) el.value = v;
+  if (document.activeElement !== el || _forceField === id) el.value = v;
 }
 
-// Text box → slider: accepts "$5M", "125", "4.3%", "60/40"; clamps to slider range
-function syncSlider(el, sliderId, min, max) {
-  const v = parseFloat(el.value.replace(/[$MmKk%]/g,'').split('/')[0]);
+const UNIT = { K:1e3, M:1e6, B:1e9 };
+// Text box → slider. Accepts "$5M", "1.5B", "125K", "125", "4.3%", "60/40".
+// `scale` is what 1.0 on the slider means in dollars (1e6 for take-home, 1e3
+// for spending); percent sliders omit it. A typed K/M/B is an absolute amount
+// and gets converted into the slider's own unit — previously the suffix was
+// just stripped, so "5B" set the take-home to $5M and "1.5M" of spending set
+// it to $50K. A bare number is already in the slider's unit, matching what the
+// box displays. Anything unparseable leaves the slider alone.
+function syncSlider(el, sliderId, min, max, scale) {
+  const raw = String(el.value).trim().replace(/[$,\s]/g,'').split('/')[0];
+  const m = raw.match(/^(\d*\.?\d+)([KkMmBb%]?)$/);
+  let v = m ? parseFloat(m[1]) : NaN;
+  if (!isNaN(v) && scale) {
+    const mult = UNIT[(m[2] || '').toUpperCase()];
+    if (mult) v = v * mult / scale;
+  }
   if (!isNaN(v)) {
     document.getElementById(sliderId).value = Math.min(max, Math.max(min, v));
   }
+  _forceField = el.id;   // let render() rewrite this box even if it still has focus
   render();
+  _forceField = null;
 }
 
 function render() {
@@ -408,7 +439,7 @@ function render() {
     <div class="met"><div class="ml">Total portfolio</div><div class="mv">${fm(total)}</div><div class="ms">After lottery taxes</div></div>
     <div class="met"><div class="ml">Gross income / yr</div><div class="mv">${fm(totG)}</div><div class="ms">Before taxes</div></div>
     <div class="met"><div class="ml">After-tax income / yr</div><div class="mv" style="color:var(--green)">${fm(totA)}</div><div class="ms">Spendable cash</div></div>
-    <button type="button" class="met met-click" onclick="zeroSurplus()" title="Set annual spending to your after-tax income (surplus → 0)" aria-label="Surplus vs spending: ${surplusText}. ${surplusMs}. Activate to set annual spending equal to your after-tax income."><div class="ml">Surplus vs spending</div><div class="mv" style="color:${surplusColor}">${surplusText}</div><div class="ms">${surplusMs}</div></button>
+    <button type="button" class="met met-click" onclick="zeroSurplus()" title="Set annual spending to your after-tax income (surplus → 0)" aria-label="Surplus vs spending: ${surplusText}. ${surplusMs}. Activate to set annual spending equal to your after-tax income."><span class="ml">Surplus vs spending</span><span class="mv" style="color:${surplusColor}">${surplusText}</span><span class="ms">${surplusMs}</span></button>
   `;
 
   const rows = [
@@ -472,43 +503,65 @@ function render() {
     `<span class="leg"><span class="leg-sq" style="background:${r.color}"></span>${r.name}</span>`
   ).join('') + `<span class="leg"><span class="leg-sq" style="background:rgba(226,75,74,0.45);border:1px dashed #E24B4A"></span>Tax drag</span>`;
 
-  if (c1) { c1.destroy(); c1 = null; }
-  c1 = new Chart(document.getElementById('c1'), {
-    type: 'bar',
-    data: {
-      labels: rows.map(r => r.name),
-      datasets: [
-        { label:'After-tax income', data:rows.map(r => Math.round(r.after)),       backgroundColor:rows.map(r => r.color), borderWidth:0 },
-        { label:'Tax drag',         data:rows.map(r => Math.round(r.gross-r.after)), backgroundColor:'rgba(226,75,74,0.38)', borderWidth:0 }
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${fm(c.parsed.y)}` }}},
-      scales: {
-        x: { stacked:true, grid:{display:false}, ticks:{ font:{size:11}, color:tc() }},
-        y: { stacked:true, grid:{color:gc()},    ticks:{ font:{size:10}, color:tc(), callback: v => fm(v) }}
+  // Rebuild only when the charts don't exist yet or the theme changed;
+  // otherwise just push the new numbers in.
+  const themeNow = document.documentElement.getAttribute('data-theme');
+  const rebuild  = !c1 || _chartsTheme !== themeNow;
+  if (rebuild) {
+    [c1, c2, c3].forEach(c => c && c.destroy());
+    c1 = c2 = c3 = null;
+    _chartsTheme = themeNow;
+  }
+
+  const afterData = rows.map(r => Math.round(r.after));
+  const dragData  = rows.map(r => Math.round(r.gross-r.after));
+  if (rebuild) {
+    c1 = new Chart(document.getElementById('c1'), {
+      type: 'bar',
+      data: {
+        labels: rows.map(r => r.name),
+        datasets: [
+          { label:'After-tax income', data:afterData, backgroundColor:rows.map(r => r.color), borderWidth:0 },
+          { label:'Tax drag',         data:dragData,  backgroundColor:'rgba(226,75,74,0.38)', borderWidth:0 }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false, animation:false,
+        plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${fm(c.parsed.y)}` }}},
+        scales: {
+          x: { stacked:true, grid:{display:false}, ticks:{ font:{size:11}, color:tc() }},
+          y: { stacked:true, grid:{color:gc()},    ticks:{ font:{size:10}, color:tc(), callback: v => fm(v) }}
+        }
       }
-    }
-  });
+    });
+  } else {
+    c1.data.datasets[0].data = afterData;
+    c1.data.datasets[1].data = dragData;
+    c1.update('none');
+  }
 
   // ── Chart 2: donut ──
   document.getElementById('leg2').innerHTML = rows.map(r =>
     `<span class="leg"><span class="leg-sq" style="background:${r.color}"></span>${r.name} ${pct(r.alloc/total)}</span>`
   ).join('');
 
-  if (c2) { c2.destroy(); c2 = null; }
-  c2 = new Chart(document.getElementById('c2'), {
-    type: 'doughnut',
-    data: {
-      labels: rows.map(r => r.name),
-      datasets: [{ data:rows.map(r => Math.round(r.alloc)), backgroundColor:rows.map(r => r.color), borderWidth:2, borderColor: cssVar('--bg-card') }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false, cutout:'64%',
-      plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.label}: ${fm(c.raw)}` }}}
-    }
-  });
+  const allocData = rows.map(r => Math.round(r.alloc));
+  if (rebuild) {
+    c2 = new Chart(document.getElementById('c2'), {
+      type: 'doughnut',
+      data: {
+        labels: rows.map(r => r.name),
+        datasets: [{ data:allocData, backgroundColor:rows.map(r => r.color), borderWidth:2, borderColor: cssVar('--bg-card') }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false, cutout:'64%', animation:false,
+        plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.label}: ${fm(c.raw)}` }}}
+      }
+    });
+  } else {
+    c2.data.datasets[0].data = allocData;
+    c2.update('none');
+  }
 
   // ── Chart 3: 10-year line ──
   const yrs = Array.from({length:11}, (_,i) => i);
@@ -520,25 +573,30 @@ function render() {
     <span class="leg"><span class="leg-sq" style="background:${COLORS.vti}"></span>VTI + VXUS</span>
     <span class="leg"><span class="leg-sq" style="background:${COLORS.tbill}"></span>Total portfolio</span>`;
 
-  if (c3) { c3.destroy(); c3 = null; }
-  c3 = new Chart(document.getElementById('c3'), {
-    type: 'line',
-    data: {
-      labels: yrs.map(y => 'Yr '+y),
-      datasets: [
-        { label:'VTI + VXUS',     data:growthVals, borderColor:COLORS.vti,   backgroundColor:COLORS.vti+'18',   fill:true, tension:0.3, pointRadius:3, borderWidth:2 },
-        { label:'Total portfolio', data:totalVals,  borderColor:COLORS.tbill, backgroundColor:COLORS.tbill+'12', fill:true, tension:0.3, pointRadius:3, borderWidth:2, borderDash:[4,3] }
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${fm(c.raw)}` }}},
-      scales: {
-        x: { grid:{display:false}, ticks:{ font:{size:11}, color:tc() }},
-        y: { grid:{color:gc()},    ticks:{ font:{size:10}, color:tc(), callback: v => fmShort(v) }}
+  if (rebuild) {
+    c3 = new Chart(document.getElementById('c3'), {
+      type: 'line',
+      data: {
+        labels: yrs.map(y => 'Yr '+y),
+        datasets: [
+          { label:'VTI + VXUS',     data:growthVals, borderColor:COLORS.vti,   backgroundColor:COLORS.vti+'18',   fill:true, tension:0.3, pointRadius:3, borderWidth:2 },
+          { label:'Total portfolio', data:totalVals,  borderColor:COLORS.tbill, backgroundColor:COLORS.tbill+'12', fill:true, tension:0.3, pointRadius:3, borderWidth:2, borderDash:[4,3] }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false, animation:false,
+        plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${fm(c.raw)}` }}},
+        scales: {
+          x: { grid:{display:false}, ticks:{ font:{size:11}, color:tc() }},
+          y: { grid:{color:gc()},    ticks:{ font:{size:10}, color:tc(), callback: v => fmShort(v) }}
+        }
       }
-    }
-  });
+    });
+  } else {
+    c3.data.datasets[0].data = growthVals;
+    c3.data.datasets[1].data = totalVals;
+    c3.update('none');
+  }
 
   saveSliders();
   document.getElementById('note').textContent = 'VTI and VXUS dividends paid to cash (no reinvestment). Qualified dividends: 20% LTCG + 3.8% NIIT + 10.9% NY = 34.7%. T-bill interest NY-exempt (saves 10.9%). Muni interest fully tax-free at both levels. SPAXX taxed as ordinary income at 47.9% combined. Growth projection assumes a fixed annual return with no withdrawals from the equity bucket.';
@@ -560,11 +618,15 @@ function loadSliders() {
         if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
       });
     }
-    // Always seed sl-tot from calculator net take-home if available
+    // Seed sl-tot from the calculator, but only when it has produced a NEW
+    // take-home since we last adopted one. Seeding unconditionally meant the
+    // take-home slider could never be moved and made to stick — drag it, come
+    // back, and it had snapped straight back to the calculator's number.
     const net = parseInt(localStorage.getItem('lottery-net-takehome'));
-    if (net > 0) {
-      const clamped = Math.min(500, Math.max(1, net / 1e6));
-      document.getElementById('sl-tot').value = clamped;
+    const lastSeeded = parseInt(localStorage.getItem('lottery-portfolio-seeded-from'));
+    if (net > 0 && net !== lastSeeded) {
+      document.getElementById('sl-tot').value = Math.min(500, Math.max(1, net / 1e6));
+      localStorage.setItem('lottery-portfolio-seeded-from', String(net));
     }
   } catch(e) {}
 }
@@ -637,7 +699,12 @@ function toggleSection(key) {
   const collapsed = !document.getElementById('body-'+key).classList.contains('collapsed');
   setSectionState(key, collapsed);
   saveSectionStates();
-  if (!collapsed) render(); // redraw charts that were hidden while collapsed
+  if (!collapsed) {
+    render();
+    // A chart built while its section was hidden has zero size, so make
+    // Chart.js measure the container again now that it's visible.
+    [c1, c2, c3].forEach(c => c && c.resize());
+  }
 }
 
 // Populate synchronously (this script is at the end of <body>, so all elements
