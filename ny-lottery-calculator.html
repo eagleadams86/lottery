@@ -2,6 +2,14 @@
 <html lang="en" data-theme="midnight">
 <head>
 <meta charset="UTF-8">
+<!-- Content Security Policy. GitHub Pages can't set response headers, so this
+     meta tag is the only place to declare one. 'unsafe-inline' is unavoidable
+     here: the app is inline script and style, by design — there's no build step
+     to generate hashes. The real value is connect-src, which pins network
+     access to the three feeds this page actually uses, plus default-src 'none'
+     and base-uri 'none'.
+     Note: frame-ancestors is ignored in a meta tag; it needs a real header. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://lottery-proxy.charlie-adams-176.workers.dev https://data.ny.gov https://api.github.com; base-uri 'none'; form-action 'none'">
 <link rel="icon" href="favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NY Lottery After-Tax Calculator</title>
@@ -117,6 +125,7 @@
   }
   .input-card input[type=text]::placeholder { color: var(--text-hint); font-weight: 400; }
   .input-hint { font-size: 11px; color: var(--text-hint); margin-top: 5px; min-height: 16px; }
+  .input-hint.err { color: var(--err); }
   .unit-toggle { display: flex; border: 1px solid var(--input-border); border-radius: 6px; overflow: hidden; flex-shrink: 0; }
   .unit-btn {
     padding: 3px 9px; font-size: 12px; font-weight: 600; cursor: pointer;
@@ -269,10 +278,10 @@
           <div class="input-wrap">
             <span class="input-prefix">$</span>
             <input type="text" id="jackpot-input" inputmode="decimal" placeholder="238" aria-label="Advertised jackpot"
-              oninput="onJ()" onkeyup="onJ()" onchange="onJ()" />
+              aria-describedby="j-hint" oninput="onJ()" onkeyup="onJ()" onchange="onJ()" />
             <div class="unit-toggle">
-              <button class="unit-btn active" id="j-M" onclick="setUnit('j','M')">M</button>
-              <button class="unit-btn"        id="j-B" onclick="setUnit('j','B')">B</button>
+              <button class="unit-btn active" id="j-M" onclick="setUnit('j','M')" aria-pressed="true" aria-label="Jackpot in millions">M</button>
+              <button class="unit-btn"        id="j-B" onclick="setUnit('j','B')" aria-pressed="false" aria-label="Jackpot in billions">B</button>
             </div>
           </div>
           <div class="input-hint" id="j-hint">Millions &mdash; tap B for billions</div>
@@ -282,13 +291,13 @@
           <div class="input-wrap">
             <span class="input-prefix">$</span>
             <input type="text" id="lump-input" inputmode="decimal" placeholder="106" aria-label="Cash value / lump sum"
-              oninput="onL()" onkeyup="onL()" onchange="onL()" />
+              aria-describedby="l-hint" oninput="onL()" onkeyup="onL()" onchange="onL()" />
             <div class="unit-toggle">
-              <button class="unit-btn active" id="l-M" onclick="setUnit('l','M')">M</button>
-              <button class="unit-btn"        id="l-B" onclick="setUnit('l','B')">B</button>
+              <button class="unit-btn active" id="l-M" onclick="setUnit('l','M')" aria-pressed="true" aria-label="Cash value in millions">M</button>
+              <button class="unit-btn"        id="l-B" onclick="setUnit('l','B')" aria-pressed="false" aria-label="Cash value in billions">B</button>
             </div>
           </div>
-          <div class="input-hint">Leave blank to estimate at 60%</div>
+          <div class="input-hint" id="l-hint">Leave blank to estimate at 60%</div>
         </div>
       </div>
     </div>
@@ -296,7 +305,7 @@
 
   <div class="ctrl-row">
     <span class="ctrl-lbl">Splitting among</span>
-    <input type="number" id="npeople" min="1" max="1000" value="1" aria-label="Number of winners" oninput="calc();localStorage.setItem('lottery-npeople',this.value)" onchange="calc();localStorage.setItem('lottery-npeople',this.value)" />
+    <input type="number" id="npeople" min="1" max="1000" step="1" value="1" aria-label="Number of winners" oninput="onWinnersInput()" onchange="onWinnersChange()" />
     <span class="ctrl-lbl">winner(s)</span>
   </div>
 
@@ -450,7 +459,9 @@ setTheme(localStorage.getItem('lottery-theme') || 'midnight');
 // Restore the rest of the persisted UI state: winner count, selected game,
 // and which collapsible sections were left open last visit.
 (function(){
-  var n=localStorage.getItem('lottery-npeople'); if(n) document.getElementById('npeople').value=n;
+  // Clamp on restore too — older versions could have saved junk here.
+  var n=parseInt(localStorage.getItem('lottery-npeople'),10);
+  if(!isNaN(n)) document.getElementById('npeople').value=Math.min(1000,Math.max(1,n));
   var g=localStorage.getItem('lottery-game'); if(g) activeGame=g;
   if(localStorage.getItem('lottery-details')==='1'){
     document.getElementById('details-body').classList.add('open');
@@ -462,9 +473,20 @@ setTheme(localStorage.getItem('lottery-theme') || 'midnight');
     document.getElementById('wn-chevron').classList.add('open');
     setExpanded('wn-toggle', true);
   }
+  refreshDrawLabels();
+})();
+
+// "Tonight"/"Tomorrow" were worked out once at load, so a page left open
+// overnight kept showing yesterday's answer. Recheck when the tab is brought
+// back to the front, and periodically while it's open.
+function refreshDrawLabels(){
   document.getElementById('pb-draw').textContent = nextDraw([1,3,6]);
   document.getElementById('mm-draw').textContent = nextDraw([2,5]);
-})();
+}
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden) refreshDrawLabels();
+});
+setInterval(refreshDrawLabels, 10*60*1000);
 
 // ── Manual / details toggles ──────────────────────────────────────────────────
 // Every disclosure keeps its button's aria-expanded in step with the panel, so
@@ -672,31 +694,43 @@ function selectGame(g){
 }
 
 // ── Unit toggles ──────────────────────────────────────────────────────────────
+// The M/B pair is a toggle, so aria-pressed reports which unit is active \u2014
+// otherwise the choice is signalled only by background colour. The j-hint text
+// is owned by calc(), which also has to be able to replace it with an error.
 function setUnit(f,u){
-  if(f==='j'){
-    jUnit=u;
-    document.getElementById('j-M').className='unit-btn'+(u==='M'?' active':'');
-    document.getElementById('j-B').className='unit-btn'+(u==='B'?' active':'');
-    document.getElementById('j-hint').textContent=u==='M'?'Millions \u2014 tap B for billions':'Billions \u2014 tap M for millions';
-  } else {
-    lUnit=u;
-    document.getElementById('l-M').className='unit-btn'+(u==='M'?' active':'');
-    document.getElementById('l-B').className='unit-btn'+(u==='B'?' active':'');
-  }
+  if(f==='j') jUnit=u; else lUnit=u;
+  ['M','B'].forEach(function(k){
+    var b=document.getElementById(f+'-'+k);
+    b.className='unit-btn'+(u===k?' active':'');
+    b.setAttribute('aria-pressed', String(u===k));
+  });
   calc();
 }
 
 // ── Parse / format ────────────────────────────────────────────────────────────
 // Parse a manual input like "238", "1.5B", "106m". A typed M/B suffix overrides
 // the unit toggle. Returns dollars, or null if empty/invalid.
+// The number part is \d*\.?\d+ rather than [\d.]+ so malformed input like
+// "1.2.3" is rejected outright instead of quietly parsing as 1.2.
 function parseField(id,unit){
   var s=document.getElementById(id).value.trim().replace(/[$,\s]/g,'');
   if(!s) return null;
-  var m=s.match(/^([\d.]+)\s*([MmBb]?)$/);
+  var m=s.match(/^(\d*\.?\d+)\s*([MmBb]?)$/);
   if(!m) return null;
   var n=parseFloat(m[1]); if(isNaN(n)) return null;
   var sf=m[2]?m[2].toUpperCase():unit;
   return sf==='B'?n*1e9:n*1e6;
+}
+// Tell the user when an amount can't be read, instead of silently ignoring it
+// and showing a figure derived from the other field (or nothing at all).
+function showFieldError(inputId, hintId, badMsg, okMsg){
+  var el=document.getElementById(inputId), hint=document.getElementById(hintId);
+  var raw=el.value.trim();
+  var bad = raw !== '' && parseField(inputId, 'M') === null;
+  hint.textContent = bad ? badMsg : okMsg;
+  hint.classList.toggle('err', bad);
+  el.setAttribute('aria-invalid', bad ? 'true' : 'false');
+  return bad;
 }
 function fmt(n){ if(n===null||isNaN(n)) return '\u2014'; return '$'+Math.round(n).toLocaleString('en-US'); }
 // Compact currency, trailing zeros trimmed ($1.5B, $238M)
@@ -717,12 +751,41 @@ function pct(r){ return (r*100).toFixed(1)+'%'; }
 function onJ(){ dbc(calc); }
 function onL(){ dbc(calc); }
 
+// ── Winner count ──────────────────────────────────────────────────────────────
+// The HTML min/max only constrain the spinner arrows — a typed "5000" or "abc"
+// sailed straight through, and the raw string was saved to localStorage and
+// restored into the box on the next visit while the maths quietly used 1.
+var MAX_WINNERS=1000;
+function winnersValue(){
+  var n=parseInt(document.getElementById('npeople').value,10);
+  return isNaN(n) ? 1 : Math.min(MAX_WINNERS, Math.max(1, n));
+}
+function onWinnersInput(){
+  // Persist only a usable value; don't normalise the box mid-keystroke.
+  var n=parseInt(document.getElementById('npeople').value,10);
+  if(!isNaN(n)) localStorage.setItem('lottery-npeople', String(Math.min(MAX_WINNERS, Math.max(1,n))));
+  calc();
+}
+function onWinnersChange(){
+  // Once they're done typing, snap the box to what's actually being used.
+  var el=document.getElementById('npeople');
+  el.value=winnersValue();
+  localStorage.setItem('lottery-npeople', el.value);
+  calc();
+}
+
 // ── Calc ──────────────────────────────────────────────────────────────────────
 function calc(){
+  // Flag unreadable amounts in the hint line under each box.
+  showFieldError('jackpot-input','j-hint','Not a number — try 238 or 1.5B',
+    jUnit==='M'?'Millions — tap B for billions':'Billions — tap M for millions');
+  showFieldError('lump-input','l-hint','Not a number — try 106 or 1.2B',
+    'Leave blank to estimate at 60%');
+
   var lump=parseField('lump-input',lUnit);
   var jack=parseField('jackpot-input',jUnit);
   if(!lump&&jack) lump=jack*0.60; // no cash value entered — estimate lump at 60% of advertised
-  var np=Math.max(1,parseInt(document.getElementById('npeople').value)||1);
+  var np=winnersValue();
 
   if(!lump){
     document.getElementById('mgrid').innerHTML='<div class="empty">Tap a game above to see the breakdown.</div>';
