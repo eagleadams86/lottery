@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <link rel="icon" href="favicon.ico">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<!-- No maximum-scale: pinch-zoom must stay available (WCAG 1.4.4) -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lottery Portfolio</title>
 <link rel="stylesheet" href="theme.css">
 <!-- Vendored Chart.js (minified UMD build) on the single line below — third-party library, do not hand-edit. -->
@@ -20,8 +21,17 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
 h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
 .hdr-sub { font-size:12px; color:var(--text3); margin-top:3px; }
 .rate-src { font-size:10px; font-weight:400; color:var(--text3); text-transform:none; letter-spacing:0; margin-left:6px; }
-.sec-lbl { font-size:11px; font-weight:500; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:10px; cursor:pointer; user-select:none; display:flex; align-items:center; gap:8px; width:fit-content; transition:color 0.15s; }
+/* Each section title is an <h2> wrapping a real <button>: the heading gives
+   screen readers a navigable outline, the button makes it keyboard-operable.
+   Both are stripped back to look exactly like the plain label they replaced. */
+.sec-hd { margin:0; font-size:inherit; font-weight:inherit; }
+.sec-lbl { font-size:11px; font-weight:500; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:10px; cursor:pointer; user-select:none; display:flex; align-items:center; gap:8px; width:fit-content; transition:color 0.15s; background:none; border:none; padding:0; font-family:inherit; text-align:left; }
 .sec-lbl:hover { color:var(--text2); }
+/* Visible keyboard focus for every control on the page (mouse clicks unaffected) */
+.sec-lbl:focus-visible, .met-click:focus-visible, .theme-btn:focus-visible,
+input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid var(--focus-border); outline-offset:2px; border-radius:4px; }
+.alloc-warn { font-size:12px; line-height:1.55; color:var(--amber); background:var(--amber-bg); border:0.5px solid var(--amber); border-radius:var(--radius); padding:10px 13px; margin-top:10px; }
+.alloc-warn[hidden] { display:none; }
 .sec-chevron { font-size:9px; color:var(--text3); transition:transform 0.2s; display:inline-block; }
 .sec-chevron.open { transform:rotate(90deg); }
 .sec-body.collapsed { display:none; }
@@ -36,7 +46,8 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
 .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
 @media (max-width:580px) { .metrics { grid-template-columns:1fr 1fr; } }
 .met { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
-.met-click { cursor:pointer; transition:border-color 0.15s, background 0.15s; }
+/* A <button> so it's keyboard-reachable, reset to sit flush with the other cards */
+.met-click { cursor:pointer; transition:border-color 0.15s, background 0.15s; width:100%; text-align:left; font-family:inherit; color:inherit; display:block; }
 .met-click:hover { border-color:var(--border2); background:var(--surface2); }
 .met .ml { font-size:11px; color:var(--text3); margin-bottom:3px; }
 .met .mv { font-size:19px; font-weight:600; letter-spacing:-0.4px; }
@@ -102,7 +113,7 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
   </div>
 
   <div class="section">
-    <p class="sec-lbl" onclick="toggleSection('assumptions')"><span class="sec-chevron open" id="chev-assumptions">&#9654;</span>Assumptions</p>
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('assumptions')" aria-expanded="true" aria-controls="body-assumptions"><span class="sec-chevron open" id="chev-assumptions" aria-hidden="true">&#9654;</span>Assumptions</button></h2>
     <div class="sec-body" id="body-assumptions">
     <div class="sliders">
       <div class="sl-row"><label for="sl-tot">Take-home (lump sum)</label><input type="range" min="1" max="500" step="any" value="5" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" aria-label="Take-home (lump sum) value" onchange="syncSlider(this,'sl-tot',1,500)"></div>
@@ -118,14 +129,14 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
   </div>
 
   <div class="section">
-    <p class="sec-lbl" onclick="toggleSection('summary')"><span class="sec-chevron open" id="chev-summary">&#9654;</span>Summary</p>
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('summary')" aria-expanded="true" aria-controls="body-summary"><span class="sec-chevron open" id="chev-summary" aria-hidden="true">&#9654;</span>Summary</button></h2>
     <div class="sec-body" id="body-summary">
     <div class="metrics" id="metrics"></div>
     </div>
   </div>
 
   <div class="section">
-    <p class="sec-lbl" onclick="toggleSection('breakdown')"><span class="sec-chevron open" id="chev-breakdown">&#9654;</span>Portfolio breakdown</p>
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('breakdown')" aria-expanded="true" aria-controls="body-breakdown"><span class="sec-chevron open" id="chev-breakdown" aria-hidden="true">&#9654;</span>Portfolio breakdown</button></h2>
     <div class="sec-body" id="body-breakdown">
     <div class="card">
       <div class="tbl-head">
@@ -134,18 +145,19 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
       </div>
       <div id="tbl-body"></div>
     </div>
+    <p class="alloc-warn" id="alloc-warn" role="status" hidden></p>
     </div>
   </div>
 
   <div class="section">
-    <p class="sec-lbl" onclick="toggleSection('waterfall')"><span class="sec-chevron open" id="chev-waterfall">&#9654;</span>Income waterfall</p>
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('waterfall')" aria-expanded="true" aria-controls="body-waterfall"><span class="sec-chevron open" id="chev-waterfall" aria-hidden="true">&#9654;</span>Income waterfall</button></h2>
     <div class="sec-body" id="body-waterfall">
     <div class="wf" id="waterfall"></div>
     </div>
   </div>
 
   <div class="section">
-    <p class="sec-lbl" onclick="toggleSection('charts')"><span class="sec-chevron open" id="chev-charts">&#9654;</span>Charts</p>
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('charts')" aria-expanded="true" aria-controls="body-charts"><span class="sec-chevron open" id="chev-charts" aria-hidden="true">&#9654;</span>Charts</button></h2>
     <div class="sec-body" id="body-charts">
     <div class="chart-grid">
       <div class="chart-card">
@@ -163,7 +175,7 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
   </div>
 
   <div class="section">
-    <p class="sec-lbl" onclick="toggleSection('growth')"><span class="sec-chevron open" id="chev-growth">&#9654;</span>10-year growth projection (equity bucket)</p>
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('growth')" aria-expanded="true" aria-controls="body-growth"><span class="sec-chevron open" id="chev-growth" aria-hidden="true">&#9654;</span>10-year growth projection (equity bucket)</button></h2>
     <div class="sec-body" id="body-growth">
     <div class="chart-card">
       <div class="legend" id="leg3"></div>
@@ -208,8 +220,11 @@ h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
           var li=document.createElement('li');
           var d=document.createElement('span');d.className='cl-date';
           d.textContent=new Date(c.commit.author.date).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
-          var a=document.createElement('a');
-          a.href=c.html_url;a.target='_blank';a.rel='noopener';
+          // Only accept a real github.com https link — never trust a URL from
+          // the API blindly, or a javascript: href would run on click.
+          var url=String(c.html_url||'');
+          var a=document.createElement(/^https:\/\/github\.com\//.test(url)?'a':'span');
+          if(a.tagName==='A'){a.href=url;a.target='_blank';a.rel='noopener noreferrer';}
           a.textContent=c.commit.message.split('\n')[0];
           li.appendChild(d);li.appendChild(a);list.appendChild(li);
         });
@@ -269,10 +284,20 @@ function readAssumptions() {
 
 // Pure income model: allocation buckets + gross/after-tax income per holding.
 // SPAXX = 1yr of spending, T-bills = 3yr, Munis = 4yr; the rest is VTI/VXUS.
+//
+// The ladder is sized off spending (1+3+4 = 8 years of it), but it obviously
+// can't cost more than the portfolio actually holds. Once spending climbs past
+// total/8 the full ladder no longer fits, so scale all three cash/bond buckets
+// down by the same factor. Without this the buckets kept their nominal sizes
+// and the model invented principal that isn't there — a $5M portfolio with $1M
+// spending reported $8M of holdings, and every income figure downstream (and
+// the donut) was computed on money the winner doesn't have.
 function computeIncome(total, spend, tbY, muY, vtiY, vxY, split) {
-  const spaxx  = spend;
-  const tbill  = spend * 3;
-  const muni   = spend * 4;
+  const ladder = spend * 8;
+  const fit    = (ladder > total && ladder > 0) ? total / ladder : 1;
+  const spaxx  = spend * 1 * fit;
+  const tbill  = spend * 3 * fit;
+  const muni   = spend * 4 * fit;
   const growth = Math.max(0, total - spaxx - tbill - muni);
   const vti    = growth * split;
   const vxus   = growth * (1-split);
@@ -283,6 +308,7 @@ function computeIncome(total, spend, tbY, muY, vtiY, vxY, split) {
   const vxusG  = vxus   * vxY,    vxusA  = vxusG  * (1-LTCG-NIIT-NY);
   return { spaxx, tbill, muni, vti, vxus,
            spaxxG, spaxxA, tbG, tbA, muG, muA, vtiG, vtiA, vxusG, vxusA,
+           underfunded: fit < 1, // ladder had to be shrunk to fit the principal
            totG: spaxxG+tbG+muG+vtiG+vxusG,
            totA: spaxxA+tbA+muA+vtiA+vxusA };
 }
@@ -357,7 +383,17 @@ function render() {
 
   const { spaxx, tbill, muni, vti, vxus,
           spaxxG, spaxxA, tbG, tbA, muG, muA, vtiG, vtiA, vxusG, vxusA,
-          totG, totA } = computeIncome(total, spend, tbY, muY, vtiY, vxY, split);
+          underfunded, totG, totA } = computeIncome(total, spend, tbY, muY, vtiY, vxY, split);
+
+  // Say so plainly when the ladder had to shrink, rather than quietly showing
+  // smaller buckets than the 1yr/3yr/4yr labels promise.
+  const warn = document.getElementById('alloc-warn');
+  warn.hidden = !underfunded;
+  warn.textContent = underfunded
+    ? 'Spending is high relative to this portfolio — a full 8 years of cash and bonds '
+      + 'would cost more than you have. The SPAXX / T-bills / Munis ladder is scaled down '
+      + 'to fit, and there is nothing left over for VTI or VXUS.'
+    : '';
   const surplus = totA - spend;
   const effRate = totG > 0 ? (totG-totA)/totG*100 : 0;
 
@@ -372,7 +408,7 @@ function render() {
     <div class="met"><div class="ml">Total portfolio</div><div class="mv">${fm(total)}</div><div class="ms">After lottery taxes</div></div>
     <div class="met"><div class="ml">Gross income / yr</div><div class="mv">${fm(totG)}</div><div class="ms">Before taxes</div></div>
     <div class="met"><div class="ml">After-tax income / yr</div><div class="mv" style="color:var(--green)">${fm(totA)}</div><div class="ms">Spendable cash</div></div>
-    <div class="met met-click" onclick="zeroSurplus()" title="Click to set annual spending to your after-tax income (surplus → 0)"><div class="ml">Surplus vs spending</div><div class="mv" style="color:${surplusColor}">${surplusText}</div><div class="ms">${surplusMs}</div></div>
+    <button type="button" class="met met-click" onclick="zeroSurplus()" title="Set annual spending to your after-tax income (surplus → 0)" aria-label="Surplus vs spending: ${surplusText}. ${surplusMs}. Activate to set annual spending equal to your after-tax income."><div class="ml">Surplus vs spending</div><div class="mv" style="color:${surplusColor}">${surplusText}</div><div class="ms">${surplusMs}</div></button>
   `;
 
   const rows = [
@@ -582,20 +618,24 @@ function saveSectionStates() {
   SECTION_KEYS.forEach(k => st[k] = document.getElementById('body-'+k).classList.contains('collapsed'));
   localStorage.setItem('lottery-portfolio-sections', JSON.stringify(st));
 }
+// Keep the chevron and the button's aria-expanded in step with the section, so
+// screen readers announce open/closed rather than just "button".
+function setSectionState(key, collapsed) {
+  document.getElementById('body-'+key).classList.toggle('collapsed', collapsed);
+  document.getElementById('chev-'+key).classList.toggle('open', !collapsed);
+  document.getElementById('chev-'+key).closest('.sec-lbl')
+    .setAttribute('aria-expanded', String(!collapsed));
+}
 function loadSectionStates() {
   try {
     const st = JSON.parse(localStorage.getItem('lottery-portfolio-sections'));
     if (!st) return;
-    SECTION_KEYS.forEach(k => {
-      const collapsed = !!st[k];
-      document.getElementById('body-'+k).classList.toggle('collapsed', collapsed);
-      document.getElementById('chev-'+k).classList.toggle('open', !collapsed);
-    });
+    SECTION_KEYS.forEach(k => setSectionState(k, !!st[k]));
   } catch(e) {}
 }
 function toggleSection(key) {
-  const collapsed = document.getElementById('body-'+key).classList.toggle('collapsed');
-  document.getElementById('chev-'+key).classList.toggle('open', !collapsed);
+  const collapsed = !document.getElementById('body-'+key).classList.contains('collapsed');
+  setSectionState(key, collapsed);
   saveSectionStates();
   if (!collapsed) render(); // redraw charts that were hidden while collapsed
 }

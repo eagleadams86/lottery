@@ -13,7 +13,7 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 |------|-------------|
 | `ny-lottery-calculator.html` | After-tax lottery take-home calculator with live jackpots and winning numbers |
 | `lottery-portfolio.html` | What-if model of investing the lump sum as a tax-aware portfolio |
-| `theme.css` | Shared color tokens + 7 theme palettes, linked by both pages (single source of truth for the theme) |
+| `theme.css` | Shared color tokens + 7 theme palettes, linked by both pages (single source of truth for the theme). Every text token is verified to meet WCAG AA contrast against both backgrounds in all 7 themes |
 | `favicon.ico` | Shared favicon |
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
 
@@ -31,7 +31,7 @@ Native mobile ports have shipped and their build plans now live in their own (pr
 Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to model what a lottery lump-sum would actually look like as a managed investment portfolio.
 
 - **Interactive sliders with editable values** — adjust take-home amount, annual spending, T-bill yield, muni yield, VTI/VXUS dividend yields, equity growth rate, and VTI/VXUS split; click any displayed value to type a number directly
-- **Spending-driven allocation model** — the cash/bond buckets scale with annual spending (SPAXX = 1 year of spending, T-bills = 3 years, NY Munis = 4 years) and everything left over goes into equities at the chosen VTI/VXUS split
+- **Spending-driven allocation model** — the cash/bond buckets scale with annual spending (SPAXX = 1 year of spending, T-bills = 3 years, NY Munis = 4 years) and everything left over goes into equities at the chosen VTI/VXUS split. When spending is high relative to the portfolio (above 1/8 of it) the full 8-year ladder no longer fits, so all three buckets are scaled down proportionally and a note explains why — allocations always add up to exactly the portfolio total, never more
 - **Live T-bill yield** — the T-bill yield slider auto-fills from the US Treasury's daily par yield curve (1-year maturity), fetched on page load with an "as of" date shown next to the label; cached in `localStorage` for 6 hours so repeat visits don't re-query the Treasury feed; falls back to the default if the feed is unreachable, and can still be dragged to override
 - **Holdings breakdown table** — shows each holding (SPAXX, T-bills, Munis, VTI, VXUS), its allocation, percentage of portfolio, gross income, tax treatment, and after-tax income
 - **Summary metrics** — key portfolio-level numbers computed live from slider inputs; click the **Surplus vs spending** tile to raise annual spending to your after-tax income, zeroing the surplus (iterates to a fixed point since the cash/bond buckets scale with spending)
@@ -39,7 +39,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Charts** — stacked bar (income by holding with tax drag overlay), donut (portfolio allocation), and line chart (10-year equity growth projection for VTI + VXUS vs. total portfolio)
 - **Tax-aware math** — applies 37% federal, 10.9% NY State, 20% LTCG, and 3.8% NIIT rates depending on holding type
 - **Themes** — dropdown in the upper right with 7 themes, listed alphabetically (Dark, Forest, Light, Midnight, Sepia, Solarized, Synthwave); defaults to Midnight, preference saved in `localStorage`. Charts adapt their axis/grid colors per theme
-- **Collapsible sections** — every section (Assumptions, Summary, Portfolio breakdown, Income waterfall, Charts, 10-year growth projection) can be collapsed by clicking its header; open/closed state is remembered across visits via `localStorage`
+- **Collapsible sections** — every section (Assumptions, Summary, Portfolio breakdown, Income waterfall, Charts, 10-year growth projection) can be collapsed from its header, by mouse or keyboard; open/closed state is remembered across visits via `localStorage`
 - **Remembers your settings** — slider values restored on revisit via `localStorage`; take-home slider auto-populated from the calculator's last net take-home
 - **Mobile-friendly** — portfolio breakdown table reflows to a card layout on narrow screens
 - **Cross-page navigation** — button to jump directly to the calculator
@@ -62,6 +62,19 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Feeds the portfolio** — net take-home is saved to `localStorage` and used to pre-fill the portfolio's take-home slider
 - **Cross-page navigation** — button to jump directly to the portfolio
 - **iOS compatible** — tested for mobile Safari quirks
+
+---
+
+---
+
+## Accessibility
+
+Both pages are built to meet WCAG 2.1 AA:
+
+- **Contrast** — every text color clears 4.5:1 against both the page and card backgrounds, in all 7 themes. The four text greys are deliberately tiered (primary > secondary > muted > hint) so the visual hierarchy survives; `--text-hint` is the floor at ~4.6:1
+- **Keyboard operable** — every control, including the portfolio's collapsible section headers and the clickable *Surplus vs spending* tile, is a real `<button>` reachable by Tab and activated with Enter/Space. Focus is always visible
+- **Screen readers** — section headers are `<h2>`-wrapped buttons carrying `aria-expanded`, so the page has a navigable heading outline and announces open/closed state. The game selector uses `aria-pressed` (selection isn't signalled by color alone), async status messages and the recalculated take-home are `role="status"` live regions, and decorative chevrons/spinners are hidden from assistive tech
+- **Zoom** — neither page restricts pinch-zoom
 
 ---
 
