@@ -6,7 +6,14 @@
    The portfolio's shorter names (--surface, --text, --text2, …) are kept as
    aliases that point at the canonical tokens via var(), so they track the
    active theme automatically and need defining only once (in :root).
-   All values meet WCAG AA contrast in both light and dark.
+
+   CONTRAST: every text token clears WCAG AA (4.5:1) against BOTH --bg and
+   --bg-card, in all seven themes — checked with a script, not by eye. The
+   ratios quoted below are the worst case of those two backdrops. The four
+   greys are deliberately tiered (primary > secondary > muted > hint) so the
+   visual hierarchy survives; keep that ordering if you retune anything.
+   --text-hint is the floor at ~4.6:1 — don't lighten it further, it carries
+   the tax disclaimer, input hints, table headers and placeholders.
 ──────────────────────────────────────────────────────────────────────────── */
 :root {
   /* Canonical light palette */
@@ -15,10 +22,10 @@
   --bg-card-alt:   #f0f0ee;
   --border:        #e0e0dd;
   --border-strong: #c8c8c4;
-  --text-primary:  #111110;   /* 16.7:1 on #fff */
-  --text-secondary:#555551;   /* 5.9:1 on #fff  */
-  --text-muted:    #767672;   /* 4.6:1 on #fff  */
-  --text-hint:     #909090;   /* 3.0:1 — large/bold only */
+  --text-primary:  #111110;   /* 17.6:1 */
+  --text-secondary:#555551;   /* 7.0:1  */
+  --text-muted:    #656562;   /* 5.4:1  */
+  --text-hint:     #6f6f6f;   /* 4.6:1  */
   --green:         #1a6e3c;
   --red:           #b91c1c;
   --ok:            #166534;
@@ -31,7 +38,7 @@
   --spinner-head:  #767672;
   --input-border:  #c8c8c4;
   --focus-border:  #111110;
-  --chart-tick:    #767672;
+  --chart-tick:    #656562;   /* tracks --text-muted */
   --chart-grid:    #e0e0dd;
 
   /* Portfolio-specific (light) */
@@ -58,10 +65,10 @@
   --bg-card-alt:   #262a33;
   --border:        #2d313b;
   --border-strong: #3d424e;
-  --text-primary:  #eef0f5;   /* 14.8:1 on #1c1f27 */
-  --text-secondary:#adb1bd;   /* 6.8:1 on #1c1f27  */
-  --text-muted:    #888d9a;   /* 4.5:1 on #1c1f27  */
-  --text-hint:     #696e7c;   /* 3.1:1 — large/bold only */
+  --text-primary:  #eef0f5;   /* 14.5:1 */
+  --text-secondary:#adb1bd;   /* 7.7:1  */
+  --text-muted:    #8e929f;   /* 5.3:1  */
+  --text-hint:     #838896;   /* 4.7:1  */
   --green:         #4ade80;
   --red:           #f87171;
   --ok:            #4ade80;
@@ -80,7 +87,7 @@
   --red-bg:   #7f1d1d;
   --amber:    #fcd34d;
   --amber-bg: #78350f;
-  --chart-tick: #888d9a;
+  --chart-tick: #8e929f;
   --chart-grid: #2d313b;
 }
 
@@ -92,18 +99,18 @@
 /* Midnight — deep indigo / navy */
 [data-theme="midnight"] {
   --bg:#0a0e1a; --bg-card:#121829; --bg-card-alt:#1b2238; --border:#262f4a; --border-strong:#374163;
-  --text-primary:#e7eaf6; --text-secondary:#aab2d0; --text-muted:#7e87a8; --text-hint:#586089;
+  --text-primary:#e7eaf6; --text-secondary:#aab2d0; --text-muted:#838cab; --text-hint:#7980a9;
   --green:#4ade80; --red:#fb7185; --ok:#4ade80; --err:#fb7185;
   --btn-bg:#e7eaf6; --btn-text:#0a0e1a; --unit-active-bg:#e7eaf6; --unit-active-txt:#0a0e1a;
   --spinner-track:#262f4a; --spinner-head:#7e87a8; --input-border:#374163; --focus-border:#818cf8;
   --green-bg:#0c3b34; --red-bg:#4c1d2e; --amber:#fcd34d; --amber-bg:#3f2d12;
-  --chart-tick:#7e87a8; --chart-grid:#262f4a;
+  --chart-tick:#838cab; --chart-grid:#262f4a;
 }
 
 /* Forest — deep green */
 [data-theme="forest"] {
   --bg:#0a130d; --bg-card:#111e16; --bg-card-alt:#182a20; --border:#21372a; --border-strong:#2f4a38;
-  --text-primary:#e6f1e9; --text-secondary:#a9c4b4; --text-muted:#7c9883; --text-hint:#5c7563;
+  --text-primary:#e6f1e9; --text-secondary:#a9c4b4; --text-muted:#7c9883; --text-hint:#6e8b76;
   --green:#6ee7a0; --red:#f87171; --ok:#6ee7a0; --err:#f87171;
   --btn-bg:#e6f1e9; --btn-text:#0a130d; --unit-active-bg:#e6f1e9; --unit-active-txt:#0a130d;
   --spinner-track:#21372a; --spinner-head:#7c9883; --input-border:#2f4a38; --focus-border:#34d399;
@@ -114,32 +121,34 @@
 /* Synthwave — purple with neon pink/green */
 [data-theme="synthwave"] {
   --bg:#170e26; --bg-card:#221537; --bg-card-alt:#2e1d49; --border:#3d2a5f; --border-strong:#553a82;
-  --text-primary:#f3e9ff; --text-secondary:#cbb3ea; --text-muted:#9d82c4; --text-hint:#74609a;
+  --text-primary:#f3e9ff; --text-secondary:#cbb3ea; --text-muted:#9e84c5; --text-hint:#8e7dae;
   --green:#50fa7b; --red:#ff5d8f; --ok:#50fa7b; --err:#ff5d8f;
   --btn-bg:#ff5d8f; --btn-text:#170e26; --unit-active-bg:#ff5d8f; --unit-active-txt:#170e26;
   --spinner-track:#3d2a5f; --spinner-head:#9d82c4; --input-border:#553a82; --focus-border:#ff5d8f;
   --green-bg:#0d3b22; --red-bg:#4a1530; --amber:#ffd166; --amber-bg:#3f2d12;
-  --chart-tick:#9d82c4; --chart-grid:#3d2a5f;
+  --chart-tick:#9e84c5; --chart-grid:#3d2a5f;
 }
 
 /* Solarized — the classic teal/tan dark palette */
 [data-theme="solarized"] {
   --bg:#002b36; --bg-card:#073642; --bg-card-alt:#0a4250; --border:#0f4d5c; --border-strong:#2a6975;
-  --text-primary:#eee8d5; --text-secondary:#93a1a1; --text-muted:#839496; --text-hint:#5f7479;
-  --green:#859900; --red:#dc322f; --ok:#859900; --err:#dc322f;
+  /* Solarized's canonical accents are too dark on its own base to pass AA, so
+     the text/status colors here are lightened tints of the classic hues. */
+  --text-primary:#eee8d5; --text-secondary:#afbaba; --text-muted:#9ba8aa; --text-hint:#899ea2;
+  --green:#8ea400; --red:#e87977; --ok:#8ea400; --err:#e87977;
   --btn-bg:#eee8d5; --btn-text:#002b36; --unit-active-bg:#eee8d5; --unit-active-txt:#002b36;
-  --spinner-track:#0f4d5c; --spinner-head:#839496; --input-border:#2a6975; --focus-border:#268bd2;
-  --green-bg:#0c3b2e; --red-bg:#4a1d1c; --amber:#b58900; --amber-bg:#3f2f0c;
-  --chart-tick:#839496; --chart-grid:#0f4d5c;
+  --spinner-track:#0f4d5c; --spinner-head:#9ba8aa; --input-border:#2a6975; --focus-border:#268bd2;
+  --green-bg:#0c3b2e; --red-bg:#4a1d1c; --amber:#c29300; --amber-bg:#3f2f0c;
+  --chart-tick:#9ba8aa; --chart-grid:#0f4d5c;
 }
 
 /* Sepia — warm paper light theme */
 [data-theme="sepia"] {
   --bg:#f3ead7; --bg-card:#fbf5e7; --bg-card-alt:#eee2c9; --border:#e0d3b4; --border-strong:#cbb992;
-  --text-primary:#3a3020; --text-secondary:#6a5b41; --text-muted:#8a7a5b; --text-hint:#a3977a;
-  --green:#4d7c0f; --red:#b1402a; --ok:#3f6212; --err:#9a3412;
+  --text-primary:#3a3020; --text-secondary:#5e5039; --text-muted:#6a5e46; --text-hint:#72684f;
+  --green:#4c7b0f; --red:#b1402a; --ok:#3f6212; --err:#9a3412;
   --btn-bg:#3a3020; --btn-text:#fbf5e7; --unit-active-bg:#3a3020; --unit-active-txt:#fbf5e7;
-  --spinner-track:#e0d3b4; --spinner-head:#8a7a5b; --input-border:#cbb992; --focus-border:#3a3020;
+  --spinner-track:#e0d3b4; --spinner-head:#6a5e46; --input-border:#cbb992; --focus-border:#3a3020;
   --green-bg:#d9e9c2; --red-bg:#f3d9cf; --amber:#92400e; --amber-bg:#f4e3c4;
-  --chart-tick:#8a7a5b; --chart-grid:#e0d3b4;
+  --chart-tick:#6a5e46; --chart-grid:#e0d3b4;
 }
