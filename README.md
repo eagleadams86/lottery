@@ -38,7 +38,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Income waterfall** — visual breakdown of gross income to after-tax income across all holdings
 - **Charts** — stacked bar (income by holding with tax drag overlay), donut (portfolio allocation), and line chart (10-year equity growth projection for VTI + VXUS vs. total portfolio)
 - **Tax-aware math** — applies 37% federal, 10.9% NY State, 20% LTCG, and 3.8% NIIT rates depending on holding type
-- **Themes** — dropdown in the upper right with 4 themes (Midnight, Dark, Light, Sepia); defaults to Midnight, preference saved in `localStorage`. Charts adapt their axis/grid colors per theme
+- **Themes** — dropdown in the upper right with 4 themes, listed alphabetically (Dark, Light, Midnight, Sepia); defaults to Midnight, preference saved in `localStorage`. Charts adapt their axis/grid colors per theme
 - **Collapsible sections** — every section (Assumptions, Summary, Portfolio breakdown, Income waterfall, Charts, 10-year growth projection) can be collapsed from its header, by mouse or keyboard; open/closed state is remembered across visits via `localStorage`
 - **Remembers your settings** — slider values restored on revisit via `localStorage`. The take-home slider is seeded from the calculator's net take-home, but only when the calculator has produced a *new* figure; if you move that slider yourself it stays where you put it
 - **Mobile-friendly** — portfolio breakdown table reflows to a card layout on narrow screens
@@ -56,7 +56,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Full NY tax breakdown** — federal withholding (24%), federal top marginal (37%), NY State withholding (10.5%), and NY State top rate (10.9%); shows both withheld at payment and additional owed at filing
 - **Split among winners** — supports dividing the jackpot among multiple people (1–1000, clamped on both typed and stepped input)
 - **Shorthand input** — accepts `325M`, `1.2B`, etc. An amount that can't be read is called out under the box instead of being silently ignored
-- **Themes** — dropdown in the upper right with 4 themes (Midnight, Dark, Light, Sepia); defaults to Midnight, preference saved in `localStorage` and shared with the portfolio page
+- **Themes** — dropdown in the upper right with 4 themes, listed alphabetically (Dark, Light, Midnight, Sepia); defaults to Midnight, preference saved in `localStorage` and shared with the portfolio page
 - **Collapsible tax tables** — detailed breakdown hidden by default, expandable on demand
 - **Remembers your settings** — game selection, winner count, and tax breakdown state all restored on revisit
 - **Feeds the portfolio** — net take-home is saved to `localStorage` and used to pre-fill the portfolio's take-home slider

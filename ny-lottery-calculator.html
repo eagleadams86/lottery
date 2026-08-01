@@ -437,9 +437,9 @@ function dbc(fn){ clearTimeout(_t); _t=setTimeout(fn,80); }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
 var THEMES = [
-  { id:'midnight',  label:'Midnight',  icon:'\u2726' },
   { id:'dark',      label:'Dark',      icon:'\u263E' },
   { id:'light',     label:'Light',     icon:'\u2600' },
+  { id:'midnight',  label:'Midnight',  icon:'\u2726' },
   { id:'sepia',     label:'Sepia',     icon:'\uD83D\uDCDC' },
 ];
 document.getElementById('theme-select').innerHTML = THEMES.map(function(t){
