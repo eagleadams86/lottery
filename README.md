@@ -13,7 +13,7 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 |------|-------------|
 | `ny-lottery-calculator.html` | After-tax lottery take-home calculator with live jackpots and winning numbers |
 | `lottery-portfolio.html` | What-if model of investing the lump sum as a tax-aware portfolio |
-| `theme.css` | Shared color tokens + 7 theme palettes, linked by both pages (single source of truth for the theme). Every text token is verified to meet WCAG AA contrast against both backgrounds in all 7 themes |
+| `theme.css` | Shared color tokens + 4 theme palettes, linked by both pages. Generated in the claude-theme-pack repo (the source of truth for all apps); every color pair is script-verified to meet WCAG AA contrast |
 | `favicon.ico` | Shared favicon |
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
 
@@ -38,7 +38,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Income waterfall** — visual breakdown of gross income to after-tax income across all holdings
 - **Charts** — stacked bar (income by holding with tax drag overlay), donut (portfolio allocation), and line chart (10-year equity growth projection for VTI + VXUS vs. total portfolio)
 - **Tax-aware math** — applies 37% federal, 10.9% NY State, 20% LTCG, and 3.8% NIIT rates depending on holding type
-- **Themes** — dropdown in the upper right with 7 themes, listed alphabetically (Dark, Forest, Light, Midnight, Sepia, Solarized, Synthwave); defaults to Midnight, preference saved in `localStorage`. Charts adapt their axis/grid colors per theme
+- **Themes** — dropdown in the upper right with 4 themes (Midnight, Dark, Light, Sepia); defaults to Midnight, preference saved in `localStorage`. Charts adapt their axis/grid colors per theme
 - **Collapsible sections** — every section (Assumptions, Summary, Portfolio breakdown, Income waterfall, Charts, 10-year growth projection) can be collapsed from its header, by mouse or keyboard; open/closed state is remembered across visits via `localStorage`
 - **Remembers your settings** — slider values restored on revisit via `localStorage`. The take-home slider is seeded from the calculator's net take-home, but only when the calculator has produced a *new* figure; if you move that slider yourself it stays where you put it
 - **Mobile-friendly** — portfolio breakdown table reflows to a card layout on narrow screens
@@ -56,7 +56,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Full NY tax breakdown** — federal withholding (24%), federal top marginal (37%), NY State withholding (10.5%), and NY State top rate (10.9%); shows both withheld at payment and additional owed at filing
 - **Split among winners** — supports dividing the jackpot among multiple people (1–1000, clamped on both typed and stepped input)
 - **Shorthand input** — accepts `325M`, `1.2B`, etc. An amount that can't be read is called out under the box instead of being silently ignored
-- **Themes** — dropdown in the upper right with 7 themes, listed alphabetically (Dark, Forest, Light, Midnight, Sepia, Solarized, Synthwave); defaults to Midnight, preference saved in `localStorage` and shared with the portfolio page
+- **Themes** — dropdown in the upper right with 4 themes (Midnight, Dark, Light, Sepia); defaults to Midnight, preference saved in `localStorage` and shared with the portfolio page
 - **Collapsible tax tables** — detailed breakdown hidden by default, expandable on demand
 - **Remembers your settings** — game selection, winner count, and tax breakdown state all restored on revisit
 - **Feeds the portfolio** — net take-home is saved to `localStorage` and used to pre-fill the portfolio's take-home slider
@@ -71,7 +71,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 
 Both pages are built to meet WCAG 2.1 AA:
 
-- **Contrast** — every text color clears 4.5:1 against both the page and card backgrounds, in all 7 themes. The four text greys are deliberately tiered (primary > secondary > muted > hint) so the visual hierarchy survives; `--text-hint` is the floor at ~4.6:1
+- **Contrast** — every text color clears 4.5:1 against the page, card and alt-card backgrounds, in all 4 themes. The four text greys are deliberately tiered (primary > secondary > muted > hint) so the visual hierarchy survives; `--text-hint` is the floor at 4.5:1
 - **Keyboard operable** — every control, including the portfolio's collapsible section headers and the clickable *Surplus vs spending* tile, is a real `<button>` reachable by Tab and activated with Enter/Space. Focus is always visible
 - **Screen readers** — section headers are `<h2>`-wrapped buttons carrying `aria-expanded`, so the page has a navigable heading outline and announces open/closed state. The game selector uses `aria-pressed` (selection isn't signalled by color alone), async status messages and the recalculated take-home are `role="status"` live regions, and decorative chevrons/spinners are hidden from assistive tech
 - **Zoom** — neither page restricts pinch-zoom
@@ -135,4 +135,4 @@ The calculator shows both the net check you receive on day one and the estimated
 
 - **Hosting:** GitHub Pages (this repo, `main` branch)
 - **Proxy:** Cloudflare Workers (free tier) — handles CORS and server-side scraping
-- **No build step** — plain HTML/CSS/JS, no dependencies or bundler required; both pages share a single `theme.css` for color tokens and the light/dark palette
+- **No build step** — plain HTML/CSS/JS, no dependencies or bundler required; both pages share a single `theme.css` (generated in the claude-theme-pack repo) for color tokens and the four theme palettes

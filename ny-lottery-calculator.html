@@ -437,13 +437,10 @@ function dbc(fn){ clearTimeout(_t); _t=setTimeout(fn,80); }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
 var THEMES = [
-  { id:'dark',      label:'Dark',      icon:'\u263E' },
-  { id:'forest',    label:'Forest',    icon:'\uD83C\uDF32' },
-  { id:'light',     label:'Light',     icon:'\u2600' },
   { id:'midnight',  label:'Midnight',  icon:'\u2726' },
+  { id:'dark',      label:'Dark',      icon:'\u263E' },
+  { id:'light',     label:'Light',     icon:'\u2600' },
   { id:'sepia',     label:'Sepia',     icon:'\uD83D\uDCDC' },
-  { id:'solarized', label:'Solarized', icon:'\uD83C\uDF17' },
-  { id:'synthwave', label:'Synthwave', icon:'\uD83C\uDF06' },
 ];
 document.getElementById('theme-select').innerHTML = THEMES.map(function(t){
   return '<option value="'+t.id+'">'+t.icon+' '+t.label+'</option>';
