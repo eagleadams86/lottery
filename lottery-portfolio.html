@@ -364,6 +364,48 @@ setTheme(localStorage.getItem('lottery-theme') || 'midnight');
 function tc() { return cssVar('--chart-tick'); }
 function gc() { return cssVar('--chart-grid'); }
 
+/* ── A chart bar is a tint with its colour on the edge, not a slab of it ─────
+   Shared convention across all these apps (it's written down in the theme
+   pack's README): the area of a chart bar is the series colour mixed most of
+   the way toward the card behind it, and the full-strength colour goes on the
+   outline. A large flat area has to clear 3:1 non-text contrast against its
+   card, which on the Light and Sepia cards means a solid fill has to be dark —
+   and five of them side by side then read as slabs of near-black on a pale
+   page. The outline holds the contrast where the eye reads the shape and gives
+   the area back to the card.
+
+   The rule is for a LARGE mark sitting on a card. It is deliberately not
+   applied to the doughnut or the 8px legend swatches; both have a note where
+   they're built saying why.
+
+   Mixed toward `--surface`, not toward white, so one constant covers all four
+   themes: these five series colours are FIXED across the themes (unlike Sprint
+   Velocity's, which are tuned per theme), and mixing toward the card is what
+   makes a fixed colour sit correctly on a cream card and a near-black one. On
+   the dark themes the fill goes quiet and the outline is the bright thing.
+
+   The line chart below already worked this way — a translucent fill under a
+   full-strength line — which is where the idea came from. The income waterfall
+   deliberately does NOT follow it: those are proportion-of-a-track meters, not
+   categorical marks, and an outlined 16px bar hides where the fill ends. */
+const BAR_TINT = .68;
+
+function tint(hex) {
+  const card = cssVar('--surface');
+  if (!/^#[0-9a-f]{6}$/i.test(hex) || !/^#[0-9a-f]{6}$/i.test(card)) return hex;
+  const a = parseInt(hex.slice(1), 16), b = parseInt(card.slice(1), 16);
+  const mix = (sh) => {
+    const from = a >> sh & 255;
+    return Math.round(from + ((b >> sh & 255) - from) * BAR_TINT);
+  };
+  return `rgb(${mix(16)},${mix(8)},${mix(0)})`;
+}
+
+/* The legend swatches stay SOLID, and that was tried the other way: they're 8px,
+   so the large-flat-area argument doesn't apply to them, and they're the one
+   place all five colours have to be told apart from each other — tinted, the two
+   violets and the two greens collapse into each other at that size. */
+
 // Update a text field unless the user is editing it (don't clobber typing).
 // _forceField overrides that for the one box syncSlider just handled, so junk
 // input gets replaced by the real value instead of sitting there looking valid.
@@ -518,8 +560,10 @@ function render() {
       data: {
         labels: rows.map(r => r.name),
         datasets: [
-          { label:'After-tax income', data:afterData, backgroundColor:rows.map(r => r.color), borderWidth:0 },
-          { label:'Tax drag',         data:dragData,  backgroundColor:'rgba(226,75,74,0.38)', borderWidth:0 }
+          { label:'After-tax income', data:afterData, backgroundColor:rows.map(r => tint(r.color)),
+            borderColor:rows.map(r => r.color), borderWidth:2, borderSkipped:false, borderRadius:4 },
+          { label:'Tax drag',         data:dragData,  backgroundColor:'rgba(226,75,74,0.38)',
+            borderColor:'#E24B4A', borderWidth:2, borderSkipped:false, borderRadius:4 }
         ]
       },
       options: {
@@ -548,6 +592,13 @@ function render() {
       type: 'doughnut',
       data: {
         labels: rows.map(r => r.name),
+        /* Deliberately NOT tinted like the bars, and this was tried: five wedges
+           meeting each other is the one place the colours have to be told apart
+           from EACH OTHER rather than from the card, and a tint compresses exactly
+           that — the two violets and the two greens converge into a pale ring. The
+           tint rule is for a large mark sitting on a card, not for small adjacent
+           ones whose whole job is mutual discrimination. Card-coloured outline for
+           the same reason: it separates the wedges without adding a sixth colour. */
         datasets: [{ data:allocData, backgroundColor:rows.map(r => r.color), borderWidth:2, borderColor: cssVar('--bg-card') }]
       },
       options: {
