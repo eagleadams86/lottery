@@ -156,28 +156,34 @@
      small enough to stay on one line at 2-up on a phone, so there's no 1-column step. */
   .metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
   @media (max-width: 720px) { .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .mc { background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border); padding: 0.9rem 1rem; }
+  .mc { background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border); padding: 0.9rem 1rem; text-align: center; }
   .ml { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
   /* Below ~360px three of the four labels wrap to a second line and the fourth doesn't,
      which left the numbers on different baselines across a 2x2 row. Reserving two lines
      is the cheap version of the subgrid the sibling apps use for the same problem. */
-  @media (max-width: 400px) { .ml { line-height: 1.5; min-height: 3em; } }
+  @media (max-width: 360px) { .ml { line-height: 1.5; min-height: 3em; } }
   .mv { font-size: 18px; font-weight: 600; color: var(--text-primary); }
   .mv.red { color: var(--red); }
   .mv.grn { color: var(--green); }
 
   /* Take-home */
+  /* Two equal halves with no divider drawn between them: pushed to the outer edges
+     the pair read as two unrelated readouts with a hole in the middle. Each half
+     centres its own label and number instead, so they sit as a matched pair. */
   .takehome {
     background: var(--bg-card); border-radius: 12px; padding: 1.1rem 1.4rem;
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 12px; margin-bottom: 0;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* baseline, not center: the halves are different heights (26px number vs 22px),
+       so centring each one left the two labels 3px out of line with each other. */
+    align-items: baseline; gap: 12px; margin-bottom: 0;
     border: 1px solid var(--border);
   }
+  .takehome > * { text-align: center; }
   .th-lbl  { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
   .th-val  { font-size: 26px; font-weight: 700; color: var(--green); letter-spacing: -0.02em; }
   .th-rate { font-size: 22px; font-weight: 600; color: var(--text-primary); }
-  .th-right { text-align: right; }
-  @media (max-width: 520px) { .th-right { text-align: left; } }
+  /* Stacked on a phone there are no halves left to centre within, so they go full width. */
+  @media (max-width: 520px) { .takehome { grid-template-columns: 1fr; } }
 
   /* Details toggle */
   .details-btn {
@@ -335,7 +341,7 @@
         <div class="th-lbl" id="th-lbl">Net take-home after all taxes</div>
         <div class="th-val" id="th-val">&#8212;</div>
       </div>
-      <div class="th-right">
+      <div>
         <div class="th-lbl">Effective total tax rate</div>
         <div class="th-rate" id="eff-rate">&#8212;</div>
       </div>
