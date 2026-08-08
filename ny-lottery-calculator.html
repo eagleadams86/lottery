@@ -345,11 +345,11 @@
   </div>
 
   <div class="wn-wrap">
-    <h2 class="sec-hd"><button class="details-btn" onclick="toggleWinning()" aria-expanded="false" aria-controls="wn-body" id="wn-toggle">
-      <span class="details-chevron" id="wn-chevron" aria-hidden="true">&#9654;</span>
+    <h2 class="sec-hd"><button class="details-btn" onclick="toggleWinning()" aria-expanded="true" aria-controls="wn-body" id="wn-toggle">
+      <span class="details-chevron open" id="wn-chevron" aria-hidden="true">&#9654;</span>
       Latest winning numbers
     </button></h2>
-    <div class="wn-body" id="wn-body">
+    <div class="wn-body open" id="wn-body">
       <div class="wn-loading" id="wn-loading" role="status"><span class="spinner" aria-hidden="true"></span>Loading latest results&hellip;</div>
       <div id="wn-content"></div>
     </div>
@@ -465,10 +465,11 @@ setTheme(localStorage.getItem('lottery-theme') || 'midnight');
     document.getElementById('details-chevron').classList.add('open');
     setExpanded('details-toggle', true);
   }
-  if(localStorage.getItem('lottery-winning')==='1'){
-    document.getElementById('wn-body').classList.add('open');
-    document.getElementById('wn-chevron').classList.add('open');
-    setExpanded('wn-toggle', true);
+  // Open by default; only collapse if this visitor closed it before.
+  if(localStorage.getItem('lottery-winning')==='0'){
+    document.getElementById('wn-body').classList.remove('open');
+    document.getElementById('wn-chevron').classList.remove('open');
+    setExpanded('wn-toggle', false);
   }
   refreshDrawLabels();
 })();
@@ -834,7 +835,7 @@ function trbold(i,d,a,c){ return '<tr><td><strong>'+i+'</strong></td><td class="
 function trtot(i,d,a,c){ return '<tr class="totrow"><td>'+i+'</td><td class="muted">'+d+'</td><td class="'+c+'">'+a+'</td></tr>'; }
 function trspace(){ return '<tr style="height:6px"><td colspan="3"></td></tr>'; }
 
-// Initial load: jackpots always; winning numbers only if that section was left open
+// Initial load: jackpots always; winning numbers unless that section was collapsed
 fetchJackpots();
 if(document.getElementById('wn-body').classList.contains('open')) fetchWinning();
 </script>
