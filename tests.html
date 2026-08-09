@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="midnight">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lottery — tests</title>
+<style>
+  /* Dev-only page: pins the pure functions in BOTH apps — the calculator's
+     input/API boundaries (parseField, ball, fmtDrawDate, the block builders)
+     and the portfolio's income model (computeIncome, parseLatest1yr). Loads
+     each real page in a hidden same-origin iframe and calls its functions
+     directly, so what's tested is what ships. Serve over http://localhost
+     (python3 -m http.server 8010); file:// iframes are blocked in some
+     browsers. The apps' own boot code runs (theme write, jackpot/winning
+     fetches that fail harmlessly off the live origin) — the tests themselves
+     add no writes and never fire input events, so calc()'s localStorage
+     write is never triggered. Colours are the Midnight palette from the
+     theme pack (dev page, hardcoded). */
+  body { background: #0a0e1a; color: #e7eaf6; margin: 0;
+         font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: #838cab; font-size: 12.5px; margin: 0 0 18px; }
+  #summary { font-weight: 600; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px;
+             border: 1px solid #262f4a; background: #121829; }
+  #summary.ok  { color: #72fe84; border-color: #72fe84; }
+  #summary.bad { color: #fb7874; border-color: #fb7874; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 6px 8px; border-bottom: 1px solid #262f4a; vertical-align: top; }
+  td.st { width: 28px; font-weight: 700; }
+  tr.pass td.st { color: #72fe84; }
+  tr.fail td.st { color: #fb7874; }
+  tr.fail td.msg { color: #fb7874; }
+  .msg { color: #838cab; font-size: 12px; white-space: pre-wrap; }
+  .group td { padding-top: 16px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
+              text-transform: uppercase; color: #838cab; border-bottom-color: #374163; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Lottery — pure-function tests</h1>
+  <p class="sub">Runs against the real <code>ny-lottery-calculator.html</code> and <code>lottery-portfolio.html</code> in hidden iframes.</p>
+  <div id="summary">Loading apps…</div>
+  <table><tbody id="out"></tbody></table>
+</div>
+<iframe id="calc" src="ny-lottery-calculator.html" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" title="calculator under test"></iframe>
+<iframe id="port" src="lottery-portfolio.html" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" title="portfolio under test"></iframe>
+
+<script>
+'use strict';
+const TESTS = [];
+function group(name) { TESTS.push({ group: name }); }
+function t(name, fn) { TESTS.push({ name, fn }); }
+function eq(actual, expected, note) {
+  const a = JSON.stringify(actual), e = JSON.stringify(expected);
+  if (a !== e) throw new Error((note ? note + ': ' : '') + 'expected ' + e + ', got ' + a);
+}
+function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy'); }
+/* Money figures come out of float multiplication, so exact eq() would pin
+   rounding noise instead of the model. Within a dollar is equality here. */
+function near(actual, expected, note) {
+  if (Math.abs(actual - expected) > 1)
+    throw new Error((note ? note + ': ' : '') + 'expected ~' + expected + ', got ' + actual);
+}
+let wc, wp; // the two app iframes' windows
+
+/* Set an input's value directly — no events fired, so the app's handlers
+   (and calc()'s localStorage write) never run. */
+function setBox(win, id, v) { win.document.getElementById(id).value = v; }
+
+group('parseField — the manual-amount boundary (calculator)');
+t('a bare number takes the active unit', () => {
+  setBox(wc, 'jackpot-input', '238');
+  eq(wc.parseField('jackpot-input', 'M'), 238e6);
+  eq(wc.parseField('jackpot-input', 'B'), 238e9);
+});
+t('a typed M/B suffix overrides the unit toggle, either case', () => {
+  setBox(wc, 'jackpot-input', '1.5B');
+  eq(wc.parseField('jackpot-input', 'M'), 1.5e9);
+  setBox(wc, 'jackpot-input', '106m');
+  eq(wc.parseField('jackpot-input', 'B'), 106e6);
+});
+t('dollar signs, commas and spaces are stripped first', () => {
+  setBox(wc, 'jackpot-input', '$1,000 ');
+  eq(wc.parseField('jackpot-input', 'M'), 1000e6);
+});
+t('malformed numbers are rejected outright, not partially parsed', () => {
+  setBox(wc, 'jackpot-input', '1.2.3');
+  eq(wc.parseField('jackpot-input', 'M'), null, '"1.2.3" must not quietly read as 1.2');
+  setBox(wc, 'jackpot-input', 'abc');
+  eq(wc.parseField('jackpot-input', 'M'), null);
+});
+t('an empty box is null (meaning: estimate the lump at 60%)', () => {
+  setBox(wc, 'jackpot-input', '');
+  eq(wc.parseField('jackpot-input', 'M'), null);
+});
+
+group('ball / fmtDrawDate / block builders — the API-data allowlist');
+t('ball() renders only one or two digits; anything else is nothing', () => {
+  ok(wc.ball('7').includes('>7<'), 'a plain number renders');
+  eq(wc.ball('123'), '', 'three digits rejected');
+  eq(wc.ball('<img src=x onerror=alert(1)>'), '', 'markup rejected');
+  eq(wc.ball(null), '');
+  eq(wc.ball(' 12 ').includes('>12<'), true, 'whitespace is trimmed first');
+});
+t('fmtDrawDate() only accepts YYYY-MM-DD-shaped input', () => {
+  ok(wc.fmtDrawDate('2026-08-07').includes('Aug 7, 2026'));
+  eq(wc.fmtDrawDate('javascript:alert(1)'), '');
+  eq(wc.fmtDrawDate(''), '');
+});
+t('a hostile API payload renders as empty chrome, never as markup', () => {
+  const r = { winning_numbers: '<script>alert(1)<\/script>', mega_ball: '"><img src=x>',
+              multiplier: '<b>', draw_date: '<svg onload=x>' };
+  const out = wc.pbBlock(r) + wc.mmBlock(r);
+  ok(!/onerror|onload|<script|<img|<svg/.test(out), 'no hostile markup survives: ' + out);
+});
+t('a real Powerball result renders six balls and the multiplier', () => {
+  const out = wc.pbBlock({ winning_numbers: '5 12 23 34 45 6', multiplier: '3', draw_date: '2026-08-05' });
+  eq((out.match(/class="ball/g) || []).length, 6);
+  ok(out.includes('Power Play'), 'multiplier shown');
+  ok(out.includes('Aug 5, 2026'), 'draw date shown');
+});
+t('a real Mega Millions result renders five whites plus the mega ball', () => {
+  const out = wc.mmBlock({ winning_numbers: '5 12 23 34 45', mega_ball: '7', draw_date: '2026-08-04' });
+  eq((out.match(/class="ball/g) || []).length, 6);
+});
+
+group('calculator formatters');
+t('fmt() rounds to whole dollars with separators; null and NaN are an em dash', () => {
+  eq(wc.fmt(1234567.4), '$1,234,567');
+  eq(wc.fmt(null), '—');
+  eq(wc.fmt(NaN), '—');
+});
+t('fmtM() trims trailing zeros; fmtM1() always keeps one decimal', () => {
+  eq(wc.fmtM(1.5e9), '$1.5B');
+  eq(wc.fmtM(2e9), '$2B');
+  eq(wc.fmtM(238e6), '$238M');
+  eq(wc.fmtM1(238e6), '$238.0M');
+  eq(wc.fmtM1(1.5e9), '$1.5B');
+});
+
+group('winnersValue — the split-count clamp');
+t('typed values outside 1–1000 are clamped, junk becomes 1', () => {
+  setBox(wc, 'npeople', '5000'); eq(wc.winnersValue(), 1000);
+  setBox(wc, 'npeople', '-3');   eq(wc.winnersValue(), 1);
+  setBox(wc, 'npeople', 'abc');  eq(wc.winnersValue(), 1);
+  setBox(wc, 'npeople', '7');    eq(wc.winnersValue(), 7);
+  setBox(wc, 'npeople', '1');
+});
+
+group('nextDraw — schedule invariants (time-of-day dependent, so invariants only)');
+t('a game drawn every day is always Tonight or Tomorrow', () => {
+  ok(['Tonight', 'Tomorrow'].includes(wc.nextDraw([0, 1, 2, 3, 4, 5, 6])));
+});
+t('the real schedules always produce a label', () => {
+  ok(wc.nextDraw([1, 3, 6]).length > 0, 'Powerball (Mon/Wed/Sat)');
+  ok(wc.nextDraw([2, 5]).length > 0, 'Mega Millions (Tue/Fri)');
+});
+
+group('tax rates — the constants the page footnote promises');
+t('withholding and top marginal rates match the published note', () => {
+  eq(wc.FED_WH, 0.24); eq(wc.FED_TOP, 0.37);
+  eq(wc.NY_WH, 0.105); eq(wc.NY_TOP, 0.109);
+});
+
+group('computeIncome — the portfolio allocation model');
+t('when the 8-year ladder fits, buckets sum to exactly the portfolio', () => {
+  const m = wp.computeIncome(100e6, 250e3, 0.04, 0.03, 0.013, 0.02, 0.6);
+  near(m.spaxx, 250e3, '1 year of spending');
+  near(m.tbill, 750e3, '3 years');
+  near(m.muni, 1e6, '4 years');
+  near(m.spaxx + m.tbill + m.muni + m.vti + m.vxus, 100e6, 'allocations add to the total');
+  near(m.vti, 98e6 * 0.6, 'equity split honoured');
+  eq(m.underfunded, false);
+});
+t('spending past total/8 shrinks all three buckets by one factor — no invented principal', () => {
+  const m = wp.computeIncome(5e6, 1e6, 0.04, 0.03, 0.013, 0.02, 0.6);
+  eq(m.underfunded, true);
+  near(m.spaxx + m.tbill + m.muni, 5e6, 'the scaled ladder is the whole portfolio');
+  near(m.vti + m.vxus, 0, 'nothing left for equities');
+  near(m.tbill / m.spaxx, 3, 'buckets keep their 1:3:4 proportions');
+});
+t('tax treatment per holding: munis free, T-bills federal-only, equities LTCG+NIIT+NY', () => {
+  const m = wp.computeIncome(100e6, 250e3, 0.04, 0.03, 0.013, 0.02, 0.6);
+  near(m.muA, m.muG, 'muni income is untaxed');
+  near(m.tbA, m.tbG * (1 - 0.37), 'T-bills exempt from NY, not federal');
+  near(m.vtiA, m.vtiG * (1 - 0.20 - 0.038 - 0.109), 'qualified dividends');
+});
+t('totals are the sum of their parts, and tax only ever reduces income', () => {
+  const m = wp.computeIncome(40e6, 400e3, 0.045, 0.028, 0.015, 0.025, 0.7);
+  near(m.totG, m.spaxxG + m.tbG + m.muG + m.vtiG + m.vxusG);
+  near(m.totA, m.spaxxA + m.tbA + m.muA + m.vtiA + m.vxusA);
+  ok(m.totA <= m.totG, 'after-tax never exceeds gross');
+});
+
+group('parseLatest1yr — the Treasury feed parser');
+const XML =
+  '<entry><content><d:NEW_DATE m:type="Edm.DateTime">2026-08-03T00:00:00</d:NEW_DATE>' +
+  '<d:BC_1YEAR m:type="Edm.Double">4.21</d:BC_1YEAR></content></entry>' +
+  '<entry><content><d:NEW_DATE m:type="Edm.DateTime">2026-08-04T00:00:00</d:NEW_DATE>' +
+  '<d:BC_1YEAR m:type="Edm.Double">4.05</d:BC_1YEAR></content></entry>';
+t('picks the most recent entry in the sheet', () => {
+  eq(wp.parseLatest1yr(XML), { rate: 4.05, date: '2026-08-04T00:00:00' });
+});
+t('an empty or rate-less sheet is null, not a crash (early-month case)', () => {
+  eq(wp.parseLatest1yr(''), null);
+  eq(wp.parseLatest1yr('<feed>no observations yet</feed>'), null);
+  eq(wp.parseLatest1yr(XML.replace('4.05', 'N/A')), null, 'a non-numeric latest rate is rejected');
+});
+t('ymStr formats the Treasury month key with zero padding', () => {
+  eq(wp.ymStr(new Date(2026, 0, 15)), '202601');
+  eq(wp.ymStr(new Date(2026, 11, 1)), '202612');
+});
+
+group('portfolio formatters + tint');
+t('fm() scales with magnitude; fmShort() trims; fm1() keeps one decimal', () => {
+  eq(wp.fm(2.5e6), '$2.50M');
+  eq(wp.fm(150e6), '$150.0M');
+  eq(wp.fm(1.234e9), '$1.23B');
+  eq(wp.fm(-125000), '-$125K');
+  eq(wp.fm(500), '$500');
+  eq(wp.fmShort(28e6), '$28M');
+  eq(wp.fmShort(27.6e6), '$27.6M');
+  eq(wp.fm1(1.5e9), '$1.5B');
+});
+t('tint() mixes a series colour 68% toward the card; junk passes through', () => {
+  const card = wp.cssVar('--surface');
+  ok(/^#[0-9a-f]{6}$/i.test(card), 'the card colour resolved from theme.css');
+  const a = parseInt('7F77DD', 16), b = parseInt(card.slice(1), 16);
+  const mix = sh => Math.round((a >> sh & 255) + ((b >> sh & 255) - (a >> sh & 255)) * 0.68);
+  eq(wp.tint('#7F77DD'), 'rgb(' + mix(16) + ',' + mix(8) + ',' + mix(0) + ')');
+  eq(wp.tint('red'), 'red', 'a non-hex colour is returned untouched');
+});
+
+/* ── Runner ───────────────────────────────────────────────────────────────── */
+window.addEventListener('load', () => {
+  const calc = document.getElementById('calc'), port = document.getElementById('port');
+  /* Both pages are classic scripts at the foot of the body, so their function
+     declarations exist by each frame's load event; poll for both frames. */
+  const ready = () => calc.contentWindow.parseField && port.contentWindow.computeIncome;
+  const tick = () => { if (ready()) run(); else setTimeout(tick, 100); };
+  setTimeout(tick, 150);
+});
+
+function run() {
+  wc = document.getElementById('calc').contentWindow;
+  wp = document.getElementById('port').contentWindow;
+  const out = document.getElementById('out');
+  let pass = 0, fail = 0;
+  for (const item of TESTS) {
+    if (item.group) {
+      const tr = document.createElement('tr');
+      tr.className = 'group';
+      tr.innerHTML = '<td colspan="3"></td>';
+      tr.firstChild.textContent = item.group;
+      out.appendChild(tr);
+      continue;
+    }
+    const tr = document.createElement('tr');
+    const st = document.createElement('td'); st.className = 'st';
+    const name = document.createElement('td'); name.textContent = item.name;
+    const msg = document.createElement('td'); msg.className = 'msg';
+    try {
+      item.fn();
+      tr.className = 'pass'; st.textContent = '✓'; pass++;
+    } catch (e) {
+      tr.className = 'fail'; st.textContent = '✕'; msg.textContent = e.message; fail++;
+    }
+    tr.appendChild(st); tr.appendChild(name); tr.appendChild(msg);
+    out.appendChild(tr);
+  }
+  const s = document.getElementById('summary');
+  s.textContent = fail === 0 ? `All ${pass} tests pass` : `${fail} of ${pass + fail} tests FAILED`;
+  s.className = fail === 0 ? 'ok' : 'bad';
+  document.title = (fail === 0 ? '✓ ' : '✕ ') + document.title;
+}
+</script>
+</body>
+</html>

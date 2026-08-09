@@ -16,6 +16,7 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 | `theme.css` | Shared color tokens + 4 theme palettes, linked by both pages. Generated in the claude-theme-pack repo (the source of truth for all apps); every color pair is script-verified to meet WCAG AA contrast |
 | `favicon.ico` | Shared favicon |
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
+| `tests.html` | Dev-only test page pinning both pages' pure functions (input parsing, feed validation, tax/allocation math, formatters); run by CI on every push |
 
 Native mobile ports have shipped and their build plans now live in their own (private) repos:
 
@@ -128,6 +129,14 @@ The calculator shows both the net check you receive on day one and the estimated
 | T-bills | Federal ordinary only (NY-exempt) | 37.0% |
 | NY Munis | Fully exempt (federal + state) | 0% |
 | VTI / VXUS dividends | LTCG (20%) + NIIT (3.8%) + NY (10.9%) | 34.7% |
+
+---
+
+## Tests
+
+`tests.html` loads both real pages in hidden same-origin iframes and calls their functions directly — no build step, no copies of the code under test. It pins the calculator's manual-amount parser, the winning-numbers allowlist, the tax-rate constants, and the winner-count clamp, plus the portfolio's allocation model (`computeIncome`), the Treasury feed parser, and the shared formatters.
+
+Run it locally from a server (`python3 -m http.server 8010`, then open `http://localhost:8010/tests.html` — `file://` iframes are blocked in some browsers) and check the summary reads "All N tests pass". CI runs the same page headless on every push (`.github/workflows/tests.yml`) and fails the build if the summary goes red.
 
 ---
 
