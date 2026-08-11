@@ -10,7 +10,16 @@
      and base-uri 'none'.
      Note: frame-ancestors is ignored in a meta tag; it needs a real header. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://lottery-proxy.charlie-adams-176.workers.dev https://data.ny.gov https://api.github.com; base-uri 'none'; form-action 'none'">
-<link rel="icon" href="favicon.ico">
+<!-- Three drawn balls — the one image that says "lottery" at 16 pixels — on the tile
+     the whole app family wears: midnight page, soft disc in the corner, the accent
+     gradient. Both pages share the mark; the calculator and the portfolio are two
+     doors onto the same thing. The SVG is what every current browser shows;
+     favicon.ico is the fallback a browser fetches from the site root on its own, and
+     what a bookmark uses. The two are the same picture — make_favicon.py draws this
+     geometry, and the three flat fills below are what it computes for each ball's
+     centre — so keep them in step. img-src allows data: URIs, so no extra request. -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'> <rect width='64' height='64' rx='14' fill='%230a0e1a'/> <circle cx='14' cy='52' r='20' fill='%23141c33'/> <circle cx='20' cy='41' r='9' fill='%238a96f9'/> <circle cx='44' cy='41' r='9' fill='%2395a2fa'/> <circle cx='32' cy='20' r='9' fill='%2398a5fb'/> </svg>">
+<link rel="alternate icon" href="favicon.ico?v=1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NY Lottery After-Tax Calculator</title>
 <link rel="stylesheet" href="theme.css">
@@ -31,6 +40,11 @@
   .hrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 8px; }
   .hrow-left { display: flex; flex-direction: column; gap: 2px; }
   .ptitle { font-size: 20px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.3px; }
+  /* The mark from the browser tab, worn beside the title. Width and height are on the
+     element as well as here, so the row is laid out at its final size before the icon
+     arrives rather than growing under the reader. It sits in the heading's own flow —
+     making .ptitle a flex row would stop the title wrapping properly on a phone. */
+  .ptitle img { width: 24px; height: 24px; vertical-align: -5px; margin-right: 9px; }
   /* Section titles are real <h2>/<h3> for screen-reader navigation; these rules
      keep them looking like the small uppercase labels they've always been.
      .sec-hd wraps a disclosure <button> so the section is both navigable as a
@@ -243,7 +257,11 @@
 
   <div class="hrow">
     <div class="hrow-left">
-      <h1 class="ptitle">NY Lottery &mdash; After-Tax Calculator</h1>
+      <!-- ?v= is not decoration: a browser holds on to a favicon for a long time, and
+           without it this would keep showing whatever icon it cached the first time.
+           Bump it on every reference in both pages when make_favicon.py is re-run. -->
+      <h1 class="ptitle"><img src="favicon.ico?v=1" width="24" height="24" alt=""
+        >NY Lottery &mdash; After-Tax Calculator</h1>
       <span class="location-tag">Outside NYC &nbsp;&middot;&nbsp; 37% federal + 10.9% NY state</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">

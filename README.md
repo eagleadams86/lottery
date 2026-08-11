@@ -14,9 +14,16 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 | `ny-lottery-calculator.html` | After-tax lottery take-home calculator with live jackpots and winning numbers |
 | `lottery-portfolio.html` | What-if model of investing the lump sum as a tax-aware portfolio |
 | `theme.css` | Shared color tokens + 4 theme palettes, linked by both pages. Generated in the claude-theme-pack repo (the source of truth for all apps); every color pair is script-verified to meet WCAG AA contrast |
-| `favicon.ico` | Shared favicon |
+| `favicon.ico` | The icon both pages share — the fallback a browser fetches from the site root on its own |
+| `make_favicon.py` | Draws `favicon.ico` to match the inline SVG icon in both pages |
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
 | `tests.html` | Dev-only test page pinning both pages' pure functions (input parsing, feed validation, tax/allocation math, formatters); run by CI on every push |
+
+The icon is three drawn balls, on the midnight tile the whole app family wears; both pages
+show the same mark beside their title. `make_favicon.py` (Pillow) keeps `favicon.ico` and the
+pages' inline SVG the same picture, rather than leaving a binary nobody can review in a diff.
+Re-run it with `python3 make_favicon.py`, then bump the `?v=` on every `favicon.ico`
+reference — browsers hold on to an icon for a long time.
 
 Native mobile ports have shipped and their build plans now live in their own (private) repos:
 
