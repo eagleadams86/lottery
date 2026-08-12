@@ -21,7 +21,12 @@
      them. The COLOUR deliberately parts company: the phone icons wear a near-white
      ball, this one wears the app family's two accent tones so it sits beside its
      siblings. The shaded crescent is FLAT here, not the native 45% — the two accent
-     tones are close together, so at 45% the shading all but disappeared.
+     tones are close together, so at 45% the shading all but disappeared. The ball is
+     also SCALED UP about its own centre (the one factor in make_favicon.py, glows
+     untouched): a home-screen icon can afford air around its subject, but at the
+     native size this covered 48% of the tile against the family's 55-70% and read as
+     the small one in the row. Every number below is that factor already applied —
+     recompute them from the script, never by hand.
      The SVG is what every current browser shows; favicon.ico is the fallback a
      browser fetches from the site root on its own, and what a bookmark uses. The two
      are the same picture, so keep them in step. The rounded corner is a CLIP over the
@@ -29,8 +34,8 @@
      tile deliberately, and without the clip they would square the corners off — the
      .ico rounds them with an alpha mask at the end, which is the same thing.
      img-src allows data: URIs, so the SVG costs no extra request. -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108 108'> <defs><clipPath id='r'><rect width='108' height='108' rx='24'/></clipPath><clipPath id='b'><circle cx='54' cy='54' r='26'/></clipPath></defs> <g clip-path='url(%23r)'> <rect width='108' height='108' fill='%230a0e1a'/> <circle cx='82' cy='18' r='44' fill='%23121829'/> <circle cx='18' cy='94' r='36' fill='%231b2238'/> <circle cx='54' cy='54' r='26' fill='%23a5b4fc'/> <circle cx='61' cy='62' r='31' fill='%23818cf8' clip-path='url(%23b)'/> <circle cx='54' cy='54' r='15.5' fill='%23a5b4fc' stroke='%230a0e1a' stroke-width='2.5'/> <path d='M54.024 62.68L54.024 48.792L49.808 51.644L49.808 47.924L54.396 44.824L57.744 44.824L57.744 62.68Z' fill='%230a0e1a'/> </g> </svg>">
-<link rel="alternate icon" href="favicon.ico?v=3">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108 108'> <defs><clipPath id='r'><rect width='108' height='108' rx='24'/></clipPath><clipPath id='b'><circle cx='54' cy='54' r='34.5'/></clipPath></defs> <g clip-path='url(%23r)'> <rect width='108' height='108' fill='%230a0e1a'/> <circle cx='82' cy='18' r='44' fill='%23121829'/> <circle cx='18' cy='94' r='36' fill='%231b2238'/> <circle cx='54' cy='54' r='34.5' fill='%23a5b4fc'/> <circle cx='63.288' cy='64.615' r='41.135' fill='%23818cf8' clip-path='url(%23b)'/> <circle cx='54' cy='54' r='20.567' fill='%23a5b4fc' stroke='%230a0e1a' stroke-width='3.317'/> <path d='M54.032 65.518L54.032 47.089L48.438 50.874L48.438 45.938L54.525 41.824L58.968 41.824L58.968 65.518Z' fill='%230a0e1a'/> </g> </svg>">
+<link rel="alternate icon" href="favicon.ico?v=4">
 <!-- No maximum-scale: pinch-zoom must stay available (WCAG 1.4.4) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lottery Portfolio</title>
@@ -141,7 +146,7 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
       <!-- ?v= is not decoration: a browser holds on to a favicon for a long time, and
            without it this would keep showing whatever icon it cached the first time.
            Bump it on every reference in both pages when make_favicon.py is re-run. -->
-      <h1><img src="favicon.ico?v=3" width="24" height="24" alt="">Lottery Portfolio</h1>
+      <h1><img src="favicon.ico?v=4" width="24" height="24" alt="">Lottery Portfolio</h1>
       <p class="hdr-sub">Outside NYC &nbsp;·&nbsp; 37% federal + 10.9% NY state</p>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">

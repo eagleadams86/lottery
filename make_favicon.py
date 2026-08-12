@@ -60,11 +60,33 @@ RING_W = 2.5
 NUMERAL = [(54.024, 62.68), (54.024, 48.792), (49.808, 51.644), (49.808, 47.924),
            (54.396, 44.824), (57.744, 44.824), (57.744, 62.68)]
 
+# Every ball coordinate above is the NATIVE one, kept that way so this file and
+# the iOS script still read side by side. This single factor is the second place
+# the web parts company from the phone icons, after the colour: it blows the
+# whole ball up about its own centre (54,54), background glows untouched.
+#
+# A home-screen icon is looked at whole and can afford air around its subject;
+# a favicon is 16px of tab furniture beside five siblings, and at the native 26
+# the ball covered 48% of the tile where the rest of the family's marks cover
+# 55-70%. It read as the small one in the row. 34.5 puts it at 64%.
+BALL_SCALE = 34.5 / 26
+
 VIEW = 108                      # the viewport the coordinates above are in
 SCALE = 8                       # supersample, then reduce
 SIZES = [16, 32, 48, 64, 128, 256]
 
 F = SCALE                       # one viewport unit -> F pixels on the canvas
+
+
+def sc(v):
+    """A length, scaled up with the ball."""
+    return v * BALL_SCALE
+
+
+def pt(x, y):
+    """A point, scaled about the ball's own centre."""
+    cx, cy, _ = BALL_C
+    return cx + (x - cx) * BALL_SCALE, cy + (y - cy) * BALL_SCALE
 
 
 def circle(d, cx, cy, r, **kw):
@@ -79,13 +101,15 @@ def build():
     circle(d, 18, 94, 36, fill=GLOW_BL)
 
     # The ball, built on its own layer so the shaded band can be clipped to it.
+    # Everything from here to the composite goes through sc()/pt().
     ball = Image.new('RGBA', (n, n), (0, 0, 0, 0))
     bd = ImageDraw.Draw(ball)
-    bx, by, br = BALL_C
+    bx, by, br = BALL_C[0], BALL_C[1], sc(BALL_C[2])
     circle(bd, bx, by, br, fill=BALL)
 
     band = Image.new('RGBA', (n, n), (0, 0, 0, 0))
-    circle(ImageDraw.Draw(band), *BAND_C,
+    bandx, bandy = pt(BAND_C[0], BAND_C[1])
+    circle(ImageDraw.Draw(band), bandx, bandy, sc(BAND_C[2]),
            fill=SHADE + (int(SHADE_ALPHA * 255),))
     clip = Image.new('L', (n, n), 0)
     circle(ImageDraw.Draw(clip), bx, by, br, fill=255)
@@ -93,9 +117,9 @@ def build():
         ball, Image.composite(band, Image.new('RGBA', (n, n), (0, 0, 0, 0)), clip))
 
     bd = ImageDraw.Draw(ball)
-    circle(bd, bx, by, RING_R, fill=BALL, outline=BG,
-           width=max(1, round(RING_W * F)))
-    bd.polygon([(x * F, y * F) for x, y in NUMERAL], fill=BG)
+    circle(bd, bx, by, sc(RING_R), fill=BALL, outline=BG,
+           width=max(1, round(sc(RING_W) * F)))
+    bd.polygon([(x * F, y * F) for x, y in (pt(*p) for p in NUMERAL)], fill=BG)
 
     img = Image.alpha_composite(img, ball)
 

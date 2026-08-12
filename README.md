@@ -28,9 +28,11 @@ one product while the tab still sits with its siblings. `make_favicon.py` is a p
 repo's `scripts/make_icon.py`, in the same 108×108 viewport the Android vectors use, and it
 keeps `favicon.ico` and the pages' inline SVG the same picture rather than leaving a binary
 nobody can review in a diff. If the native icon's shapes ever change, change this with them —
-the colour is the one place the web deliberately differs. Re-run with
-`python3 make_favicon.py`, then bump the `?v=` on every `favicon.ico` reference — browsers
-hold on to an icon for a long time.
+colour and size are the two places the web deliberately differs. The ball is drawn larger
+here than the phone icons draw it, so it carries the same weight as the other apps' marks at
+favicon size; that is one scale factor in the script, and the SVG's numbers come from it.
+Re-run with `python3 make_favicon.py`, then bump the `?v=` on every `favicon.ico`
+reference — browsers hold on to an icon for a long time.
 
 Native mobile ports have shipped and their build plans now live in their own (private) repos:
 
