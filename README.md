@@ -122,7 +122,7 @@ All three feeds are cached in localStorage for 6 hours per device.
 
 All figures are for **New York State residents outside NYC and Yonkers** (no city surcharge).
 
-### Lottery winnings (Calculator)
+### Lottery Winnings (Calculator)
 
 | Tax | Rate |
 |-----|------|
@@ -133,7 +133,7 @@ All figures are for **New York State residents outside NYC and Yonkers** (no cit
 
 The calculator shows both the net check you receive on day one and the estimated additional tax owed when you file.
 
-### Investment income (Portfolio)
+### Investment Income (Portfolio)
 
 | Holding | Tax treatment | Effective rate |
 |---------|--------------|----------------|
