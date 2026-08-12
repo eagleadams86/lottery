@@ -238,7 +238,25 @@ window.addEventListener('load', () => {
   /* Both pages are classic scripts at the foot of the body, so their function
      declarations exist by each frame's load event; poll for both frames. */
   const ready = () => calc.contentWindow.parseField && port.contentWindow.computeIncome;
-  const tick = () => { if (ready()) run(); else setTimeout(tick, 100); };
+  /* Bounded, because the un-bounded version polled for ever: opened off disk
+     (file:// frames are blocked) or with nothing serving the folder, the frames
+     never become ready and the page just sat there saying "Loading" with no
+     hint that the setup, not the code, was the problem. Five seconds is far
+     longer than two local frames need. */
+  const giveUpAt = Date.now() + 5000;
+  const tick = () => {
+    if (ready()) return run();
+    if (Date.now() < giveUpAt) return setTimeout(tick, 100);
+    const s = document.getElementById('summary');
+    s.className = 'bad';
+    s.textContent = 'The hidden frames never loaded the pages — is this folder being served?';
+    document.getElementById('out').innerHTML =
+      '<tr><td class="msg" style="white-space:normal;font-family:inherit;font-size:13px">' +
+      'This page tests the real calculator and portfolio in hidden frames, and a browser ' +
+      'blocks those when it is opened straight off disk. Run <code>cd ~/claude-lottery ' +
+      '&amp;&amp; python3 -m http.server 8010</code> and open ' +
+      '<code>http://localhost:8010/tests.html</code>.</td></tr>';
+  };
   setTimeout(tick, 150);
 });
 
