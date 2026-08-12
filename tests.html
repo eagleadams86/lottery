@@ -43,8 +43,9 @@
   <div id="summary">Loading apps…</div>
   <table><tbody id="out"></tbody></table>
 </div>
-<iframe id="calc" src="ny-lottery-calculator.html" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" title="calculator under test"></iframe>
-<iframe id="port" src="lottery-portfolio.html" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" title="portfolio under test"></iframe>
+<!-- The two frames are built in script, not here: they boot the real pages, so
+     they must not exist until the localhost gate at the foot of this file has
+     passed. -->
 
 <script>
 'use strict';
@@ -233,8 +234,30 @@ t('tint() mixes a series colour 68% toward the card; junk passes through', () =>
 });
 
 /* ── Runner ───────────────────────────────────────────────────────────────── */
+/* ── The localhost gate ─────────────────────────────────────────────────────
+   Booting the pages is itself the side effect worth guarding: they save their
+   defaults and their jackpot caches the moment they load, and on the published
+   site that is a visitor's own stored settings, on the origin every app in this
+   family shares. So the frames are created only on a local server, and the
+   check comes before they exist rather than inside their load handler.
+
+   file:// is NOT in this list, deliberately: it has no hostname, and treating
+   it as local would build frames a browser then blocks, leaving the page to
+   blame the code for what is a setup problem. Same rule as the sibling apps.
+─────────────────────────────────────────────────────────────────────────── */
+const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
+
 window.addEventListener('load', () => {
-  const calc = document.getElementById('calc'), port = document.getElementById('port');
+  if (!LOCAL_HOSTS.includes(location.hostname)) return refuse();
+  const frame = (id, src, title) => {
+    const f = document.createElement('iframe');
+    f.id = id; f.src = src; f.title = title;
+    f.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none';
+    document.body.appendChild(f);
+    return f;
+  };
+  const calc = frame('calc', 'ny-lottery-calculator.html', 'calculator under test');
+  const port = frame('port', 'lottery-portfolio.html', 'portfolio under test');
   /* Both pages are classic scripts at the foot of the body, so their function
      declarations exist by each frame's load event; poll for both frames. */
   const ready = () => calc.contentWindow.parseField && port.contentWindow.computeIncome;
@@ -259,6 +282,81 @@ window.addEventListener('load', () => {
   };
   setTimeout(tick, 150);
 });
+
+/* Two reasons to land here, needing different sentences: the published site
+   (where booting the pages would write into a visitor's own saved settings) and
+   a file:// copy off disk (where it cannot work at all — browsers block file://
+   frames). Both end at the same instruction. */
+function refuse() {
+  const onDisk = location.protocol === 'file:';
+  const s = document.getElementById('summary');
+  s.className = 'bad';
+  s.textContent = onDisk
+    ? 'Not run from a file — this page needs a local server.'
+    : 'Not run here — this page boots live copies of the pages it tests.';
+  const tr = document.createElement('tr');
+  const td = document.createElement('td');
+  td.colSpan = 3;
+  td.style.cssText = 'font-size:13px;line-height:1.6';
+  td.innerHTML = (onDisk
+    ? 'The suite loads the calculator and the portfolio in hidden frames to test them, and a '
+      + 'browser blocks those frames when the page is opened straight off disk — so the tests '
+      + 'would have nothing to run against. Serve the folder instead:'
+    : 'The suite loads the calculator and the portfolio in hidden frames to test them. On '
+      + '<strong></strong> those pages would save their defaults into your own browser storage. '
+      + 'It runs on <code>localhost</code> only, against a copy served from the repo folder:') +
+    '<br><br><code>cd ~/claude-lottery &amp;&amp; python3 -m http.server 8010</code><br>' +
+    'then open <code>http://localhost:8010/tests.html</code>.<br><br>' +
+    'Nothing has been changed by opening this page — ' +
+    '<a href="ny-lottery-calculator.html">back to the calculator</a>.';
+  if (!onDisk) td.querySelector('strong').textContent = location.hostname;
+  tr.appendChild(td);
+  document.getElementById('out').appendChild(tr);
+  showLatestRun();
+}
+
+
+/* ── The scorecard, where the suite itself can't run ─────────────────────────
+   Refusing to run and then saying nothing about whether the tests pass is half
+   an answer: the question someone opens this page to ask is "is it green?".
+   The same suite runs headless in CI on every push, so ask GitHub how that went
+   and show it here. Nothing is booted and nothing is stored — it is one public,
+   unauthenticated read of a workflow's run list.
+─────────────────────────────────────────────────────────────────────────── */
+function showLatestRun() {
+  const tr = document.createElement('tr');
+  const td = document.createElement('td');
+  td.colSpan = 3;
+  td.style.cssText = 'font-size:14px;line-height:1.6;padding:12px 16px';
+  td.textContent = 'Checking the latest CI run…';
+  tr.appendChild(td);
+  document.getElementById('out').appendChild(tr);
+
+  fetch('https://api.github.com/repos/eagleadams86/lottery/actions/workflows/tests.yml/runs?branch=main&per_page=1')
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then((d) => {
+      const run = d && d.workflow_runs && d.workflow_runs[0];
+      if (!run) { td.textContent = 'No CI runs found for this repository yet.'; return; }
+      const done = run.status === 'completed';
+      const okRun = run.conclusion === 'success';
+      tr.className = !done ? '' : (okRun ? 'pass' : 'fail');
+      const when = run.updated_at ? new Date(run.updated_at).toLocaleString() : '';
+      const sha = String(run.head_sha || '').slice(0, 7);
+      /* Only ever build an <a> when the API really did hand back a GitHub https
+         URL — the same guard the app's changelog uses. */
+      const url = String(run.html_url || '');
+      td.textContent = (!done ? '⏳ The latest run is still going'
+        : okRun ? '✓ The full suite passed in CI' : '✕ The suite FAILED in CI')
+        + (when ? ' — ' + when : '') + (sha ? ' · commit ' + sha : '') + '. ';
+      if (/^https:\/\/github\.com\//.test(url)) {
+        const a = document.createElement('a');
+        a.href = url; a.rel = 'noopener noreferrer';
+        a.textContent = 'Open the run for the full scorecard';
+        td.appendChild(a);
+      }
+    })
+    .catch(() => { td.textContent = 'Could not reach GitHub to check the latest CI run.'; });
+}
 
 function run() {
   wc = document.getElementById('calc').contentWindow;
