@@ -19,11 +19,16 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
 | `tests.html` | Dev-only test page pinning both pages' pure functions (input parsing, feed validation, tax/allocation math, formatters); run by CI on every push |
 
-The icon is three drawn balls, on the midnight tile the whole app family wears; both pages
-show the same mark beside their title. `make_favicon.py` (Pillow) keeps `favicon.ico` and the
-pages' inline SVG the same picture, rather than leaving a binary nobody can review in a diff.
-Re-run it with `python3 make_favicon.py`, then bump the `?v=` on every `favicon.ico`
-reference — browsers hold on to an icon for a long time.
+**The icon is the native apps' icon** — the numbered ball from
+[lottery-ios](https://github.com/eagleadams86/lottery-ios) and
+[lottery-android](https://github.com/eagleadams86/lottery-android), on the midnight field with
+its two drifting corner glows. Both pages show it beside their title and in the browser tab,
+so the web and the phone apps look like one product. `make_favicon.py` is a port of the iOS
+repo's `scripts/make_icon.py`, in the same 108×108 viewport the Android vectors use, and it
+keeps `favicon.ico` and the pages' inline SVG the same picture rather than leaving a binary
+nobody can review in a diff. If the native icon ever changes, change this with it. Re-run with
+`python3 make_favicon.py`, then bump the `?v=` on every `favicon.ico` reference — browsers
+hold on to an icon for a long time.
 
 Native mobile ports have shipped and their build plans now live in their own (private) repos:
 

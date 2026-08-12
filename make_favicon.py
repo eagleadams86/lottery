@@ -9,76 +9,91 @@ rather than hand-editing a binary nobody can review in a diff.
 
     python3 make_favicon.py
 
-The mark is three drawn balls — the one image that says "lottery" at 16 pixels.
-Solid discs rather than outlined ones on purpose: a ring this small turns to
-mush, a filled shape survives. They sit on the family tile Money Map, PAPTrack,
-Sprint Predictability and Flow Metrics all use: the midnight page as a rounded
-square, the soft disc in the bottom-left corner, and the accent gradient — so
-the balls come out darkest at the bottom left and lightest at the top, which is
-what gives the cluster its depth.
+**The mark is the native apps' icon.** It is a port of
+`claude-lottery-ios/scripts/make_icon.py`, which is itself a render of the
+Android adaptive icon in `claude-lottery-android` — a numbered ball on the
+midnight field with its two drifting corner glows. The web, the iPhone and the
+Android app are one product, and someone who has the app on their phone should
+recognise the tab. **If the native icon changes, change this with it**; the
+coordinates below are deliberately the SAME 108x108 viewport the Android
+vectors use, so the two scripts can be read side by side.
+
+Every colour here is a real theme-pack token (`--bg`, `--surface`,
+`--surface-alt`, `--text-primary`, `--text-secondary`), inherited from the
+native icon — this mark introduces no artwork tints of its own.
 
 Both pages share the one icon; the calculator and the portfolio are two doors
 onto the same thing.
 
 Everything is drawn at 8x and reduced with Lanczos, which is what gives the
-16px version clean edges. Keep the shapes here in step with the SVG in the two
-pages if that ever changes.
+16px version clean edges.
 """
 
 from PIL import Image, ImageDraw
 
-# The mark, in the SVG's own 64x64 coordinates.
-BG = (10, 14, 26, 255)          # #0a0e1a — midnight, the default theme's page
-GLOW = (20, 28, 51, 255)        # #141c33 — the darker disc in the corner
-GRAD_FROM = (129, 140, 248)     # #818cf8 — midnight's accent
-GRAD_TO = (165, 180, 252)       # #a5b4fc
-GRAD_AXIS = ((10, 52), (54, 12))                  # where the gradient runs
+# The mark, in the Android vectors' own 108x108 viewport.
+BG = (10, 14, 26, 255)          # #0a0e1a — --bg, midnight's page
+GLOW_TR = (18, 24, 41, 255)     # #121829 — --surface, the top-right drift
+GLOW_BL = (27, 34, 56, 255)     # #1b2238 — --surface-alt, the bottom-left one
+BALL = (231, 234, 246, 255)     # #e7eaf6 — --text-primary
+SHADE = (170, 178, 208)         # #aab2d0 — --text-secondary, the shaded band
+SHADE_ALPHA = 0.45
 
-BALLS = [(20, 41), (44, 41), (32, 20)]            # centres, drawn back to front
-BALL_R = 9                      # the gaps between them are ~6, which is what
-                                # keeps three separate balls at 16px
+BALL_C = (54, 54, 26)           # centre x, y, radius
+BAND_C = (61, 62, 31)           # the shading circle, clipped to the ball
+RING_R = 15.5                   # the classic inner ring
+RING_W = 2.5
+# The numeral 1 — the Android path with its group transform (scale 0.62 about
+# 54,54 then translateX 3) already applied, exactly as the iOS script does it.
+NUMERAL = [(54.024, 62.68), (54.024, 48.792), (49.808, 51.644), (49.808, 47.924),
+           (54.396, 44.824), (57.744, 44.824), (57.744, 62.68)]
 
+VIEW = 108                      # the viewport the coordinates above are in
 SCALE = 8                       # supersample, then reduce
 SIZES = [16, 32, 48, 64, 128, 256]
 
-
-def lerp(a, b, t):
-    return tuple(round(x + (y - x) * t) for x, y in zip(a, b))
+F = SCALE                       # one viewport unit -> F pixels on the canvas
 
 
-def gradient_at(point):
-    """Colour for a point, projected onto the gradient's axis."""
-    (x0, y0), (x1, y1) = GRAD_AXIS
-    dx, dy = x1 - x0, y1 - y0
-    span = dx * dx + dy * dy
-    t = ((point[0] - x0) * dx + (point[1] - y0) * dy) / span
-    return lerp(GRAD_FROM, GRAD_TO, min(1.0, max(0.0, t)))
+def circle(d, cx, cy, r, **kw):
+    d.ellipse([(cx - r) * F, (cy - r) * F, (cx + r) * F, (cy + r) * F], **kw)
 
 
 def build():
-    n = 64 * SCALE
-    img = Image.new('RGBA', (n, n), (0, 0, 0, 0))
+    n = VIEW * SCALE
+    img = Image.new('RGBA', (n, n), BG)
     d = ImageDraw.Draw(img)
+    circle(d, 82, 18, 44, fill=GLOW_TR)
+    circle(d, 18, 94, 36, fill=GLOW_BL)
 
-    d.rectangle([0, 0, n, n], fill=BG)
-    # the soft disc bottom-left, the way the SVG has it
-    d.ellipse([(14 - 20) * SCALE, (52 - 20) * SCALE,
-               (14 + 20) * SCALE, (52 + 20) * SCALE], fill=GLOW)
+    # The ball, built on its own layer so the shaded band can be clipped to it.
+    ball = Image.new('RGBA', (n, n), (0, 0, 0, 0))
+    bd = ImageDraw.Draw(ball)
+    bx, by, br = BALL_C
+    circle(bd, bx, by, br, fill=BALL)
 
-    # Each ball takes its colour from where its CENTRE falls on the gradient
-    # axis, so a ball is one flat colour and the three read as three depths.
-    # The SVG does the same, by giving each circle its own solid fill.
-    for x, y in BALLS:
-        d.ellipse([(x - BALL_R) * SCALE, (y - BALL_R) * SCALE,
-                   (x + BALL_R) * SCALE, (y + BALL_R) * SCALE],
-                  fill=gradient_at((x, y)) + (255,))
+    band = Image.new('RGBA', (n, n), (0, 0, 0, 0))
+    circle(ImageDraw.Draw(band), *BAND_C,
+           fill=SHADE + (int(SHADE_ALPHA * 255),))
+    clip = Image.new('L', (n, n), 0)
+    circle(ImageDraw.Draw(clip), bx, by, br, fill=255)
+    ball = Image.alpha_composite(
+        ball, Image.composite(band, Image.new('RGBA', (n, n), (0, 0, 0, 0)), clip))
 
-    # Round the corners with an alpha mask. The SVG leaves the disc square at
-    # the edges; an icon reads better rounded, and this is the file that ends
-    # up on a bookmarks bar.
+    bd = ImageDraw.Draw(ball)
+    circle(bd, bx, by, RING_R, fill=BALL, outline=BG,
+           width=max(1, round(RING_W * F)))
+    bd.polygon([(x * F, y * F) for x, y in NUMERAL], fill=BG)
+
+    img = Image.alpha_composite(img, ball)
+
+    # Round the corners with an alpha mask. iOS applies its own corner mask, so
+    # the native icon is drawn square; this is the file that ends up on a
+    # bookmarks bar, where nothing masks it and a square tile reads as a bug.
+    # The radius is the family's 14-in-64, scaled to this viewport.
     mask = Image.new('L', (n, n), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, n - 1, n - 1],
-                                           radius=14 * SCALE, fill=255)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        [0, 0, n - 1, n - 1], radius=round(14 / 64 * VIEW) * SCALE, fill=255)
     img.putalpha(mask)
     return img
 
