@@ -9,18 +9,30 @@ rather than hand-editing a binary nobody can review in a diff.
 
     python3 make_favicon.py
 
-**The mark is the native apps' icon.** It is a port of
-`claude-lottery-ios/scripts/make_icon.py`, which is itself a render of the
-Android adaptive icon in `claude-lottery-android` — a numbered ball on the
-midnight field with its two drifting corner glows. The web, the iPhone and the
-Android app are one product, and someone who has the app on their phone should
-recognise the tab. **If the native icon changes, change this with it**; the
-coordinates below are deliberately the SAME 108x108 viewport the Android
-vectors use, so the two scripts can be read side by side.
+**The mark is the native apps' ball, in the app family's blue.** The GEOMETRY
+is a port of `claude-lottery-ios/scripts/make_icon.py`, which is itself a
+render of the Android adaptive icon in `claude-lottery-android` — a numbered
+ball on the midnight field with its two drifting corner glows. The web, the
+iPhone and the Android app are one product, so someone who has the app on their
+phone should recognise the tab. **If the native icon's shapes change, change
+these with them**; the coordinates below are deliberately the SAME 108x108
+viewport the Android vectors use, so the two scripts can be read side by side.
 
-Every colour here is a real theme-pack token (`--bg`, `--surface`,
-`--surface-alt`, `--text-primary`, `--text-secondary`), inherited from the
-native icon — this mark introduces no artwork tints of its own.
+**The COLOUR is where the web deliberately parts company.** The native ball is
+near-white (`--text-primary`) with a `--text-secondary` band at 45%; here it is
+the app family's two accent tones — `#a5b4fc` for the body, `--accent` for the
+shaded crescent — so it sits beside Money Map, PAPTrack, Sprint Predictability,
+Flow Metrics and Golf Handicap as one of a set. The band is FLAT rather than
+translucent because the two accent tones are close together by design: at the
+native icon's 45% the crescent all but vanished, where 45% of a much darker
+`--text-secondary` gave the white ball a clear one. So: same ball, family
+palette. The phone icons still wear the pale one; changing those means a new
+build and, for iOS, a new submission, so they are deliberately left alone.
+
+Everything except `#a5b4fc` is a real theme-pack token (`--bg`, `--surface`,
+`--surface-alt`, `--accent`). That one is the lighter artwork tint every other
+mark in the family uses — copied, never re-picked, so nothing new enters the
+pack.
 
 Both pages share the one icon; the calculator and the portfolio are two doors
 onto the same thing.
@@ -35,9 +47,9 @@ from PIL import Image, ImageDraw
 BG = (10, 14, 26, 255)          # #0a0e1a — --bg, midnight's page
 GLOW_TR = (18, 24, 41, 255)     # #121829 — --surface, the top-right drift
 GLOW_BL = (27, 34, 56, 255)     # #1b2238 — --surface-alt, the bottom-left one
-BALL = (231, 234, 246, 255)     # #e7eaf6 — --text-primary
-SHADE = (170, 178, 208)         # #aab2d0 — --text-secondary, the shaded band
-SHADE_ALPHA = 0.45
+BALL = (165, 180, 252, 255)     # #a5b4fc — the light accent, as every other mark
+SHADE = (129, 140, 248)         # #818cf8 — --accent, the shaded band
+SHADE_ALPHA = 1.0               # flat, not the native icon's 45% (see below)
 
 BALL_C = (54, 54, 26)           # centre x, y, radius
 BAND_C = (61, 62, 31)           # the shading circle, clipped to the ball

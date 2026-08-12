@@ -10,14 +10,18 @@
      actually uses, plus default-src 'none' and base-uri 'none'.
      Note: frame-ancestors is ignored in a meta tag; it needs a real header. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://home.treasury.gov https://api.github.com; base-uri 'none'; form-action 'none'">
-<!-- The mark is the NATIVE APPS' icon: the numbered ball from lottery-ios and
-     lottery-android, on the midnight field with its two drifting corner glows. The
+<!-- The mark is the NATIVE APPS' ball in the app family's blue: the numbered ball
+     from lottery-ios and lottery-android, on the midnight field with its two
+     drifting corner glows, recoloured to the family accent. The
      web, the iPhone app and the Android app are one product, so someone who has the
      app on their phone should recognise the tab. make_favicon.py is a port of
      claude-lottery-ios/scripts/make_icon.py and keeps the SAME 108x108 viewport the
      Android vectors use, which is why this viewBox is 108 and not the 64 the rest of
-     the app family draws in — if the native icon changes, change both with it. Every
-     colour is a real theme-pack token, inherited from the native icon.
+     the app family draws in — if the native icon's shapes change, change both with
+     them. The COLOUR deliberately parts company: the phone icons wear a near-white
+     ball, this one wears the app family's two accent tones so it sits beside its
+     siblings. The shaded crescent is FLAT here, not the native 45% — the two accent
+     tones are close together, so at 45% the shading all but disappeared.
      The SVG is what every current browser shows; favicon.ico is the fallback a
      browser fetches from the site root on its own, and what a bookmark uses. The two
      are the same picture, so keep them in step. The rounded corner is a CLIP over the
@@ -25,8 +29,8 @@
      tile deliberately, and without the clip they would square the corners off — the
      .ico rounds them with an alpha mask at the end, which is the same thing.
      img-src allows data: URIs, so the SVG costs no extra request. -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108 108'> <defs><clipPath id='r'><rect width='108' height='108' rx='24'/></clipPath><clipPath id='b'><circle cx='54' cy='54' r='26'/></clipPath></defs> <g clip-path='url(%23r)'> <rect width='108' height='108' fill='%230a0e1a'/> <circle cx='82' cy='18' r='44' fill='%23121829'/> <circle cx='18' cy='94' r='36' fill='%231b2238'/> <circle cx='54' cy='54' r='26' fill='%23e7eaf6'/> <circle cx='61' cy='62' r='31' fill='%23aab2d0' fill-opacity='.45' clip-path='url(%23b)'/> <circle cx='54' cy='54' r='15.5' fill='%23e7eaf6' stroke='%230a0e1a' stroke-width='2.5'/> <path d='M54.024 62.68L54.024 48.792L49.808 51.644L49.808 47.924L54.396 44.824L57.744 44.824L57.744 62.68Z' fill='%230a0e1a'/> </g> </svg>">
-<link rel="alternate icon" href="favicon.ico?v=2">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108 108'> <defs><clipPath id='r'><rect width='108' height='108' rx='24'/></clipPath><clipPath id='b'><circle cx='54' cy='54' r='26'/></clipPath></defs> <g clip-path='url(%23r)'> <rect width='108' height='108' fill='%230a0e1a'/> <circle cx='82' cy='18' r='44' fill='%23121829'/> <circle cx='18' cy='94' r='36' fill='%231b2238'/> <circle cx='54' cy='54' r='26' fill='%23a5b4fc'/> <circle cx='61' cy='62' r='31' fill='%23818cf8' clip-path='url(%23b)'/> <circle cx='54' cy='54' r='15.5' fill='%23a5b4fc' stroke='%230a0e1a' stroke-width='2.5'/> <path d='M54.024 62.68L54.024 48.792L49.808 51.644L49.808 47.924L54.396 44.824L57.744 44.824L57.744 62.68Z' fill='%230a0e1a'/> </g> </svg>">
+<link rel="alternate icon" href="favicon.ico?v=3">
 <!-- No maximum-scale: pinch-zoom must stay available (WCAG 1.4.4) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lottery Portfolio</title>
@@ -137,7 +141,7 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
       <!-- ?v= is not decoration: a browser holds on to a favicon for a long time, and
            without it this would keep showing whatever icon it cached the first time.
            Bump it on every reference in both pages when make_favicon.py is re-run. -->
-      <h1><img src="favicon.ico?v=2" width="24" height="24" alt="">Lottery Portfolio</h1>
+      <h1><img src="favicon.ico?v=3" width="24" height="24" alt="">Lottery Portfolio</h1>
       <p class="hdr-sub">Outside NYC &nbsp;·&nbsp; 37% federal + 10.9% NY state</p>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
