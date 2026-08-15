@@ -233,6 +233,25 @@ t('tint() mixes a series colour 68% toward the card; junk passes through', () =>
   eq(wp.tint('red'), 'red', 'a non-hex colour is returned untouched');
 });
 
+group('take-home slider scale');
+t('posToM / mToPos span $0.1M to $500M and round-trip', () => {
+  eq(Math.round(wp.posToM(0) * 1e6), 100000, 'the floor is $100K, not $1M');
+  eq(Math.round(wp.posToM(1000) * 1e6), 500000000);
+  [0.1, 0.5, 5, 20, 500].forEach(m =>
+    ok(Math.abs(wp.posToM(wp.mToPos(m)) - m) < 1e-9, m + 'M survives the round-trip'));
+});
+t('mToPos clamps out-of-range amounts onto the track', () => {
+  eq(wp.mToPos(0.01), 0, 'below the floor pins to the low end');
+  eq(wp.mToPos(2000), 1000, 'above the ceiling pins to the high end');
+});
+t('the decades are evenly spaced, so small wins are as draggable as big ones', () => {
+  // Each 10x costs the same length of track — that is the whole point of the
+  // log scale, and it is what makes a $500K share reachable by dragging.
+  const decade = wp.mToPos(10) - wp.mToPos(1);
+  ok(Math.abs((wp.mToPos(1) - wp.mToPos(0.1)) - decade) < 1e-9);
+  ok(Math.abs((wp.mToPos(100) - wp.mToPos(10)) - decade) < 1e-9);
+});
+
 /* ── Runner ───────────────────────────────────────────────────────────────── */
 /* ── The localhost gate ─────────────────────────────────────────────────────
    Booting the pages is itself the side effect worth guarding: they save their
