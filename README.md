@@ -98,7 +98,7 @@ Both pages are built to meet WCAG 2.1 AA:
 
 ## Security
 
-- **Content Security Policy** — both pages declare a CSP via `<meta>` (GitHub Pages can't set response headers). `connect-src` pins network access to only the feeds each page uses, and `default-src 'none'` / `base-uri 'none'` / `form-action 'none'` close off the rest. `'unsafe-inline'` for script and style is unavoidable given the no-build-step single-file design, so the policy is defence in depth rather than full XSS protection. `frame-ancestors` can't be set from a meta tag and would need a real header
+- **Content Security Policy** — every page declares a CSP via `<meta>` (GitHub Pages can't set response headers), including `tests.html`, which Pages publishes beside the apps. `connect-src` pins network access to only the feeds each page uses, and `default-src 'none'` / `base-uri 'none'` / `form-action 'none'` close off the rest. `'unsafe-inline'` for script and style is unavoidable given the no-build-step single-file design, so the policy is defence in depth rather than full XSS protection. `frame-ancestors` can't be set from a meta tag and would need a real header
 - **Untrusted feed data** — winning numbers from `data.ny.gov` are validated before rendering: ball numbers must match `\d{1,2}`, the multiplier is coerced with `parseInt`, and draw dates must match `YYYY-MM-DD`; anything else is dropped. Commit links from the GitHub API are only rendered as links when the URL is a real `https://github.com/` address
 - **Jackpot proxy** — the Worker restricts CORS to the GitHub Pages origin. Note this only stops other *websites* using it; `Origin` is set by the browser, so a scripted client can still call it directly
 
