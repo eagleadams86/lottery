@@ -152,7 +152,9 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 .leg { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--text2); }
 .leg-sq { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
 .note { font-size:11px; color:var(--text3); margin-top:18px; padding-top:14px; border-top:0.5px solid var(--border); line-height:1.6; }
-.footer { font-size:11px; color:var(--text3); text-align:center; margin-top:36px; }
+/* Left-aligned to match the notes above it and the sibling apps' footers — the
+   disclaimer wraps on a narrow window, and centred wrapped text has no edge to read down. */
+.footer { font-size:11px; color:var(--text3); text-align:left; margin-top:36px; }
 .footer a{color:inherit}
 .foot-links{margin-top:10px}
 </style>
