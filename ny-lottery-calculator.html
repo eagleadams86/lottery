@@ -37,6 +37,20 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108 108'> <defs><clipPath id='r'><rect width='108' height='108' rx='24'/></clipPath><clipPath id='b'><circle cx='54' cy='54' r='34.5'/></clipPath></defs> <g clip-path='url(%23r)'> <rect width='108' height='108' fill='%230a0e1a'/> <circle cx='82' cy='18' r='44' fill='%23121829'/> <circle cx='18' cy='94' r='36' fill='%231b2238'/> <circle cx='54' cy='54' r='34.5' fill='%23a5b4fc'/> <circle cx='63.288' cy='64.615' r='41.135' fill='%23818cf8' clip-path='url(%23b)'/> <circle cx='54' cy='54' r='20.567' fill='%23a5b4fc' stroke='%230a0e1a' stroke-width='3.317'/> <path d='M54.032 65.518L54.032 47.089L48.438 50.874L48.438 45.938L54.525 41.824L58.968 41.824L58.968 65.518Z' fill='%230a0e1a'/> </g> </svg>">
 <link rel="alternate icon" href="favicon.ico?v=4">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  /* Frame-buster. GitHub Pages can't send frame-ancestors (a meta CSP ignores
+     it), so any origin could iframe this page and redress a visitor's clicks.
+     The ONE legitimate framer is tests.html: same-origin, so its frameElement
+     is readable and carries data-lottery-tests. A cross-origin framer makes
+     window.frameElement null and top.location assignable — navigating the top
+     window away is the only counter a page can mount. */
+  try {
+    if (window.top !== window.self &&
+        !(window.frameElement && window.frameElement.hasAttribute('data-lottery-tests'))) {
+      window.top.location = window.self.location;
+    }
+  } catch (e) { document.documentElement.style.display = 'none'; }
+</script>
 <title>NY Lottery After-Tax Calculator</title>
 <link rel="stylesheet" href="theme.css">
 <style>
@@ -644,7 +658,21 @@ async function fetchWinning(force){
     _wnLoaded=true;
     renderWinning();
   } catch(e) {
-    loading.innerHTML='Could not load winning numbers.';
+    // On failure fall back to the cache with the TTL ignored — stale numbers
+    // beat none. Leaving _wnLoaded false while old numbers were still on
+    // screen made renderWinning()'s early return stop the panel tracking
+    // game-card clicks until a full reload.
+    try {
+      var stale=JSON.parse(localStorage.getItem('lottery-winning-cache'));
+      if(stale && (stale.pb||stale.mm)){ winData.pb=stale.pb; winData.mm=stale.mm; }
+    } catch(e2){}
+    if(winData.pb||winData.mm){
+      _wnLoaded=true;
+      loading.innerHTML='Could not refresh \u2014 showing earlier results.';
+      renderWinning();
+    } else {
+      loading.innerHTML='Could not load winning numbers.';
+    }
   }
 }
 
@@ -671,7 +699,13 @@ function applyJackpots(data, ts){
   document.getElementById('manual-wrap').style.display='block';
   document.getElementById('manual-inputs').classList.remove('open');
   document.getElementById('manual-chevron').classList.remove('open');
-  var t=new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  var d=new Date(ts);
+  var t=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  // Within the 6-hour TTL "Updated 11:50 PM" can be yesterday's pull, and a
+  // bare time-of-day reads as today. Name the day whenever it isn't today's.
+  if(d.toDateString()!==new Date().toDateString()){
+    t=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+', '+t;
+  }
   var st=document.getElementById('fetch-status');
   st.className='fetch-status ok';
   st.textContent='Updated '+t+' — tap a game below';
@@ -715,9 +749,15 @@ async function fetchJackpots(force){
     } else { throw new Error('No data'); }
   } catch(e) {
     st.className='fetch-status err';
-    st.textContent='Could not load jackpots \u2014 enter amounts below';
-    document.getElementById('game-row').style.display='none'; // hide inert skeleton cards
-    openManual();
+    // A failed refresh must not tear down a working page: when cached jackpots
+    // are already on the cards, report the failure and leave everything alone.
+    if(gameData.pb||gameData.mm){
+      st.textContent='Could not refresh jackpots \u2014 showing earlier figures';
+    } else {
+      st.textContent='Could not load jackpots \u2014 enter amounts below';
+      document.getElementById('game-row').style.display='none'; // hide inert skeleton cards
+      openManual();
+    }
   }
   btn.disabled=false;
 }
@@ -825,6 +865,21 @@ function onWinnersChange(){
 }
 
 // ── Calc ──────────────────────────────────────────────────────────────────────
+// Withheld at payment vs. true liability at the top marginal rate; fedX/nyX is
+// the extra owed when filing the return. Pure arithmetic, split from calc() so
+// tests.html can pin it. `lump` is the full pre-tax lump sum in dollars.
+function taxBreakdown(lump, np){
+  var share=lump/np;
+  var fedWH=share*FED_WH, nyWH=share*NY_WH, totWH=fedWH+nyWH, afterWH=share-totWH;
+  var fedTrue=share*FED_TOP, nyTrue=share*NY_TOP;
+  var fedX=Math.max(0,fedTrue-fedWH), nyX=Math.max(0,nyTrue-nyWH);
+  var net=share-(fedTrue+nyTrue);
+  // A typed $0 lump is legitimate input; without the guard 0/0 reads "NaN%".
+  var eff=share>0?(fedTrue+nyTrue)/share:0;
+  return { share:share, fedWH:fedWH, nyWH:nyWH, totWH:totWH, afterWH:afterWH,
+           fedTrue:fedTrue, nyTrue:nyTrue, fedX:fedX, nyX:nyX, net:net, eff:eff };
+}
+
 function calc(){
   // Flag unreadable amounts in the hint line under each box.
   showFieldError('jackpot-input','j-hint','Not a number — try 238 or 1.5B',
@@ -834,22 +889,19 @@ function calc(){
 
   var lump=parseField('lump-input',lUnit);
   var jack=parseField('jackpot-input',jUnit);
-  if(!lump&&jack) lump=jack*0.60; // no cash value entered — estimate lump at 60% of advertised
+  // === null, not falsy: a typed $0 is an answer, not a blank to re-estimate.
+  if(lump===null&&jack!==null) lump=jack*0.60; // no cash value entered — estimate lump at 60% of advertised
   var np=winnersValue();
 
-  if(!lump){
+  if(lump===null){
     document.getElementById('mgrid').innerHTML='<div class="empty">Tap a game above to see the breakdown.</div>';
     document.getElementById('results-section').style.display='none';
     return;
   }
 
-  // Withheld at payment vs. true liability at the top marginal rate;
-  // fedX/nyX is the extra owed when filing the return.
-  var share=lump/np;
-  var fedWH=share*FED_WH, nyWH=share*NY_WH, totWH=fedWH+nyWH, afterWH=share-totWH;
-  var fedTrue=share*FED_TOP, nyTrue=share*NY_TOP;
-  var fedX=Math.max(0,fedTrue-fedWH), nyX=Math.max(0,nyTrue-nyWH);
-  var net=share-(fedTrue+nyTrue), eff=(fedTrue+nyTrue)/share;
+  var b=taxBreakdown(lump,np);
+  var share=b.share, fedWH=b.fedWH, nyWH=b.nyWH, totWH=b.totWH, afterWH=b.afterWH,
+      fedTrue=b.fedTrue, nyTrue=b.nyTrue, fedX=b.fedX, nyX=b.nyX, net=b.net, eff=b.eff;
 
   document.getElementById('mgrid').innerHTML=
     mc('Your lump share',fmtM1(share),'')+

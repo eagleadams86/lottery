@@ -6,7 +6,7 @@
      meta tag is the only place to declare one. 'unsafe-inline' is unavoidable
      here: the whole app (including the bundled Chart.js) is inline script and
      style, by design — there's no build step to generate hashes. The real value
-     is connect-src, which pins network access to the three feeds this page
+     is connect-src, which pins network access to the two feeds this page
      actually uses, plus default-src 'none' and base-uri 'none'.
      Note: frame-ancestors is ignored in a meta tag; it needs a real header. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://home.treasury.gov https://api.github.com; base-uri 'none'; form-action 'none'">
@@ -38,6 +38,20 @@
 <link rel="alternate icon" href="favicon.ico?v=4">
 <!-- No maximum-scale: pinch-zoom must stay available (WCAG 1.4.4) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  /* Frame-buster. GitHub Pages can't send frame-ancestors (a meta CSP ignores
+     it), so any origin could iframe this page and redress a visitor's clicks.
+     The ONE legitimate framer is tests.html: same-origin, so its frameElement
+     is readable and carries data-lottery-tests. A cross-origin framer makes
+     window.frameElement null and top.location assignable — navigating the top
+     window away is the only counter a page can mount. */
+  try {
+    if (window.top !== window.self &&
+        !(window.frameElement && window.frameElement.hasAttribute('data-lottery-tests'))) {
+      window.top.location = window.self.location;
+    }
+  } catch (e) { document.documentElement.style.display = 'none'; }
+</script>
 <title>Lottery Portfolio</title>
 <link rel="stylesheet" href="theme.css">
 <!-- Vendored Chart.js (minified UMD build) on the single line below — third-party library, do not hand-edit. -->
@@ -105,7 +119,9 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 .tbl-row span { font-size:13px; color:var(--text); font-variant-numeric:tabular-nums; }
 .tbl-row > span:not(:first-child), .tbl-mid > span { text-align:right; }
 @media (max-width:600px) {
-  .tbl-head { display:none; }
+  /* Visually hidden, NOT display:none — the ARIA table's column headers have
+     to survive on a phone, or every cell there reads as an unlabelled number. */
+  .tbl-head { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
   .tbl-row { grid-template-columns:1fr auto; row-gap:3px; padding:10px 14px; }
   .tname { grid-column:1; grid-row:1; }
   .tbl-after { grid-column:2; grid-row:1; align-self:start; font-size:15px; text-align:right; }
@@ -181,12 +197,17 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
   <div class="section">
     <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('breakdown')" aria-expanded="true" aria-controls="body-breakdown"><span class="sec-chevron open" id="chev-breakdown" aria-hidden="true">&#9654;</span>Portfolio breakdown</button></h2>
     <div class="sec-body" id="body-breakdown">
-    <div class="card">
-      <div class="tbl-head">
-        <span>Holding</span><span>Allocation</span><span>% total</span>
-        <span>Gross income</span><span>Tax treatment</span><span>After-tax income</span>
+    <!-- A grid of divs, not a <table>: the phone layout re-flows each row into
+         two lines, which real table display types can't do. The ARIA roles put
+         the table semantics back so screen readers get labelled cells instead
+         of a stream of bare numbers; the rows built in render() carry the
+         matching row/cell roles. -->
+    <div class="card" role="table" aria-label="Portfolio breakdown">
+      <div class="tbl-head" role="row">
+        <span role="columnheader">Holding</span><span role="columnheader">Allocation</span><span role="columnheader">% total</span>
+        <span role="columnheader">Gross income</span><span role="columnheader">Tax treatment</span><span role="columnheader">After-tax income</span>
       </div>
-      <div id="tbl-body"></div>
+      <div id="tbl-body" role="rowgroup"></div>
     </div>
     <p class="alloc-warn" id="alloc-warn" role="status" hidden></p>
     </div>
@@ -539,30 +560,39 @@ function render() {
   ];
 
   // ── Table ──
+  // role=presentation on .tbl-mid: it exists only so the phone layout can
+  // re-flow the middle four cells as one flex group, so assistive tech should
+  // see its children as the row's own cells. Cell order matches the header
+  // (Holding · Allocation · % total · Gross · Tax treatment · After-tax),
+  // which is what associates each cell with its column.
   document.getElementById('tbl-body').innerHTML = rows.map(r => `
-    <div class="tbl-row">
-      <span class="tname"><span class="tni"><span class="dot" style="background:${r.color}"></span>${r.name}</span><span class="tsub">${r.sub}</span></span>
-      <div class="tbl-mid">
-        <span>${fm(r.alloc)}</span>
-        <span>${pct(r.alloc/total)}</span>
-        <span>${fm(r.gross)}</span>
-        <span class="${r.tc}">${r.tax}</span>
+    <div class="tbl-row" role="row">
+      <span class="tname" role="cell"><span class="tni"><span class="dot" style="background:${r.color}"></span>${r.name}</span><span class="tsub">${r.sub}</span></span>
+      <div class="tbl-mid" role="presentation">
+        <span role="cell">${fm(r.alloc)}</span>
+        <span role="cell">${pct(r.alloc/total)}</span>
+        <span role="cell">${fm(r.gross)}</span>
+        <span class="${r.tc}" role="cell">${r.tax}</span>
       </div>
-      <span class="tbl-after" style="font-weight:600">${fm(r.after)}</span>
+      <span class="tbl-after" role="cell" style="font-weight:600">${fm(r.after)}</span>
     </div>`).join('') + `
-    <div class="tbl-row tot">
-      <span style="font-weight:600">Total</span>
-      <div class="tbl-mid">
-        <span style="font-weight:600">${fm(total)}</span>
-        <span>100%</span>
-        <span style="font-weight:600">${fm(totG)}</span>
-        <span style="font-size:11px;color:var(--text3)">Eff. rate ${effRate.toFixed(1)}%</span>
+    <div class="tbl-row tot" role="row">
+      <span style="font-weight:600" role="cell">Total</span>
+      <div class="tbl-mid" role="presentation">
+        <span style="font-weight:600" role="cell">${fm(total)}</span>
+        <span role="cell">100%</span>
+        <span style="font-weight:600" role="cell">${fm(totG)}</span>
+        <span style="font-size:11px;color:var(--text3)" role="cell">Eff. rate ${effRate.toFixed(1)}%</span>
       </div>
-      <span class="tbl-after" style="font-weight:600;color:var(--green)">${fm(totA)}</span>
+      <span class="tbl-after" role="cell" style="font-weight:600;color:var(--green)">${fm(totA)}</span>
     </div>`;
 
   // ── Waterfall ──
   const maxWF = totG || 1;
+  // Negative bars are the theme's --err at 40% alpha, appended as a hex-alpha
+  // pair the way the line chart does (COLORS.vti+'18'). cssVar() resolves it
+  // per render, so a theme switch re-renders it correctly; every theme in the
+  // pack defines --err as a 6-digit hex, which is what makes the append safe.
   function wfrow(lbl, val, color, indent) {
     if (Math.abs(val) < 0.5) val = 0; // snap near-zero (avoids "−$0")
     const w = Math.round((Math.abs(val)/maxWF)*100);
@@ -570,12 +600,12 @@ function render() {
     const isSurplus = lbl === 'Surplus';
     return `<div class="wfr">
       <span class="wfl" style="padding-left:${indent?10:0}px;font-size:${indent?11:12}px;color:${neg?'var(--red)':'var(--text2)'}">${lbl}</span>
-      <div class="wfb"><div class="wfbi" style="width:${w}%;background:${neg?'rgba(153,27,27,0.4)':color}"></div></div>
+      <div class="wfb"><div class="wfbi" style="width:${w}%;background:${neg?cssVar('--err')+'66':color}"></div></div>
       <span class="wfv" style="color:${neg?'var(--red)':isSurplus&&val>=0?'var(--green)':'var(--text)'}">${neg?'−':isSurplus&&val>0?'+':''}${fm(Math.abs(val))}</span>
     </div>`;
   }
   document.getElementById('waterfall').innerHTML =
-    wfrow('Gross income', totG, '#888888', false) +
+    wfrow('Gross income', totG, 'var(--text-muted)', false) +
     '<hr class="wfd">' +
     // Display-only split of the total tax drag: ~77% federal / ~23% NY
     wfrow('Federal tax drag',  -(totG-totA)*0.77, '', true) +
@@ -746,7 +776,16 @@ function parseLatest1yr(xml){
 }
 var TBILL_TTL = 6*60*60*1000; // 6 hours — Treasury yields update once per business day
 function applyTbill(rate, dateStr){
-  document.getElementById('sl-tb').value = Math.min(7, Math.max(2, Math.round(rate*10)/10));
+  // Move the slider only when the live rate is one this browser hasn't adopted
+  // yet — reapplying the cached rate on every load stomped a manual override
+  // for the whole 6-hour TTL, though the README promises an override sticks.
+  // Same seeded-from pattern as the take-home slider in loadSliders().
+  var r = Math.min(7, Math.max(2, Math.round(rate*10)/10));
+  var adopted = parseFloat(localStorage.getItem('lottery-tbill-adopted'));
+  if (r !== adopted) {
+    document.getElementById('sl-tb').value = r;
+    localStorage.setItem('lottery-tbill-adopted', String(r));
+  }
   var d = new Date(dateStr.slice(0,10) + 'T00:00:00');
   document.getElementById('tb-src').textContent = 'live · ' + d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
   render();

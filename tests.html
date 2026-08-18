@@ -8,15 +8,17 @@
 <style>
   /* Dev-only page: pins the pure functions in BOTH apps — the calculator's
      input/API boundaries (parseField, ball, fmtDrawDate, the block builders)
-     and the portfolio's income model (computeIncome, parseLatest1yr). Loads
+     and tax arithmetic (taxBreakdown), and the portfolio's income model
+     (computeIncome, parseLatest1yr) and input boundary (syncSlider). Loads
      each real page in a hidden same-origin iframe and calls its functions
      directly, so what's tested is what ships. Serve over http://localhost
      (python3 -m http.server 8010); file:// iframes are blocked in some
      browsers. The apps' own boot code runs (theme write, jackpot/winning
-     fetches that fail harmlessly off the live origin) — the tests themselves
-     add no writes and never fire input events, so calc()'s localStorage
-     write is never triggered. Colours are the Midnight palette from the
-     theme pack (dev page, hardcoded). */
+     fetches that fail harmlessly off the live origin) — the pure-function
+     tests add no writes of their own; only the syncSlider group drives a
+     real handler whose render() saves slider state, into the localhost
+     copy's storage the localhost gate already confines it to. Colours are
+     the Midnight palette from the theme pack (dev page, hardcoded). */
   body { background: #0a0e1a; color: #e7eaf6; margin: 0;
          font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
   .wrap { max-width: 860px; margin: 0 auto; padding: 28px 20px 60px; }
@@ -165,6 +167,28 @@ t('withholding and top marginal rates match the published note', () => {
   eq(wc.NY_WH, 0.105); eq(wc.NY_TOP, 0.109);
 });
 
+group('taxBreakdown — the arithmetic behind calc() (calculator)');
+t('one winner: withholding, return top-up and net all follow from the rates', () => {
+  const b = wc.taxBreakdown(100e6, 1);
+  near(b.share, 100e6);
+  near(b.fedWH, 24e6); near(b.nyWH, 10.5e6);
+  near(b.afterWH, 100e6 - 34.5e6, 'received after withholding');
+  near(b.fedX, 13e6, 'the 37% − 24% federal gap');
+  near(b.nyX, 400e3, 'the 10.9% − 10.5% NY gap');
+  near(b.net, 100e6 * (1 - 0.37 - 0.109));
+  ok(Math.abs(b.eff - 0.479) < 1e-9, 'effective rate is the two top rates combined');
+});
+t('splitting divides the share before any tax is applied', () => {
+  const b = wc.taxBreakdown(100e6, 4);
+  near(b.share, 25e6);
+  near(b.net, wc.taxBreakdown(25e6, 1).net, 'a quarter share taxes like a $25M win');
+});
+t('a typed $0 lump is a real answer: all zeros, never NaN', () => {
+  const b = wc.taxBreakdown(0, 1);
+  eq(b.share, 0); eq(b.net, 0);
+  eq(b.eff, 0, '0/0 must not surface as "NaN%" on screen');
+});
+
 group('computeIncome — the portfolio allocation model');
 t('when the 8-year ladder fits, buckets sum to exactly the portfolio', () => {
   const m = wp.computeIncome(100e6, 250e3, 0.04, 0.03, 0.013, 0.02, 0.6);
@@ -253,6 +277,58 @@ t('the decades are evenly spaced, so small wins are as draggable as big ones', (
   ok(Math.abs((wp.mToPos(100) - wp.mToPos(10)) - decade) < 1e-9);
 });
 
+group('syncSlider — the typed-value boundary (portfolio)');
+/* Drives the REAL onchange handler on the real boxes, with the same arguments
+   the markup passes. Unlike the groups above these tests have side effects:
+   syncSlider ends in render(), which rewrites every box and saves slider
+   state — into the localhost copy's own storage only, which the gate below
+   already guarantees. The first test notes where the sliders were and the
+   last one puts them back. */
+function syncBox(boxId, typed, args) {
+  const el = wp.document.getElementById(boxId);
+  el.value = typed;
+  wp.syncSlider.apply(null, [el].concat(args));
+}
+const TOT_ARGS   = ['sl-tot', 0.1, 500, 1e6, true];
+const SP_ARGS    = ['sl-sp', 50, 5000, 1e3];
+const SPLIT_ARGS = ['sl-split', 40, 80];
+const slider = (id) => wp.document.getElementById(id).value;
+let _slBefore = null;
+t('a typed K/M/B suffix is an absolute amount, converted to the slider\'s unit', () => {
+  _slBefore = { tot: slider('sl-tot'), sp: slider('sl-sp'), split: slider('sl-split') };
+  syncBox('o-tot', '0.2B', TOT_ARGS);
+  near(wp.posToM(parseFloat(slider('sl-tot'))), 200, '"0.2B" is 200 slider-millions');
+  syncBox('o-sp', '1.5M', SP_ARGS);
+  eq(parseFloat(slider('sl-sp')), 1500, '"1.5M" of spending is 1500 slider-thousands');
+});
+t('"5B" clamps to the $500M ceiling instead of quietly reading as $5M', () => {
+  // The documented past bug: the suffix was stripped, so "5B" set $5M.
+  syncBox('o-tot', '5B', TOT_ARGS);
+  near(wp.posToM(parseFloat(slider('sl-tot'))), 500);
+});
+t('the split box reads the left half of "NN/MM"', () => {
+  syncBox('o-split', '55/45', SPLIT_ARGS);
+  eq(parseFloat(slider('sl-split')), 55);
+});
+t('dollar signs and commas are stripped; out-of-range values clamp onto the track', () => {
+  syncBox('o-sp', '$9,999', SP_ARGS);
+  eq(parseFloat(slider('sl-sp')), 5000);
+  syncBox('o-sp', '3', SP_ARGS);
+  eq(parseFloat(slider('sl-sp')), 50, 'below the floor pins to the low end');
+});
+t('junk leaves the slider alone and the box snaps back to the real value', () => {
+  const before = slider('sl-sp');
+  syncBox('o-sp', 'abc', SP_ARGS);
+  eq(slider('sl-sp'), before, 'the slider must not move');
+  eq(wp.document.getElementById('o-sp').value, wp.fm(parseFloat(before) * 1e3),
+     'the box shows the value actually in use, not the junk');
+  // Put the sliders back where the page had them before this group ran.
+  wp.document.getElementById('sl-tot').value = _slBefore.tot;
+  wp.document.getElementById('sl-sp').value = _slBefore.sp;
+  wp.document.getElementById('sl-split').value = _slBefore.split;
+  wp.render();
+});
+
 /* ── Runner ───────────────────────────────────────────────────────────────── */
 /* ── The localhost gate ─────────────────────────────────────────────────────
    Booting the pages is itself the side effect worth guarding: they save their
@@ -272,6 +348,10 @@ window.addEventListener('load', () => {
   const frame = (id, src, title) => {
     const f = document.createElement('iframe');
     f.id = id; f.src = src; f.title = title;
+    /* Both apps' frame-busters break out of any framer that does NOT carry
+       this attribute — it is what marks these frames as the one legitimate,
+       same-origin exception. */
+    f.setAttribute('data-lottery-tests', '');
     f.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none';
     document.body.appendChild(f);
     return f;
