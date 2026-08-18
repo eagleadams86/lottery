@@ -19,6 +19,9 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
 | `tests.html` | Dev-only test page pinning both pages' pure functions (input parsing, feed validation, tax/allocation math, formatters); run by CI on every push |
 
+Both pages carry a **How it works** link at the foot, back to this README on GitHub — the
+repo front page renders it, and it is where the tax and allocation assumptions are spelled out.
+
 **The icon is the native apps' ball, in the app family's blue** — the numbered ball from
 [lottery-ios](https://github.com/eagleadams86/lottery-ios) and
 [lottery-android](https://github.com/eagleadams86/lottery-android), on the midnight field with
