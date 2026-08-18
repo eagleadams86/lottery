@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="midnight">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NY Lottery Calculator — Privacy Policy</title>
+<link rel="icon" href="favicon.ico?v=1">
+<script>
+  /* The same pre-paint boot as the two app pages: honour the saved theme, so this
+     page doesn't open midnight on someone who chose Light. Keep the list in step
+     with theirs. */
+  try {
+    var t = localStorage.getItem('lottery-theme');
+    var ok = ['light','dark','midnight','sepia'];
+    document.documentElement.setAttribute('data-theme',
+      ok.indexOf(t) === -1 ? 'midnight' : t);
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="theme.css">
+<style>
+  body { margin: 0; background: var(--bg); color: var(--text-primary);
+         font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 44px 20px 80px; }
+  h1 { font-size: 22px; margin: 0 0 2px; }
+  .meta { color: var(--text-muted); font-size: 13px; margin: 0 0 26px; }
+  h2 { font-size: 17px; margin: 30px 0 8px; }
+  p, li { color: var(--text-secondary); }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; border-radius: 3px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: 12px; padding: 16px 20px; margin: 14px 0; }
+  .card p { margin: 0; }
+  .card strong { color: var(--text-primary); }
+  ul { padding-left: 20px; }
+  .back { display: inline-block; margin-bottom: 26px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="ny-lottery-calculator.html">← Back to the calculator</a>
+  <h1>NY Lottery Calculator &amp; Portfolio — Privacy Policy</h1>
+  <p class="meta">Effective August 18, 2026</p>
+
+  <p>Both pages — the after-tax calculator and the lump-sum portfolio model — run entirely in
+  your browser. There is no account, no sign-in and no server of ours holding anything.</p>
+
+  <h2>What These Pages Store</h2>
+  <p>Only your own settings, in your browser's local storage: the theme you picked, the
+  jackpot game and number of winners you last used, which sections you left open, and the
+  portfolio page's slider values (take-home amount, spending, yields and the equity split).
+  The figures you type are never sent anywhere — every calculation happens on your device.
+  Clearing the site's browser data deletes all of it.</p>
+
+  <h2>What Leaves Your Browser</h2>
+  <div class="card">
+    <p><strong>Current jackpots.</strong> The calculator asks a small Cloudflare Worker
+    (<code>lottery-proxy.charlie-adams-176.workers.dev</code>) for the current Powerball and
+    Mega Millions jackpots. It reads them from a public lottery site and passes the two
+    numbers back. Nothing about you or your figures is included in the request.</p>
+  </div>
+  <div class="card">
+    <p><strong>Winning numbers.</strong> Recent draw results come from New York State's own
+    open-data service at <code>data.ny.gov</code>. Again, only a request for public results —
+    nothing of yours goes with it.</p>
+  </div>
+  <div class="card">
+    <p><strong>T-bill yield.</strong> The portfolio page reads the current Treasury yield
+    curve from <code>home.treasury.gov</code> so the cash bucket starts at a real rate.</p>
+  </div>
+  <p>Those three are the only network calls either page makes, and the pages' Content-Security-Policy
+  blocks anything else outright. Like any web request, each one necessarily shows the service
+  your IP address — that is all they receive.</p>
+
+  <h2>What These Pages Do Not Do</h2>
+  <ul>
+    <li>No analytics or usage-tracking scripts</li>
+    <li>No advertising or ad networks</li>
+    <li>No cookies, no accounts, no sign-in</li>
+    <li>No third-party code — the chart library is a copy served from this site, not a CDN</li>
+    <li>No selling or sharing data with third parties; there is nothing to sell</li>
+  </ul>
+
+  <h2>Changes to This Policy</h2>
+  <p>If this policy changes, the updated version will be posted here with a new effective
+  date.</p>
+
+  <h2>Contact</h2>
+  <p><a href="mailto:eagleadams86@gmail.com">eagleadams86@gmail.com</a></p>
+</div>
+</body>
+</html>

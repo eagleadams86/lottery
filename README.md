@@ -18,6 +18,7 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 | `make_favicon.py` | Draws `favicon.ico` to match the inline SVG icon in both pages |
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
 | `tests.html` | Dev-only test page pinning both pages' pure functions (input parsing, feed validation, tax/allocation math, formatters); run by CI on every push |
+| `privacy.html` | Privacy policy for both pages — what is kept in the browser, and the three public feeds they read |
 
 Both pages carry a **How it works** link at the foot, back to this README on GitHub — the
 repo front page renders it, and it is where the tax and allocation assumptions are spelled out.

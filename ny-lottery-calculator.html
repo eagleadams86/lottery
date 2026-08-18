@@ -6,10 +6,10 @@
      meta tag is the only place to declare one. 'unsafe-inline' is unavoidable
      here: the app is inline script and style, by design — there's no build step
      to generate hashes. The real value is connect-src, which pins network
-     access to the three feeds this page actually uses, plus default-src 'none'
+     access to the two feeds this page actually uses, plus default-src 'none'
      and base-uri 'none'.
      Note: frame-ancestors is ignored in a meta tag; it needs a real header. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://lottery-proxy.charlie-adams-176.workers.dev https://data.ny.gov https://api.github.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://lottery-proxy.charlie-adams-176.workers.dev https://data.ny.gov; base-uri 'none'; form-action 'none'">
 <!-- The mark is the NATIVE APPS' ball in the app family's blue: the numbered ball
      from lottery-ios and lottery-android, on the midnight field with its two
      drifting corner glows, recoloured to the family accent. The
@@ -423,56 +423,18 @@
 
   <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.5%. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge &mdash; those only apply to residents of those cities. Lottery winnings are ordinary income; FICA does not apply. Estimates only &mdash; consult a CPA for exact liability. Jackpot data via usamega.com. Winning numbers via data.ny.gov.</p>
 
-  <p class="note foot-links"><a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a></p>
+  <p class="note foot-links"><a href="privacy.html">Privacy policy</a> &middot;
+    <a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a></p>
+  <p class="note foot-copy">&copy; 2026 Charles Adams — an independent personal project,
+    <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licensed</a>.</p>
 
-  <details class="changelog" id="cl-box">
-    <summary>Recent Changes</summary>
-    <ol id="cl-list"><li>Loading&hellip;</li></ol>
-  </details>
 </div>
 
 <style>
-.changelog{margin:18px 0 4px;font-size:12.5px;color:var(--text-muted)}
-.changelog summary{cursor:pointer;user-select:none;opacity:.75}
-.changelog summary:hover{opacity:1}
-.changelog ol{list-style:none;margin:10px 0 0;padding:0}
-.changelog li{display:flex;gap:10px;padding:3px 0;align-items:baseline}
-.cl-date{white-space:nowrap;opacity:.65;font-variant-numeric:tabular-nums;flex-shrink:0}
-.changelog a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--border)}
 .foot-links{margin-top:10px}
-.foot-links a{color:inherit}
-.changelog a:hover{color:var(--text)}
+.foot-links a,.foot-copy a{color:inherit}
+.foot-copy{margin-top:6px}
 </style>
-<script>
-// "Recent changes" box — lazily loads this file's last 10 commit subjects
-// from the GitHub API the first time the box is expanded.
-(function(){
-  var box=document.getElementById('cl-box'),loaded=false;
-  box.addEventListener('toggle',function(){
-    if(!box.open||loaded)return;loaded=true;
-    var list=document.getElementById('cl-list');
-    fetch('https://api.github.com/repos/eagleadams86/lottery/commits?path=ny-lottery-calculator.html&per_page=10')
-      .then(function(r){if(!r.ok)throw new Error('http');return r.json();})
-      .then(function(cs){
-        list.innerHTML='';
-        if(!cs.length){list.innerHTML='<li>No changes recorded yet.</li>';return;}
-        cs.forEach(function(c){
-          var li=document.createElement('li');
-          var d=document.createElement('span');d.className='cl-date';
-          d.textContent=new Date(c.commit.author.date).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
-          // Only accept a real github.com https link — never trust a URL from
-          // the API blindly, or a javascript: href would run on click.
-          var url=String(c.html_url||'');
-          var a=document.createElement(/^https:\/\/github\.com\//.test(url)?'a':'span');
-          if(a.tagName==='A'){a.href=url;a.target='_blank';a.rel='noopener noreferrer';}
-          a.textContent=c.commit.message.split('\n')[0];
-          li.appendChild(d);li.appendChild(a);list.appendChild(li);
-        });
-      })
-      .catch(function(){list.innerHTML='<li>Changelog unavailable right now (offline?).</li>';});
-  });
-})();
-</script>
 
 <script>
 // Jackpot proxy (Cloudflare Worker; source in worker.js). Its CORS policy only
