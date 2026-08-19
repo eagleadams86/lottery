@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="midnight">
+<head>
+<meta charset="utf-8">
+<!-- This page exists to stop GitHub Pages serving something else here. Without an
+     index.html, Pages fell back to Jekyll rendering README.md — a page on the
+     family's shared origin with NO Content-Security-Policy that pulled a script
+     from cdnjs.cloudflare.com. Every page on eagleadams86.github.io shares one
+     browser origin with the apps that hold work data, so a third-party script on
+     any of them is a hole in all of them. `.nojekyll` beside this file turns that
+     rendering off for good; this file is what the address now serves. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NY Lottery Calculator &amp; Portfolio</title>
+<meta name="description" content="After-tax take-home calculator for New York State lottery winners, and a what-if model of investing the lump sum.">
+<link rel="icon" href="favicon.ico?v=1">
+<script>
+  /* The same pre-paint boot as the app pages: honour the saved theme, so this
+     page doesn't open midnight on someone who chose Light. Keep the list in step
+     with theirs. */
+  try {
+    var t = localStorage.getItem('lottery-theme');
+    var ok = ['light','dark','midnight','sepia'];
+    document.documentElement.setAttribute('data-theme',
+      ok.indexOf(t) === -1 ? 'midnight' : t);
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="theme.css">
+<style>
+  body { margin: 0; background: var(--bg); color: var(--text-primary);
+         font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 44px 20px 80px; }
+  .brand { display: flex; align-items: center; gap: 12px; margin: 0 0 4px; }
+  .brand img { width: 30px; height: 30px; border-radius: 7px; }
+  h1 { font-size: 22px; margin: 0; }
+  .lede { color: var(--text-secondary); margin: 0 0 26px; }
+  .card { display: block; background: var(--surface); border: 1px solid var(--border);
+          border-radius: 12px; padding: 18px 20px; margin: 14px 0; text-decoration: none; }
+  .card:hover { border-color: var(--border-strong); }
+  .card:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
+  .card h2 { font-size: 17px; margin: 0 0 6px; color: var(--text-primary); }
+  .card p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+  .note { color: var(--text-muted); font-size: 12.5px; margin-top: 30px; }
+  .note a { color: var(--accent); }
+  .note a:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <img src="favicon.ico?v=1" width="30" height="30" alt="">
+    <h1>NY Lottery Calculator &amp; Portfolio</h1>
+  </div>
+  <p class="lede">Two pages, both running entirely in your browser. No account, and nothing
+    you type leaves your device.</p>
+
+  <a class="card" href="ny-lottery-calculator.html">
+    <h2>Take-Home Calculator →</h2>
+    <p>What a Powerball or Mega Millions win actually pays a New York State resident after
+      federal and state tax, lump sum or annuity, split any number of ways. Current jackpots
+      and the latest winning numbers load automatically.</p>
+  </a>
+
+  <a class="card" href="lottery-portfolio.html">
+    <h2>Lump-Sum Portfolio Model →</h2>
+    <p>A what-if model of investing the lump sum: how long it lasts at a given spending
+      level, split between cash, bonds and equities, with the cash bucket starting from the
+      current Treasury yield.</p>
+  </a>
+
+  <p class="note"><a href="privacy.html">Privacy policy</a> &middot;
+    <a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a><br>
+    &copy; 2026 Charles Adams — an independent personal project,
+    <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licensed</a>.</p>
+</div>
+
+<!-- ── Offline ────────────────────────────────────────────────────────────────
+     Registered from all three pages, not just this one: someone who bookmarked
+     the calculator lands there directly and should get offline too, and the
+     worker is the same one whichever page installs it. The reasoning, the
+     allowlist and the network-first strategy all live in sw.js.
+
+     Guarded twice: not in a frame (tests.html loads the app pages in hidden
+     iframes, and a suite run has no business installing a resident worker), and
+     after load, so registration doesn't compete with first paint. -->
+<script>
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  if (window.top !== window.self) return;
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js', { scope: './' })
+      .then(function () { return navigator.serviceWorker.ready; })
+      .then(function (reg) {
+        /* Ask the worker to repair any missing shell file. The install event that
+           first filled the cache fires ONCE per script version, so if the cache is
+           later evicted nothing would ever rebuild it — offline would quietly rot
+           to "whatever the last visit happened to request". This runs while we are
+           demonstrably online, which is the only time the repair can work. */
+        if (reg.active) reg.active.postMessage({ type: 'shell-check' });
+      })
+      .catch(function (e) { console.warn('Offline unavailable:', e); });
+  });
+})();
+</script>
+</body>
+</html>

@@ -9,7 +9,7 @@
      is connect-src, which pins network access to the one feed this page
      actually uses, plus default-src 'none' and base-uri 'none'.
      Note: frame-ancestors is ignored in a meta tag; it needs a real header. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://home.treasury.gov; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://home.treasury.gov; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <!-- The mark is the NATIVE APPS' ball in the app family's blue: the numbered ball
      from lottery-ios and lottery-android, on the midnight field with its two
      drifting corner glows, recoloured to the family accent. The
@@ -823,5 +823,43 @@ loadSliders(); loadSectionStates(); render();
 // run after first paint without causing shift.
 fetchTbillYield();
 </script>
+<!-- ── Offline ────────────────────────────────────────────────────────────────
+     The same registration the other two pages carry — whichever page you open
+     first installs the one worker, and all three are in its scope. The
+     strategy, the allowlist and the reasoning live in sw.js, which is worth
+     reading before changing anything here.
+
+     Guarded twice: NOT IN A FRAME (tests.html loads both pages in hidden
+     iframes, and a suite run has no business installing a resident worker — nor
+     picking up one another run left behind, which is how a green suite starts
+     lying about which code it tested), and AFTER LOAD, so it doesn't compete
+     with first paint.
+
+     No `updatefound` prompt, deliberately. Under network-first there is nothing
+     to prompt about: the page you are reading came off the network, so it is
+     already current, and the worker only matters on a visit where the network
+     failed. The live feeds are never cached, so an offline visit shows the
+     page's own "couldn't load" state for those rather than a stale figure. -->
+<script>
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  if (window.top !== window.self) return;
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js', { scope: './' })
+      .then(function () { return navigator.serviceWorker.ready; })
+      .then(function (reg) {
+        /* Ask the worker to repair any missing shell file. The install event
+           that first filled the cache fires ONCE per script version, so if the
+           cache is later evicted nothing would ever rebuild it — offline would
+           quietly rot to "whatever the last visit happened to request". This
+           runs while we are demonstrably online, which is the only time the
+           repair can work. */
+        if (reg.active) reg.active.postMessage({ type: 'shell-check' });
+      })
+      .catch(function (e) { console.warn('Offline unavailable:', e); });
+  });
+})();
+</script>
+
 </body>
 </html> 

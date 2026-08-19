@@ -13,3 +13,43 @@ NY Lottery take-home calculator + investment portfolio model. Two single-file HT
 - **`tests.html` pins the pure functions in both pages — open it (same local server, `http://localhost:8010/tests.html`) and check "All N tests pass" whenever you touch the calculator's `parseField`/`ball`/`fmtDrawDate`/`pbBlock`/`mmBlock`/`winnersValue`/`nextDraw`/`taxBreakdown` or the tax constants, or the portfolio's `computeIncome`/`parseLatest1yr`/`tint`/`posToM`/`mToPos`/`syncSlider` or the formatters.** It loads both real pages in hidden same-origin iframes and calls the functions directly (all plain `function` declarations, so no app-side hook is needed). Needs `http://localhost` — `file://` iframes are blocked in some browsers. The jackpot-proxy CORS error in the console while it runs is the documented localhost limitation, not a test failure. CI runs the same page headless on every push (`.github/workflows/tests.yml`) and fails the build if the summary goes red. When a rule pinned there changes, change the matching test in the same commit.
 - **`privacy.html` is the privacy policy for both pages** (static page, same midnight shell as the sibling apps, linked from each page's footer beside the copyright line). Added 2026-08-18. Nothing is stored but preferences and nothing is sent to the three public feeds, so it is short — but every page on the shared origin carries one. Update it if either page starts talking to a new endpoint.
 - Write commit subject lines in plain English a non-developer can read (what changed and why it matters, not implementation detail). The "Recent changes" section that showed them on both pages was removed 2026-08-18, across the whole app family, and the GitHub API went out of both CSPs with it.
+- **`index.html` exists to stop Pages serving something else, and `.nojekyll` keeps it that
+  way.** Until 2026-08-18 this repo had no index, so `https://eagleadams86.github.io/lottery/`
+  served a Jekyll rendering of README.md: a page on the family's shared origin with **no CSP**
+  that pulled `anchor.min.js` from cdnjs. Every page on that origin can reach the localStorage
+  and sync sessions of the apps holding work data, so a third-party script on any of them is a
+  hole in all of them. Don't delete either file, and if the landing page is ever restyled it
+  keeps its CSP and its zero external scripts. `tests.html` pins both.
+- **There IS a service worker (`sw.js`), and it covers all three pages** — one worker, scope
+  `./`, registered from whichever page you open first. `lot-shell-` is its cache prefix, and
+  `activate` must only ever delete caches with that prefix: Cache Storage is origin-wide and a
+  sibling app's cache is not ours to touch. Only files already public in this repo are ever
+  cached (`./`, both pages, `theme.css`, `privacy.html`, `favicon.ico`).
+- **The three feeds are never cached, and that is a correctness rule rather than a privacy
+  one.** The jackpot proxy, `data.ny.gov` and `home.treasury.gov` are cross-origin, so the
+  fetch handler ignores them outright — but the reason to keep it that way is that a cached
+  jackpot presented as current is a WRONG ANSWER, where a cached page is merely an old one.
+  Offline, each page shows its own "couldn't load" state, which is honest.
+- **No `SCHEMA` / `haltForNewerData` here, unlike every sibling app, and the reason is that
+  these pages save no records.** Every key they write is a preference (theme, game, winners,
+  open sections, sliders) or a cache of a public feed that refetches on the next load. The
+  sibling apps need a halt because stale code there strips fields out of somebody's saved
+  data and pushes the loss to their other devices; there is nothing here to lose. **If either
+  page ever starts saving something a user would miss, that is the moment to add the marker
+  and the halt** — `tests.html` pins the full list of stored keys precisely so that change
+  cannot happen quietly.
+- **A worker on Pages runs with NO CSP** (it takes its policy from its own script's response
+  headers, and Pages cannot send headers), which is why `sw.js` is tiny, has no `eval`, no
+  `importScripts`, no dynamic import and no cross-origin URL anywhere in it. Both pages spell
+  out `worker-src 'self'` rather than letting it resolve through the fallback chain.
+- **`sw-kill.js` is the escape hatch and exists before it is needed.** A bad page is fixed by
+  pushing a new one; a bad worker is resident and can keep serving itself. `cp sw-kill.js
+  sw.js`, commit, push.
+- **Two worker traps, both silent:** `cache.addAll` is all-or-nothing (one 404 and there is no
+  offline at all while everything looks healthy), and `install` fires once per script version
+  (so an evicted cache is never rebuilt) — hence `topUp()` fetching entries one at a time, and
+  the `shell-check` message each page sends on load. Registration is frame-guarded, or
+  `tests.html` would install a worker and then test whatever it had cached.
+- **Don't confuse `sw.js` with `worker.js`.** `worker.js` is the Cloudflare Worker that proxies
+  jackpots, deployed separately and nothing to do with the browser. `sw.js` is the service
+  worker in the page.

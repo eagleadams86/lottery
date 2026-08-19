@@ -11,6 +11,9 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 
 | File | Description |
 |------|-------------|
+| `index.html` | The landing page at [eagleadams86.github.io/lottery/](https://eagleadams86.github.io/lottery/) — links to both tools. It exists so GitHub Pages serves *our* page there; without it Pages rendered this README instead, on a page with no Content-Security-Policy that pulled a script from a CDN. `.nojekyll` beside it turns that rendering off for good. |
+| `sw.js` | Service worker: keeps both pages, the stylesheet and the icon on your device so they open offline. Never caches a jackpot, a winning number or a yield — those are live figures, and a stale one is a wrong answer. |
+| `sw-kill.js` | The escape hatch — copy it over `sw.js` and push to uninstall every installed worker. |
 | `ny-lottery-calculator.html` | After-tax lottery take-home calculator with live jackpots and winning numbers |
 | `lottery-portfolio.html` | What-if model of investing the lump sum as a tax-aware portfolio |
 | `theme.css` | Shared color tokens + 4 theme palettes, linked by both pages. Generated in the claude-theme-pack repo (the source of truth for all apps); every color pair is script-verified to meet WCAG AA contrast |
@@ -22,6 +25,30 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 
 Both pages carry a **How it works** link at the foot, back to this README on GitHub — the
 repo front page renders it, and it is where the tax and allocation assumptions are spelled out.
+
+## Working Offline
+
+Both pages keep a copy of themselves on your device, so they open with no network at all —
+the tax maths and the portfolio model are pure calculation and work exactly the same. What
+can't work offline is the live data: current jackpots, the latest winning numbers and the
+Treasury yield. Those are never cached, deliberately — a jackpot from last week shown as
+this week's is a wrong answer, not an old page — so offline you get each page's ordinary
+"couldn't load, enter it yourself" state for them.
+
+What's kept is only the two pages, the landing page, the privacy policy, the stylesheet and
+the icon: files already public in this repo, and nothing else. **Nothing you type is ever put
+there.** That matters because every one of these apps shares a single browser origin, so
+that cache is not private to this repo.
+
+The network is always tried **first**, and the stored copy is used only when it genuinely
+doesn't answer (or takes more than five seconds), so you can't be left on an old version
+while you're online. Unlike the sibling apps there is no "saved by a newer version" check
+here, and deliberately: these pages save nothing but preferences and cached feed data, so
+stale code has nothing of yours to damage. `tests.html` pins that reasoning — it fails if a
+new stored key appears that isn't a preference or a cache.
+
+`sw-kill.js` sits in the repo unused, as an escape hatch: copying it over `sw.js` and pushing
+makes every installed copy uninstall itself and go back to being ordinary online-only pages.
 
 **The icon is the native apps' ball, in the app family's blue** — the numbered ball from
 [lottery-ios](https://github.com/eagleadams86/lottery-ios) and

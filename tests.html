@@ -2,7 +2,15 @@
 <html lang="en" data-theme="midnight">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self'; connect-src https://api.github.com; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<!-- Every page on the shared origin ships a CSP (the family security rule) —
+     this one is published on GitHub Pages beside the pages it tests, so it is
+     as much a page on the origin as they are. connect-src 'self' is for reading
+     sw.js and the pages as text (the offline group below pins their shape),
+     api.github.com for the CI-scorecard line, and frame-src 'self' for the two
+     harness iframes, whose content is then governed by each page's own CSP.
+     `style-src 'self'` is what lets theme.css load, so this page wears the same
+     palette as the pages it tests. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self' https://api.github.com; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lottery — Tests</title>
 <style>
@@ -341,7 +349,168 @@ t('junk leaves the slider alone and the box snaps back to the real value', () =>
    it as local would build frames a browser then blocks, leaving the page to
    blame the code for what is a setup problem. Same rule as the sibling apps.
 ─────────────────────────────────────────────────────────────────────────── */
+/* ── Offline: the service worker ────────────────────────────────────────────
+   Read as TEXT rather than exercised as a live worker, and that is the point
+   rather than a shortcut: registration is frame-guarded, so this suite never
+   installs one — a suite that did would be testing whatever that worker had
+   cached instead of the files on disk.
+
+   What is worth asserting is the SHAPE of the thing. Cache Storage is keyed by
+   ORIGIN and shared with every sibling app, so "only files already public in
+   this repo, ever" is the promise holding this up. */
+let SW_SRC = '', KILL_SRC = '', INDEX_SRC = '', CALC_SRC = '', PORT_SRC = '';
+const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+group('Offline — the service worker');
+
+t('sw.js and its kill switch are both present', () => {
+  ok(SW_SRC, 'sw.js is missing');
+  ok(KILL_SRC, 'sw-kill.js is missing — the escape hatch has to exist BEFORE it is needed');
+});
+
+t('the cache list holds only files that are already public', () => {
+  const m = SW_SRC.match(/const SHELL = \[([\s\S]*?)\]/);
+  ok(m, 'could not find the SHELL list in sw.js');
+  const shell = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort();
+  /* Exact equality, not "contains". A new entry has to be added here too, which
+     is the moment to ask whether the file is genuinely public. */
+  eq(shell, ['./', 'favicon.ico', 'lottery-portfolio.html', 'ny-lottery-calculator.html',
+             'privacy.html', 'theme.css'], 'the offline shell list changed');
+});
+
+t('no live figure is ever cached — a stale jackpot is a wrong answer', () => {
+  const m = SW_SRC.match(/const SHELL = \[([\s\S]*?)\]/);
+  const shell = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+  for (const entry of shell)
+    for (const pat of [/^tests\.html$/, /\.py$/, /worker\.js$/, /CLAUDE/i, /README/i])
+      ok(!pat.test(entry), `"${entry}" is on the shell list but must never be cached`);
+  /* The three feeds are cross-origin, so the worker never sees them at all —
+     pinned here because caching one would be a correctness bug, not just a
+     privacy one: the page would show last week's jackpot as this week's. */
+  const code = stripComments(SW_SRC);
+  ok(/url\.origin !== self\.location\.origin\) return;/.test(code),
+    'the fetch handler must ignore every cross-origin request outright');
+  for (const host of ['workers.dev', 'data.ny.gov', 'treasury'])
+    ok(!code.includes(host), `sw.js names ${host} in executable code`);
+});
+
+t('the worker touches nothing cross-origin, and has no eval', () => {
+  const code = stripComments(SW_SRC);
+  ok(!/https?:\/\//.test(code), 'sw.js names an off-origin URL in executable code');
+  /* A worker on Pages runs with NO CSP at all, so these are not merely untidy. */
+  for (const bad of ['eval(', 'importScripts(', 'new Function('])
+    ok(!code.includes(bad), `sw.js uses ${bad} — it runs with no CSP, so it must not`);
+});
+
+t('the worker deletes only its own caches', () => {
+  const code = stripComments(SW_SRC);
+  ok(/startsWith\(PREFIX\)/.test(code), 'activate must guard caches.delete with the prefix');
+  ok(/const PREFIX = 'lot-shell-';/.test(SW_SRC), 'and the prefix must be this repo’s');
+});
+
+t('the worker is network-first, so cached code needs a failed network', () => {
+  const code = stripComments(SW_SRC);
+  ok(/Promise\.race/.test(code) && /cache\.match/.test(code), 'expected the network-first race');
+  ok(!/caches\.match\(req\)\s*\.then\(\s*\(?r\)?\s*=>\s*r\s*\|\|/.test(code),
+    'this looks cache-first — the whole design rests on network-first');
+  ok(/!res\.ok && cached/.test(code),
+    'a same-origin error reply with a cached copy in hand must serve the cache');
+});
+
+t('a missing shell file can be repaired without a new worker version', () => {
+  const code = stripComments(SW_SRC);
+  ok(/addEventListener\(\s*'message'/.test(code) && /'shell-check'/.test(code),
+    'the worker must accept a shell-check message');
+  ok(!/addAll/.test(code), 'addAll rejects the whole precache on a single 404, silently');
+  ok(/e\.data\.type !== 'shell-check'\) return;/.test(code),
+    'the message handler must reject anything but shell-check');
+  ok(!/e\.data\.(url|urls|path|cache|key)/.test(code),
+    'and must never read a URL or cache name out of a message');
+});
+
+t('the kill switch stays a pure uninstaller', () => {
+  const code = stripComments(KILL_SRC);
+  ok(/unregister\(\)/.test(code), 'sw-kill.js must unregister itself');
+  ok(!/addEventListener\(\s*'fetch'/.test(code), 'and intercept nothing — inert is the point');
+  ok(!/cache\.put|addAll/.test(code), 'and never cache anything');
+  ok(/startsWith\('lot-shell-'\)/.test(code), 'and clear only this repo’s caches');
+});
+
+t('all three pages register the worker, frame-guarded, after load', () => {
+  /* Whichever page you open first installs it, and all three are in its scope —
+     so someone who bookmarked the calculator gets offline too. The frame guard
+     is what stops this very suite installing one while it runs. */
+  for (const [name, src] of [['index.html', INDEX_SRC], ['the calculator', CALC_SRC],
+                             ['the portfolio', PORT_SRC]]) {
+    ok(/navigator\.serviceWorker\.register\('sw\.js', \{ scope: '\.\/' \}\)/.test(src),
+      `${name} must register the worker`);
+    ok(/window\.top !== window\.self/.test(src),
+      `${name}'s registration must skip frames, or this suite would install one`);
+    ok(/window\.addEventListener\('load', function \(\) \{/.test(src),
+      `${name} must wait for load rather than compete with first paint`);
+    ok(/if \(reg\.active\) reg\.active\.postMessage\(\{ type: 'shell-check' \}\)/.test(src),
+      `${name} must ask for a shell check on load`);
+    const csp = (src.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1] || '';
+    ok(/worker-src 'self'/.test(csp),
+      `${name}'s CSP must spell out worker-src 'self', not lean on the fallback chain`);
+    ok(!/worker-src[^;]*https?:/.test(csp), `${name}'s worker-src must admit no off-origin host`);
+  }
+});
+
+t('no schema halt here, and that is the deliberate difference', () => {
+  /* The sibling apps refuse to open a saved copy from a newer build, because
+     stale code there strips fields out of somebody's records and pushes the
+     loss to their other devices. These pages save no records — only
+     preferences and caches of public feeds — so there is nothing to lose and
+     nothing to halt over. If that ever changes, this test is the tripwire. */
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]])
+    ok(!/haltForNewerData/.test(src), `${name} has grown a halt — has it started saving records?`);
+  const stored = [...(CALC_SRC + PORT_SRC).matchAll(/localStorage\.setItem\('([^']+)'/g)]
+    .map((m) => m[1]).filter((v, i, a) => a.indexOf(v) === i).sort();
+  eq(stored, ['lottery-details', 'lottery-game', 'lottery-jackpot-cache', 'lottery-net-takehome',
+              'lottery-npeople', 'lottery-portfolio-sections', 'lottery-portfolio-seeded-from',
+              'lottery-portfolio-sliders', 'lottery-tbill-adopted', 'lottery-tbill-cache',
+              'lottery-theme', 'lottery-winning', 'lottery-winning-cache'],
+     'the stored keys changed — every one must still be a preference or a cache, or this repo needs a version marker like its siblings');
+});
+
+/* ── The index page ─────────────────────────────────────────────────────────
+   It exists because without it GitHub Pages served a Jekyll rendering of
+   README.md at /lottery/ — a page on the shared origin with no CSP that pulled
+   a script from cdnjs. These two tests are what stop that coming back. */
+group('index.html — the page /lottery/ actually serves');
+
+t('it ships a CSP and loads no third-party script', () => {
+  ok(INDEX_SRC, 'index.html is missing — Pages will fall back to rendering the README');
+  ok(/http-equiv="Content-Security-Policy"/.test(INDEX_SRC), 'index.html must carry a CSP');
+  ok(!/<script[^>]+src=/i.test(INDEX_SRC), 'index.html must load no external script');
+  /* Attributes only, not prose: the file's own comment names the cdnjs script
+     that used to be served here, which is the whole reason it exists. */
+  const urls = [...INDEX_SRC.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]);
+  for (const u of urls)
+    ok(!/cdnjs|unpkg|jsdelivr|cloudflare\.com\/ajax/i.test(u),
+      `index.html points at a CDN: ${u}`);
+});
+
+t('it links both tools, the privacy policy and How it works', () => {
+  for (const href of ['ny-lottery-calculator.html', 'lottery-portfolio.html', 'privacy.html'])
+    ok(INDEX_SRC.includes('href="' + href + '"'), `index.html must link ${href}`);
+  ok(/>How it works</.test(INDEX_SRC), 'the footer link is labelled "How it works" family-wide');
+  ok(/MIT licensed/.test(INDEX_SRC), 'and carries the authorship line every public page has');
+});
+
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
+
+/* The offline group reads files rather than frames, so it is fetched here and
+   handed to run() — the test bodies themselves stay synchronous, like every
+   other one on this page. A missing file leaves its variable empty and fails
+   its own test rather than taking the suite down. */
+async function loadSources() {
+  const grab = async (f) => { try { const r = await fetch(f); return r.ok ? await r.text() : ''; } catch (e) { return ''; } };
+  [SW_SRC, KILL_SRC, INDEX_SRC, CALC_SRC, PORT_SRC] = await Promise.all(
+    [grab('sw.js'), grab('sw-kill.js'), grab('index.html'),
+     grab('ny-lottery-calculator.html'), grab('lottery-portfolio.html')]);
+}
 
 window.addEventListener('load', () => {
   if (!LOCAL_HOSTS.includes(location.hostname)) return refuse();
@@ -368,7 +537,7 @@ window.addEventListener('load', () => {
      longer than two local frames need. */
   const giveUpAt = Date.now() + 5000;
   const tick = () => {
-    if (ready()) return run();
+    if (ready()) return loadSources().then(run);
     if (Date.now() < giveUpAt) return setTimeout(tick, 100);
     const s = document.getElementById('summary');
     s.className = 'bad';
