@@ -172,17 +172,19 @@ t('the real schedules always produce a label', () => {
 group('tax rates — the constants the page footnote promises');
 t('withholding and top marginal rates match the published note', () => {
   eq(wc.FED_WH, 0.24); eq(wc.FED_TOP, 0.37);
-  eq(wc.NY_WH, 0.105); eq(wc.NY_TOP, 0.109);
+  /* NY law (20 NYCRR 171.11) withholds lottery prizes at the HIGHEST effective
+     state rate, so NY_WH must track NY_TOP — 10.5% was a bug, fixed 2026-08-18. */
+  eq(wc.NY_WH, 0.109); eq(wc.NY_TOP, 0.109);
 });
 
 group('taxBreakdown — the arithmetic behind calc() (calculator)');
 t('one winner: withholding, return top-up and net all follow from the rates', () => {
   const b = wc.taxBreakdown(100e6, 1);
   near(b.share, 100e6);
-  near(b.fedWH, 24e6); near(b.nyWH, 10.5e6);
-  near(b.afterWH, 100e6 - 34.5e6, 'received after withholding');
+  near(b.fedWH, 24e6); near(b.nyWH, 10.9e6);
+  near(b.afterWH, 100e6 - 34.9e6, 'received after withholding');
   near(b.fedX, 13e6, 'the 37% − 24% federal gap');
-  near(b.nyX, 400e3, 'the 10.9% − 10.5% NY gap');
+  near(b.nyX, 0, 'NY withholds at its top rate, so nothing more is due at filing');
   near(b.net, 100e6 * (1 - 0.37 - 0.109));
   ok(Math.abs(b.eff - 0.479) < 1e-9, 'effective rate is the two top rates combined');
 });
@@ -225,6 +227,15 @@ t('totals are the sum of their parts, and tax only ever reduces income', () => {
   near(m.totG, m.spaxxG + m.tbG + m.muG + m.vtiG + m.vxusG);
   near(m.totA, m.spaxxA + m.tbA + m.muA + m.vtiA + m.vxusA);
   ok(m.totA <= m.totG, 'after-tax never exceeds gross');
+});
+t('the federal/NY tax-drag split follows each holding\'s own rates', () => {
+  // Bond-heavy on purpose: $10M with $1M spending puts $8M in the ladder, so
+  // most income is T-bills and munis — the case a fixed split gets wrong.
+  const m = wp.computeIncome(10e6, 1e6, 0.04, 0.03, 0.013, 0.02, 0.6);
+  near(m.fedDrag + m.nyDrag, m.totG - m.totA, 'the two halves are exactly the whole drag');
+  near(m.fedDrag, (m.spaxxG + m.tbG) * 0.37 + (m.vtiG + m.vxusG) * (0.20 + 0.038));
+  near(m.nyDrag, (m.spaxxG + m.vtiG + m.vxusG) * 0.109,
+    'T-bill and muni income owe no NY tax, so neither may appear in the NY half');
 });
 
 group('parseLatest1yr — the Treasury feed parser');
@@ -334,6 +345,34 @@ t('junk leaves the slider alone and the box snaps back to the real value', () =>
   wp.document.getElementById('sl-tot').value = _slBefore.tot;
   wp.document.getElementById('sl-sp').value = _slBefore.sp;
   wp.document.getElementById('sl-split').value = _slBefore.split;
+  wp.render();
+});
+
+group('waterfall — the rendered tax-drag rows (portfolio)');
+/* Drives the REAL builder through render(), like the syncSlider group above
+   (same save/restore discipline, same localhost-only storage writes). This is
+   the test that would have caught the hard-coded 77/23 display split. */
+t('federal/NY drag rows are computed per holding, not a fixed 77/23 split', () => {
+  const ids = ['sl-tot', 'sl-sp'];
+  const before = {};
+  ids.forEach((id) => before[id] = wp.document.getElementById(id).value);
+  // Bond-heavy on purpose: $4M with $500K spending makes the 8-year ladder the
+  // whole portfolio, so nearly all income is T-bills and munis — where the old
+  // fixed split invented NY tax that T-bill and muni interest never owes.
+  wp.document.getElementById('sl-tot').value = wp.mToPos(4);
+  wp.document.getElementById('sl-sp').value = 500;
+  wp.render();
+  const a = wp.readAssumptions();
+  const m = wp.computeIncome(a.total, a.spend, a.tbY, a.muY, a.vtiY, a.vxY, a.split);
+  const html = wp.document.getElementById('waterfall').innerHTML;
+  ok(html.includes('>−' + wp.fm(m.fedDrag) + '<'),
+     'the federal row must show the summed per-holding federal drag');
+  ok(html.includes('>−' + wp.fm(m.nyDrag) + '<'),
+     'the NY row must show the summed per-holding NY drag');
+  const old23 = wp.fm((m.totG - m.totA) * 0.23);
+  ok(old23 !== wp.fm(m.nyDrag), 'allocation chosen so the old 23% figure differs');
+  ok(!html.includes('>−' + old23 + '<'), 'the old fixed-split NY figure is gone');
+  ids.forEach((id) => wp.document.getElementById(id).value = before[id]);
   wp.render();
 });
 

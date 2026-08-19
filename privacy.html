@@ -5,13 +5,14 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NY Lottery Calculator — Privacy Policy</title>
-<link rel="icon" href="favicon.ico?v=1">
+<link rel="icon" href="favicon.ico?v=4">
 <script>
   /* The same pre-paint boot as the two app pages: honour the saved theme, so this
      page doesn't open midnight on someone who chose Light. Keep the list in step
      with theirs. */
   try {
     var t = localStorage.getItem('lottery-theme');
+    if (t === 'slate') t = 'dark'; // renamed family-wide: same palette (see theme.css)
     var ok = ['light','dark','midnight','sepia'];
     document.documentElement.setAttribute('data-theme',
       ok.indexOf(t) === -1 ? 'midnight' : t);
@@ -34,6 +35,10 @@
   .card strong { color: var(--text-primary); }
   ul { padding-left: 20px; }
   .back { display: inline-block; margin-bottom: 26px; font-size: 14px; }
+  /* Same footer trio as every public page in the family, minus the privacy
+     link — this page is the privacy policy. */
+  .foot { color: var(--text-muted); font-size: 12.5px; margin-top: 34px; }
+  .foot a { color: inherit; }
 </style>
 </head>
 <body>
@@ -46,18 +51,23 @@
   your browser. There is no account, no sign-in and no server of ours holding anything.</p>
 
   <h2>What These Pages Store</h2>
-  <p>Only your own settings, in your browser's local storage: the theme you picked, the
-  jackpot game and number of winners you last used, which sections you left open, and the
-  portfolio page's slider values (take-home amount, spending, yields and the equity split).
-  The figures you type are never sent anywhere — every calculation happens on your device.
-  Clearing the site's browser data deletes all of it.</p>
+  <p>Two kinds of thing, both in your browser's local storage and both deleted by clearing
+  the site's browser data. First, your own settings: the theme you picked, the jackpot game
+  and number of winners you last used, which sections you left open, and the portfolio
+  page's slider values (take-home amount, spending, yields and the equity split). The
+  figures you type are never sent anywhere — every calculation happens on your device.
+  Second, <strong>a copy of the public figures the pages fetch</strong> — the current
+  jackpots, the latest winning numbers and the Treasury yield — kept for up to six hours so
+  a repeat visit doesn't re-query the feeds. Each figure is shown with its date,
+  and if a refresh fails the page keeps showing the earlier figures and says so, rather than
+  going blank.</p>
 
   <p>Both pages also keep <strong>a copy of themselves</strong> on your device, so they open
   offline: the pages, the stylesheet and the icon — the same public files anyone can read on
   GitHub, and nothing else. None of your figures go there, and neither do the jackpots,
-  winning numbers or yields below; those are always fetched fresh, so an offline page tells
-  you it couldn't load them rather than showing you a stale one. Clearing the site's browser
-  data removes the copy along with everything else.</p>
+  winning numbers or yields; those live only in the six-hour store above, so once it lapses
+  an offline page tells you it couldn't load them rather than inventing a current-looking
+  number. Clearing the site's browser data removes the copy along with everything else.</p>
 
   <h2>What Leaves Your Browser</h2>
   <div class="card">
@@ -94,6 +104,10 @@
 
   <h2>Contact</h2>
   <p><a href="mailto:eagleadams86@gmail.com">eagleadams86@gmail.com</a></p>
+
+  <p class="foot"><a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a><br>
+    &copy; 2026 Charles Adams — an independent personal project,
+    <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licensed</a>.</p>
 </div>
 </body>
 </html>

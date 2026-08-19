@@ -29,11 +29,15 @@ repo front page renders it, and it is where the tax and allocation assumptions a
 ## Working Offline
 
 Both pages keep a copy of themselves on your device, so they open with no network at all —
-the tax maths and the portfolio model are pure calculation and work exactly the same. What
-can't work offline is the live data: current jackpots, the latest winning numbers and the
-Treasury yield. Those are never cached, deliberately — a jackpot from last week shown as
-this week's is a wrong answer, not an old page — so offline you get each page's ordinary
-"couldn't load, enter it yourself" state for them.
+the tax maths and the portfolio model are pure calculation and work exactly the same. The
+live data — current jackpots, the latest winning numbers and the Treasury yield — is never
+part of that offline copy: the service worker deliberately refuses to cache the three
+feeds, because a jackpot from last week silently presented as this week's would be a wrong
+answer, not an old page. Each page does keep the last figures it fetched in `localStorage`
+for up to six hours (so repeat visits don't re-query the feeds, and a failed refresh can
+fall back to them **labelled as earlier figures**) — which means shortly after a visit an
+offline page may still show those recent figures with their date, and past the six hours
+you get its ordinary "couldn't load, enter it yourself" state.
 
 What's kept is only the two pages, the landing page, the privacy policy, the stylesheet and
 the icon: files already public in this repo, and nothing else. **Nothing you type is ever put
@@ -102,7 +106,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Next draw dates** — shows upcoming draw date for each game (Powerball: Mon/Wed/Sat, Mega Millions: Tue/Fri), computed client-side in ET
 - **Latest winning numbers** — collapsible section showing the most recent draw results, fetched live from NY's open data portal (`data.ny.gov`); displays color-coded balls (red Powerball, gold Mega Ball) and the Power Play multiplier, and tracks the game selected at the top. Expanded by default; open/closed state remembered via `localStorage`, so collapsing it sticks across visits. Results are cached in `localStorage` for 6 hours, so reopening the section within that window renders instantly without re-querying the API; the top **Refresh** button force-pulls fresh results when the section is open
 - **Lump-sum take-home** — computes the after-tax value of the cash option; if only the advertised (annuity) jackpot is entered, the cash value is estimated at 60%
-- **Full NY tax breakdown** — federal withholding (24%), federal top marginal (37%), NY State withholding (10.5%), and NY State top rate (10.9%); shows both withheld at payment and additional owed at filing
+- **Full NY tax breakdown** — federal withholding (24%), federal top marginal (37%), NY State withholding (10.9% — by law the state's highest rate, so the only top-up owed at filing is federal), and NY State top rate (10.9%); shows both withheld at payment and additional owed at filing
 - **Split among winners** — supports dividing the jackpot among multiple people (1–1000, clamped on both typed and stepped input)
 - **Shorthand input** — accepts `325M`, `1.2B`, etc. An amount that can't be read is called out under the box instead of being silently ignored
 - **Themes** — dropdown in the upper right with 4 themes, listed alphabetically (Dark, Light, Midnight, Sepia); defaults to Midnight, preference saved in `localStorage` and shared with the portfolio page
@@ -130,7 +134,7 @@ Both pages are built to meet WCAG 2.1 AA:
 ## Security
 
 - **Content Security Policy** — every page declares a CSP via `<meta>` (GitHub Pages can't set response headers), including `tests.html`, which Pages publishes beside the apps. `connect-src` pins network access to only the feeds each page uses, and `default-src 'none'` / `base-uri 'none'` / `form-action 'none'` close off the rest. `'unsafe-inline'` for script and style is unavoidable given the no-build-step single-file design, so the policy is defence in depth rather than full XSS protection. `frame-ancestors` can't be set from a meta tag and would need a real header
-- **Untrusted feed data** — winning numbers from `data.ny.gov` are validated before rendering: ball numbers must match `\d{1,2}`, the multiplier is coerced with `parseInt`, and draw dates must match `YYYY-MM-DD`; anything else is dropped. Commit links from the GitHub API are only rendered as links when the URL is a real `https://github.com/` address
+- **Untrusted feed data** — winning numbers from `data.ny.gov` are validated before rendering: ball numbers must match `\d{1,2}`, the multiplier is coerced with `parseInt`, and draw dates must match `YYYY-MM-DD`; anything else is dropped. The CI-scorecard line on `tests.html` (the one place the GitHub API is still read, since the Recent-changes boxes were removed) only renders a link when the API hands back a real `https://github.com/` address
 - **Jackpot proxy** — the Worker restricts CORS to the GitHub Pages origin. Note this only stops other *websites* using it; `Origin` is set by the browser, so a scripted client can still call it directly
 
 ---
@@ -164,10 +168,10 @@ All figures are for **New York State residents outside NYC and Yonkers** (no cit
 |-----|------|
 | Federal withholding (at payment) | 24% |
 | Federal top marginal (owed at filing) | 37% |
-| NY State withholding (at payment) | 10.5% |
+| NY State withholding (at payment) | 10.9% |
 | NY State top rate (owed at filing) | 10.9% |
 
-The calculator shows both the net check you receive on day one and the estimated additional tax owed when you file.
+The calculator shows both the net check you receive on day one and the estimated additional tax owed when you file. NY withholding equals the top rate on purpose: state law ([20 NYCRR 171.11](https://www.law.cornell.edu/regulations/new-york/20-NYCRR-171.11), and [Publication 140-W](https://www.tax.ny.gov/pdf/publications/income/pub140w.pdf)) requires lottery prizes over $5,000 to be withheld at the **highest effective rate of state tax** — currently 10.9% — so the only filing-time top-up in the model is the federal 37% − 24% gap.
 
 ### Investment Income (Portfolio)
 

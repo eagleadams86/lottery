@@ -421,7 +421,7 @@
     </div>
   </div>
 
-  <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.5%. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge &mdash; those only apply to residents of those cities. Lottery winnings are ordinary income; FICA does not apply. Estimates only &mdash; consult a CPA for exact liability. Jackpot data via usamega.com. Winning numbers via data.ny.gov.</p>
+  <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.9% &mdash; by law the state's highest rate, so no further NY tax is due at filing. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge &mdash; those only apply to residents of those cities. Lottery winnings are ordinary income; FICA does not apply. Estimates only &mdash; consult a CPA for exact liability. Jackpot data via usamega.com. Winning numbers via data.ny.gov.</p>
 
   <p class="note foot-links"><a href="privacy.html">Privacy policy</a> &middot;
     <a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a></p>
@@ -442,7 +442,11 @@
 var WORKER = 'https://lottery-proxy.charlie-adams-176.workers.dev';
 // _WH = withheld at payment; _TOP = top marginal rate (true liability).
 // The gap between the two is what's still owed at the next tax return.
-var FED_WH=0.24, FED_TOP=0.37, NY_WH=0.105, NY_TOP=0.109;
+// NY law (20 NYCRR 171.11; Pub 140-W) withholds lottery prizes at the HIGHEST
+// effective state rate — currently 10.9% — so NY_WH equals NY_TOP and the only
+// filing-time top-up is federal. They stay separate constants because the
+// bracket and the withholding rule could diverge again.
+var FED_WH=0.24, FED_TOP=0.37, NY_WH=0.109, NY_TOP=0.109;
 var jUnit='M', lUnit='M'; // current unit (Millions/Billions) for the two manual inputs
 // Powerball: Mon(1) Wed(3) Sat(6) · Mega Millions: Tue(2) Fri(5)
 function nextDraw(drawDays) {
@@ -459,6 +463,19 @@ function nextDraw(drawDays) {
   if (min === 1) return 'Tomorrow';
   var d = new Date(etNow); d.setDate(etNow.getDate() + min);
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// A fetch that gives up after 15s, so a hung feed can't pin the spinner (and
+// the disabled Refresh button) for the browser's multi-minute default.
+// Deliberately NOT AbortSignal.timeout: its timer can be suspended in a hidden
+// tab and never fire. A plain setTimeout can fire late in a hidden tab too,
+// but late still recovers — the catch path runs and the UI comes back —
+// where never-firing leaves the page stuck.
+var FETCH_TIMEOUT_MS = 15000;
+function fetchWithTimeout(url){
+  var ctl = new AbortController();
+  var timer = setTimeout(function(){ ctl.abort(); }, FETCH_TIMEOUT_MS);
+  return fetch(url, { signal: ctl.signal }).finally(function(){ clearTimeout(timer); });
 }
 
 var gameData={pb:null, mm:null};
@@ -478,6 +495,7 @@ document.getElementById('theme-select').innerHTML = THEMES.map(function(t){
   return '<option value="'+t.id+'">'+t.icon+' '+t.label+'</option>';
 }).join('');
 function setTheme(theme) {
+  if (theme === 'slate') theme = 'dark'; // renamed family-wide: same palette (see theme.css)
   if (!THEMES.some(function(t){ return t.id === theme; })) theme = 'midnight';
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('lottery-theme', theme);
@@ -491,7 +509,9 @@ setTheme(localStorage.getItem('lottery-theme') || 'midnight');
   // Clamp on restore too — older versions could have saved junk here.
   var n=parseInt(localStorage.getItem('lottery-npeople'),10);
   if(!isNaN(n)) document.getElementById('npeople').value=Math.min(1000,Math.max(1,n));
-  var g=localStorage.getItem('lottery-game'); if(g) activeGame=g;
+  // Only the two real ids — anything else saved here (older builds, another
+  // page on the origin) would leave no game selectable until a manual click.
+  var g=localStorage.getItem('lottery-game'); if(g==='pb'||g==='mm') activeGame=g;
   if(localStorage.getItem('lottery-details')==='1'){
     document.getElementById('details-body').classList.add('open');
     document.getElementById('details-chevron').classList.add('open');
@@ -613,8 +633,8 @@ async function fetchWinning(force){
   loading.style.display='block';
   try {
     var results=await Promise.all([
-      fetch(PB_URL).then(function(r){return r.json();}),
-      fetch(MM_URL).then(function(r){return r.json();})
+      fetchWithTimeout(PB_URL).then(function(r){return r.json();}),
+      fetchWithTimeout(MM_URL).then(function(r){return r.json();})
     ]);
     winData.pb = (results[0]&&results[0][0]) || null;
     winData.mm = (results[1]&&results[1][0]) || null;
@@ -706,7 +726,7 @@ async function fetchJackpots(force){
   st.className='fetch-status';
   st.innerHTML='<span class="spinner" aria-hidden="true"></span>Looking up current jackpots&hellip;';
   try {
-    var res=await fetch(WORKER);
+    var res=await fetchWithTimeout(WORKER);
     var data=await res.json();
     if(data.error) throw new Error(data.error);
     var ts=Date.now();

@@ -13,13 +13,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NY Lottery Calculator &amp; Portfolio</title>
 <meta name="description" content="After-tax take-home calculator for New York State lottery winners, and a what-if model of investing the lump sum.">
-<link rel="icon" href="favicon.ico?v=1">
+<link rel="icon" href="favicon.ico?v=4">
 <script>
   /* The same pre-paint boot as the app pages: honour the saved theme, so this
      page doesn't open midnight on someone who chose Light. Keep the list in step
      with theirs. */
   try {
     var t = localStorage.getItem('lottery-theme');
+    if (t === 'slate') t = 'dark'; // renamed family-wide: same palette (see theme.css)
     var ok = ['light','dark','midnight','sepia'];
     document.documentElement.setAttribute('data-theme',
       ok.indexOf(t) === -1 ? 'midnight' : t);
@@ -48,7 +49,7 @@
 <body>
 <div class="wrap">
   <div class="brand">
-    <img src="favicon.ico?v=1" width="30" height="30" alt="">
+    <img src="favicon.ico?v=4" width="30" height="30" alt="">
     <h1>NY Lottery Calculator &amp; Portfolio</h1>
   </div>
   <p class="lede">Two pages, both running entirely in your browser. No account, and nothing
@@ -57,8 +58,8 @@
   <a class="card" href="ny-lottery-calculator.html">
     <h2>Take-Home Calculator →</h2>
     <p>What a Powerball or Mega Millions win actually pays a New York State resident after
-      federal and state tax, lump sum or annuity, split any number of ways. Current jackpots
-      and the latest winning numbers load automatically.</p>
+      federal and state tax &mdash; computed on the cash lump sum, split any number of ways.
+      Current jackpots and the latest winning numbers load automatically.</p>
   </a>
 
   <a class="card" href="lottery-portfolio.html">

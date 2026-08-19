@@ -354,8 +354,16 @@ function computeIncome(total, spend, tbY, muY, vtiY, vxY, split) {
   const muG    = muni   * muY,    muA    = muG;
   const vtiG   = vti    * vtiY,   vtiA   = vtiG   * (1-LTCG-NIIT-NY);
   const vxusG  = vxus   * vxY,    vxusA  = vxusG  * (1-LTCG-NIIT-NY);
+  // The waterfall's federal/NY split, summed per holding from the same rates as
+  // the after-tax figures above (NIIT is federal). The two always add up to
+  // exactly totG − totA. This used to be a hard-coded 77/23 display split,
+  // which overstated NY drag on any T-bill- or muni-heavy allocation — T-bill
+  // interest owes no NY tax at all.
+  const fedDrag = (spaxxG + tbG) * FED + (vtiG + vxusG) * (LTCG + NIIT);
+  const nyDrag  = (spaxxG + vtiG + vxusG) * NY;
   return { spaxx, tbill, muni, vti, vxus,
            spaxxG, spaxxA, tbG, tbA, muG, muA, vtiG, vtiA, vxusG, vxusA,
+           fedDrag, nyDrag,
            underfunded: fit < 1, // ladder had to be shrunk to fit the principal
            totG: spaxxG+tbG+muG+vtiG+vxusG,
            totA: spaxxA+tbA+muA+vtiA+vxusA };
@@ -389,6 +397,7 @@ document.getElementById('theme-select').innerHTML = THEMES.map(t =>
   `<option value="${t.id}">${t.icon} ${t.label}</option>`
 ).join('');
 function setTheme(theme) {
+  if (theme === 'slate') theme = 'dark'; // renamed family-wide: same palette (see theme.css)
   if (!THEMES.some(t => t.id === theme)) theme = 'midnight';
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('lottery-theme', theme);
@@ -490,7 +499,7 @@ function render() {
 
   const { spaxx, tbill, muni, vti, vxus,
           spaxxG, spaxxA, tbG, tbA, muG, muA, vtiG, vtiA, vxusG, vxusA,
-          underfunded, totG, totA } = computeIncome(total, spend, tbY, muY, vtiY, vxY, split);
+          fedDrag, nyDrag, underfunded, totG, totA } = computeIncome(total, spend, tbY, muY, vtiY, vxY, split);
 
   // Say so plainly when the ladder had to shrink, rather than quietly showing
   // smaller buckets than the 1yr/3yr/4yr labels promise.
@@ -574,9 +583,9 @@ function render() {
   document.getElementById('waterfall').innerHTML =
     wfrow('Gross income', totG, 'var(--text-muted)', false) +
     '<hr class="wfd">' +
-    // Display-only split of the total tax drag: ~77% federal / ~23% NY
-    wfrow('Federal tax drag',  -(totG-totA)*0.77, '', true) +
-    wfrow('NY state tax drag', -(totG-totA)*0.23, '', true) +
+    // Real per-holding split from computeIncome — the two sum to totG − totA.
+    wfrow('Federal tax drag',  -fedDrag, '', true) +
+    wfrow('NY state tax drag', -nyDrag, '', true) +
     '<hr class="wfd">' +
     wfrow('After-tax income', totA, COLORS.muni, false) +
     wfrow('Annual spending',  -spend, '', true) +
