@@ -53,3 +53,26 @@ NY Lottery take-home calculator + investment portfolio model. Two single-file HT
 - **Don't confuse `sw.js` with `worker.js`.** `worker.js` is the Cloudflare Worker that proxies
   jackpots, deployed separately and nothing to do with the browser. `sw.js` is the service
   worker in the page.
+
+## Fields (2026-08-20)
+
+- **A box you land on has its contents SELECTED**, so typing replaces the figure
+  rather than running on to the end of it — one delegated `focusin` listener
+  (`SELECT_ON_FOCUS`) on each of the two calculator pages, which bubbles where
+  `focus` does not. Ported from Money Map, and the same block runs in every app
+  in the family. Three things it must keep doing:
+  - **The type list is a WHITELIST.** The portfolio page is mostly sliders, and a
+    `range` has no text for `select()` to take; so does any type nobody has
+    thought about yet. `data-keep-caret` is the by-hand opt-out for a single-line
+    prose field — neither page has one, but the attribute is honoured here too so
+    the family's block stays identical.
+  - **The one-shot `mouseup` guard is load-bearing, and only for a POINTER-driven
+    focus.** A click focuses on mousedown and then places the caret on mouseup,
+    which collapses the selection made a moment earlier: without it the feature
+    works from the keyboard and looks broken with a mouse. A `{once:true}`
+    listener left hanging after a Tab would eat the caret placement of a later,
+    deliberate click — hence `focusFromPointer`, set on a capturing `pointerdown`.
+  - **Clicking a second time places the caret normally**, since the box is focused
+    by then and no focusin fires. That is the way back in for editing rather than
+    replacing, and it is why the portfolio page's slider boxes are still editable
+    a character at a time.

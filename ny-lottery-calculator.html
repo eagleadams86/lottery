@@ -925,6 +925,44 @@ function trbold(i,d,a,c){ return '<tr><td><strong>'+i+'</strong></td><td class="
 function trtot(i,d,a,c){ return '<tr class="totrow"><td>'+i+'</td><td class="muted">'+d+'</td><td class="'+c+'">'+a+'</td></tr>'; }
 function trspace(){ return '<tr style="height:6px"><td colspan="3"></td></tr>'; }
 
+// ── A box you land on has its contents selected ────────────────────────────
+// Typing then REPLACES the figure instead of running on to the end of it.
+// Every box here holds one short figure — a jackpot, a
+// number of winners — correcting one meant clearing it first: click, then
+// Cmd-A or several backspaces, then type. Ported from Money Map, and the same
+// block runs in every app in the family.
+//
+// One delegated listener on focusin, which BUBBLES where focus does not, so it
+// covers every box on the page with nothing to remember when adding one. The
+// type list is a WHITELIST: types with no text in them are left out because select() means
+// nothing there, and so is any type nobody has thought about yet, and
+// data-keep-caret opts a field out by hand (nothing here needs it — there is no
+// prose box on these pages — but the sibling apps' note fields do). Clicking a
+// second time places the caret as it always did — the box is focused by then,
+// so no focusin fires.
+const SELECT_ON_FOCUS = new Set(['text', 'search', 'number', 'tel', 'url', 'password']);
+// Whether the focus about to be handled came from a pointer, which decides
+// whether the guard below is needed at all. Capture, so it is set before the
+// focus it explains.
+let focusFromPointer = false;
+document.addEventListener('pointerdown', function(){ focusFromPointer = true; }, true);
+document.addEventListener('pointerup', function(){ focusFromPointer = false; }, true);
+document.addEventListener('focusin', function(e){
+  const el = e.target;
+  if (!el || el.tagName !== 'INPUT' || !SELECT_ON_FOCUS.has(el.type)) return;
+  if (el.hasAttribute('data-keep-caret')) return;
+  if (typeof el.select !== 'function') return;
+  el.select();
+  // A click focuses on mousedown and then PLACES THE CARET on mouseup, which
+  // collapses the selection made a moment earlier — without this the feature
+  // works from the keyboard and appears broken with a mouse, which is how
+  // everybody would meet it. Attached only for a pointer-driven focus and only
+  // once, so it is spent on the click that caused it: a listener left hanging
+  // after a Tab would eat the caret placement of a later, deliberate click.
+  if (focusFromPointer)
+    el.addEventListener('mouseup', function(ev){ ev.preventDefault(); }, { once: true });
+});
+
 // Initial load: jackpots always; winning numbers unless that section was collapsed
 fetchJackpots();
 if(document.getElementById('wn-body').classList.contains('open')) fetchWinning();
