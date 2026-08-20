@@ -27,7 +27,7 @@ async function scrape(slug) {
     const result = await fromLotteryUSA(slug);
     if (result && result.jackpot > 0) return result;
   } catch(e) {}
-  return { jackpot: 0, cashValue: 0, nextDraw: '' };
+  return { jackpot: 0, cashValue: 0 };
 }
 
 async function fromUSAMega(slug) {
@@ -51,15 +51,17 @@ async function fromUSAMega(slug) {
   const jMatch = html.match(new RegExp(namePattern + '\\s+Jackpot\\s+for\\s+([^<$]+?)\\s*\\$([\\d,]+)', 'i'));
   const cMatch = html.match(/Cash:\s*\$([0-9,]+)/i);
 
-  // Also try standalone date patterns as fallback
-  const dateFromJackpot = jMatch ? jMatch[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/,?\s*\d{4}/, '').trim() : '';
-  const dateFromPage = html.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2}/i);
-  const nextDraw = dateFromJackpot || (dateFromPage ? dateFromPage[0].trim() : '');
-
+  // Numbers only. This used to also scrape a `nextDraw` date string out of the
+  // page and hand it to the client, which never read it — the calculator has
+  // always computed the next draw itself from the fixed Mon/Wed/Sat and Tue/Fri
+  // schedule (`nextDraw()` in ny-lottery-calculator.html), which needs no
+  // network and can't go stale. So it was free-text from a third party crossing
+  // a trust boundary for nothing. Removed 2026-08-20. Radix 10 is explicit on
+  // both parses: these strings are digits and commas, but a leading zero should
+  // never be anyone's guess.
   return {
-    jackpot:   jMatch ? parseInt(jMatch[2].replace(/,/g, '')) : 0,
-    cashValue: cMatch ? parseInt(cMatch[1].replace(/,/g, '')) : 0,
-    nextDraw
+    jackpot:   jMatch ? parseInt(jMatch[2].replace(/,/g, ''), 10) : 0,
+    cashValue: cMatch ? parseInt(cMatch[1].replace(/,/g, ''), 10) : 0
   };
 }
 
@@ -77,12 +79,11 @@ async function fromLotteryUSA(slug) {
 
   const jMatch = html.match(/\$\s*([\d,]+(?:\.\d+)?)\s*(Million|Billion)/i);
   const cMatch = html.match(/[Cc]ash\s*(?:[Vv]alue|[Oo]ption)[^\$]*\$\s*([\d,]+(?:\.\d+)?)\s*(Million|Billion)/i);
-  const dMatch = html.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2}/i);
 
+  // Numbers only, same as the primary scraper above — see the note there.
   return {
     jackpot:   jMatch ? parseSuffix(jMatch[1], jMatch[2]) : 0,
-    cashValue: cMatch ? parseSuffix(cMatch[1], cMatch[2]) : 0,
-    nextDraw:  dMatch ? dMatch[0].trim() : ''
+    cashValue: cMatch ? parseSuffix(cMatch[1], cMatch[2]) : 0
   };
 }
 
