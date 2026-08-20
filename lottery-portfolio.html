@@ -740,6 +740,20 @@ function loadSliders() {
 }
 
 // ── Live T-bill yield (US Treasury daily par yield curve, 1-year) ──────────────
+// A fetch that gives up after 15s, so a hung feed can't leave the yield fetch
+// pending for the browser's multi-minute default. Copied from the calculator
+// page beside this one, which has had it since its own feeds were added — this
+// page was the only one still calling bare fetch(), which an audit found on
+// 2026-08-20. Deliberately NOT AbortSignal.timeout: its timer can be suspended
+// in a hidden tab and never fire. A plain setTimeout can fire late in a hidden
+// tab too, but late still recovers — the catch path runs and the slider keeps
+// whatever value it had — where never-firing leaves the request hanging.
+var FETCH_TIMEOUT_MS = 15000;
+function fetchWithTimeout(url){
+  var ctl = new AbortController();
+  var timer = setTimeout(function(){ ctl.abort(); }, FETCH_TIMEOUT_MS);
+  return fetch(url, { signal: ctl.signal }).finally(function(){ clearTimeout(timer); });
+}
 function tbXmlUrl(ym){ return 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve&field_tdr_date_value_month=' + ym; }
 function ymStr(d){ return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0'); }
 function parseLatest1yr(xml){
@@ -777,11 +791,11 @@ async function fetchTbillYield(){
   } catch(e){}
   try {
     var now = new Date();
-    var xml = await fetch(tbXmlUrl(ymStr(now))).then(function(r){ return r.text(); });
+    var xml = await fetchWithTimeout(tbXmlUrl(ymStr(now))).then(function(r){ return r.text(); });
     var latest = parseLatest1yr(xml);
     if (!latest) { // early in the month the current sheet may be empty — try previous month
       var prev = new Date(now.getFullYear(), now.getMonth()-1, 1);
-      xml = await fetch(tbXmlUrl(ymStr(prev))).then(function(r){ return r.text(); });
+      xml = await fetchWithTimeout(tbXmlUrl(ymStr(prev))).then(function(r){ return r.text(); });
       latest = parseLatest1yr(xml);
     }
     if (!latest) return;
