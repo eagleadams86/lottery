@@ -447,7 +447,7 @@ t('federal/NY drag rows are computed per holding, not a fixed 77/23 split', () =
    What is worth asserting is the SHAPE of the thing. Cache Storage is keyed by
    ORIGIN and shared with every sibling app, so "only files already public in
    this repo, ever" is the promise holding this up. */
-let SW_SRC = '', KILL_SRC = '', INDEX_SRC = '', CALC_SRC = '', PORT_SRC = '', CHART_SRC = '';
+let SW_SRC = '', KILL_SRC = '', INDEX_SRC = '', CALC_SRC = '', PORT_SRC = '', CHART_SRC = '', PKG = '';
 const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 group('Offline — the service worker');
@@ -520,6 +520,36 @@ t('every parseInt spells out its radix', () => {
          name + ' has a parseInt with no radix: ' + tail.split('\n')[0].slice(0, 70));
     }
   }
+});
+
+t('package.json and the vendored bundle name the SAME Chart.js', () => {
+  /* The manifest exists only so Dependabot has something to scan — nothing is
+     ever installed from it, and the bytes that ship are chart.min.js in this
+     repo. That creates one specific way to end up lying: Dependabot cannot
+     re-vendor a file, so a version-bump PR would raise the manifest to 4.5.0
+     while the app went on serving 4.4.1, and the repo would claim a version it
+     does not run.
+
+     This is what stops that being quiet. A manifest-only bump fails here, which
+     turns the PR into the correct instruction — "a newer Chart.js exists, now
+     update the FILE too, in all three repos" — rather than a false record. Same
+     discipline as the theme pack's gate: a generated artefact must match its
+     source. */
+  const pinned = (PKG.match(/"chart\.js"\s*:\s*"([^"]+)"/) || [])[1];
+  ok(pinned, 'package.json must declare chart.js');
+  ok(/^\d+\.\d+\.\d+$/.test(pinned),
+     'pin it exactly — a ^ or ~ range cannot be checked against a vendored file: ' + pinned);
+  ok(CHART_SRC.includes('"' + pinned + '"'),
+     'chart.min.js is not ' + pinned + ' — if this followed a Dependabot bump, the file '
+     + 'still has to be re-vendored, and Flow Metrics and Money Map with it');
+});
+t('the manifest installs nothing and can never be published', () => {
+  const pkg = JSON.parse(PKG);
+  eq(pkg.private, true, 'private:true, so it can never reach npm by accident');
+  ok(!pkg.scripts, 'no scripts — this repo has no build step and must not grow one');
+  ok(!pkg.dependencies, "the entry belongs in devDependencies, which CI's --omit=dev skips");
+  ok(pkg.devDependencies && Object.keys(pkg.devDependencies).length === 1,
+     'one entry only: the library that is vendored beside it');
 });
 
 t('nothing is loaded from a CDN', () => {
@@ -662,10 +692,10 @@ const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
    its own test rather than taking the suite down. */
 async function loadSources() {
   const grab = async (f) => { try { const r = await fetch(f); return r.ok ? await r.text() : ''; } catch (e) { return ''; } };
-  [SW_SRC, KILL_SRC, INDEX_SRC, CALC_SRC, PORT_SRC, CHART_SRC] = await Promise.all(
+  [SW_SRC, KILL_SRC, INDEX_SRC, CALC_SRC, PORT_SRC, CHART_SRC, PKG] = await Promise.all(
     [grab('sw.js'), grab('sw-kill.js'), grab('index.html'),
      grab('ny-lottery-calculator.html'), grab('lottery-portfolio.html'),
-     grab('chart.min.js')]);
+     grab('chart.min.js'), grab('package.json')]);
 }
 
 window.addEventListener('load', () => {

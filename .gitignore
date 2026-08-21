@@ -1,1 +1,5 @@
 .claude/settings.local.json
+# Never committed. CI installs Playwright here and throws the runner away;
+# package.json declares no dependency that is meant to be installed at all.
+node_modules/
+package-lock.json

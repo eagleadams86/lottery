@@ -7,6 +7,14 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 
 ---
 
+**Why there is a `package.json` in a repo with no build step.** It is not a package and it
+installs nothing — it exists so Dependabot has a manifest to scan. Its only entry is the
+Chart.js that is *vendored* as `chart.min.js` beside the app, pinned exactly, and CI passes
+`--omit=dev` so npm never downloads it. Dependabot cannot re-vendor a file, so a version-bump
+PR would otherwise raise the manifest while the app went on serving the old bytes; a test pins
+the two to the same version, which makes a manifest-only bump fail and turns the PR into the
+right instruction — update the file too, in all three repos that carry it.
+
 ## Files
 
 | File | Description |
