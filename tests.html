@@ -271,10 +271,60 @@ t('fm() scales with magnitude; fmShort() trims; fm1() keeps one decimal', () => 
 t('tint() mixes a series colour 68% toward the card; junk passes through', () => {
   const card = wp.cssVar('--surface');
   ok(/^#[0-9a-f]{6}$/i.test(card), 'the card colour resolved from theme.css');
-  const a = parseInt('7F77DD', 16), b = parseInt(card.slice(1), 16);
+  // A REAL series token, not a literal — this used to pin #7F77DD, which was one of
+  // the five colours this page invented for itself and no longer has.
+  const src = wp.cssVar('--series-4');
+  ok(/^#[0-9a-f]{6}$/i.test(src), '--series-4 resolved from theme.css');
+  const a = parseInt(src.slice(1), 16), b = parseInt(card.slice(1), 16);
   const mix = sh => Math.round((a >> sh & 255) + ((b >> sh & 255) - (a >> sh & 255)) * 0.68);
-  eq(wp.tint('#7F77DD'), 'rgb(' + mix(16) + ',' + mix(8) + ',' + mix(0) + ')');
+  eq(wp.tint(src), 'rgb(' + mix(16) + ',' + mix(8) + ',' + mix(0) + ')');
   eq(wp.tint('red'), 'red', 'a non-hex colour is returned untouched');
+});
+
+/* ── The palette comes from the pack, and no longer from this file ────────────
+   The portfolio used to carry five hex values of its own, two of which simulate
+   to the same colour under deuteranopia (#378ADD and #7F77DD -> #7979DE and
+   #7979DD, a deltaE of 0.7). It now reads --series-1..5, which the pack gates at
+   deltaE 18 across all ten pairs. These tests pin the two halves of that: the
+   values really do come from the stylesheet, and the source has no invented
+   palette left to drift back to. */
+t('the five asset colours resolve from the pack ramp, in numeric order', () => {
+  const c = wp.colors();
+  const want = ['spaxx', 'tbill', 'muni', 'vti', 'vxus'];
+  want.forEach((k, i) => {
+    const token = wp.cssVar('--series-' + (i + 1));
+    ok(/^#[0-9a-f]{6}$/i.test(token), '--series-' + (i + 1) + ' is a 6-digit hex');
+    eq(c[k], token, k + ' is --series-' + (i + 1));
+  });
+  // 6-digit specifically: the line chart appends alpha as hex (C.vti + '18'),
+  // which silently produces nonsense against a 3-digit or rgb() value.
+  eq(c.drag, wp.cssVar('--err'), 'tax drag is --err, not a sixth category');
+});
+t('colours are re-read per render, so a theme switch actually repaints', () => {
+  // The regression this guards: a `const COLORS = {...}` evaluated once at load
+  // keeps the first theme's values for the life of the page, and the charts then
+  // repaint in the previous theme's colours after a switch.
+  const saved = wp.document.documentElement.getAttribute('data-theme');
+  try {
+    wp.setTheme('light');
+    const light = wp.colors().spaxx;
+    wp.setTheme('midnight');
+    const midnight = wp.colors().spaxx;
+    ok(light !== midnight, 'Light and Midnight give different series colours');
+    eq(midnight, wp.cssVar('--series-1'), 'and the live one matches the stylesheet');
+  } finally {
+    wp.setTheme(saved || 'midnight');   // never leave the page on another theme
+  }
+});
+t('the portfolio source carries no palette of its own', () => {
+  // Comments here still NAME the retired colours, on purpose — the explanation of
+  // what went wrong is worth keeping — so they are stripped before the check.
+  const body = stripComments(PORT_SRC);
+  ok(body.length > 1000, 'the portfolio source loaded');
+  ok(!/#(378ADD|7F77DD|1D9E75|0F6E56|534AB7|E24B4A)\b/i.test(body),
+     'none of the six retired literals is still live code');
+  ok(!/rgba\(226, ?75, ?74/.test(body), 'and neither is the old tax-drag rgba()');
+  ok(/cssVar\('--series-1'\)/.test(body), 'the ramp is read from the stylesheet');
 });
 
 group('take-home slider scale');

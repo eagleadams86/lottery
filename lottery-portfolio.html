@@ -269,7 +269,32 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 // Top marginal rates: federal ordinary income, NY state, long-term capital
 // gains, and the 3.8% net investment income tax.
 const FED=0.37, NY=0.109, LTCG=0.20, NIIT=0.038;
-const COLORS = { spaxx:'#378ADD', tbill:'#1D9E75', muni:'#0F6E56', vti:'#7F77DD', vxus:'#534AB7' };
+/* ── The five asset classes take the theme pack's categorical ramp ───────────
+   --series-1 to --series-5, used in numeric order, which is the rule the pack
+   states: two charts of the same data then agree, and the order is a lightness
+   staircase that must not be re-sorted into a prettier one.
+
+   This page used to carry five hex values of its own — the only invented palette
+   in the family, and Flow Metrics had already declined to invent one for exactly
+   this reason. Two of the five, #378ADD for SPAXX and #7F77DD for VTI, came out as
+   #7979DE and #7979DD under deuteranopia: a deltaE of 0.7, so the largest wedge of
+   the doughnut (48%) and the smallest (2.5%) read as one colour. Nothing caught it
+   because nothing was looking at that palette. The ramp is gated at deltaE 18
+   across all ten pairs under both dichromacies, so it cannot come back here
+   without check_contrast.py failing in the pack first.
+
+   A FUNCTION, not a const, and this matters: setTheme() re-runs render(), so the
+   values have to be re-read from the document on every pass or a theme switch
+   would keep the previous theme's colours. tc(), gc() and tint() all read theirs
+   per call for the same reason. */
+function colors() {
+  return { spaxx: cssVar('--series-1'), tbill: cssVar('--series-2'),
+           muni:  cssVar('--series-3'), vti:   cssVar('--series-4'),
+           vxus:  cssVar('--series-5'),
+           /* Not a sixth category — a subtraction from each of the five. See the
+              stripe note by stripes() for why it is not simply a sixth colour. */
+           drag:  cssVar('--err') };
+}
 
 // Compact currency: $1.23B / $2.50M / $125K
 function fm(n) {
@@ -445,6 +470,31 @@ function tint(hex) {
   return `rgb(${mix(16)},${mix(8)},${mix(0)})`;
 }
 
+/* ── Tax drag carries a STRIPE, not just a colour ────────────────────────────
+   Tax drag is stacked directly on top of each asset's segment, so it is the one
+   mark on this page that has to be told apart from a *series* colour rather than
+   from the card. Colour alone cannot do that job: --err is deltaE 8.8 from
+   --series-5 on Light and 11.6 on Sepia under deuteranopia, because both are the
+   rust-red family and red-green deficiency collapses exactly that axis. VXUS and
+   its own tax drag would have been one block.
+
+   So the drag keeps --err — it means money lost, and that is what --err says —
+   and carries the distinction in a diagonal hatch as well, which no colour vision
+   affects. Same answer the theme pack gives for status chips ("put the colour in
+   the border or the figure, never the fill alone") and the same helper Money Map
+   uses for its money-out bars. Falls back to the flat tint when Chart is absent,
+   which is how the test harness loads this file. */
+const stripes = (color, under) => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 8;
+  const g = c.getContext('2d');
+  g.fillStyle = under; g.fillRect(0, 0, 8, 8);
+  g.strokeStyle = color; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(-2, 6); g.lineTo(6, -2);
+  g.moveTo(2, 10); g.lineTo(10, 2); g.stroke();
+  return (typeof Chart !== 'undefined') ? g.createPattern(c, 'repeat') : under;
+};
+
 /* The legend swatches stay SOLID, and that was tried the other way: they're 8px,
    so the large-flat-area argument doesn't apply to them, and they're the one
    place all five colours have to be told apart from each other — tinted, the two
@@ -527,12 +577,16 @@ function render() {
     <button type="button" class="met met-click" onclick="zeroSurplus()" title="Set annual spending to your after-tax income (surplus → 0)" aria-label="Surplus vs spending: ${surplusText}. ${surplusMs}. Activate to set annual spending equal to your after-tax income."><span class="ml">Surplus vs spending</span><span class="mv" style="color:${surplusColor}">${surplusText}</span><span class="ms">${surplusMs}</span></button>
   `;
 
+  /* Resolved once per render rather than per use: five getComputedStyle calls,
+     not thirty, and every mark in this pass is guaranteed the same theme. */
+  const C = colors();
+
   const rows = [
-    { name:'SPAXX',    sub:'1yr cash buffer · core',              alloc:spaxx, gross:spaxxG, after:spaxxA, tax:'Ordinary (47.9%)',       tc:'to', color:COLORS.spaxx },
-    { name:'T-bills',  sub:'3yr ladder · NY exempt',              alloc:tbill, gross:tbG,    after:tbA,    tax:'Federal only (37%)',      tc:'tp', color:COLORS.tbill },
-    { name:'NY Munis', sub:'4yr ladder · fully exempt',           alloc:muni,  gross:muG,    after:muA,    tax:'Fully exempt',            tc:'tf', color:COLORS.muni  },
-    { name:'VTI',      sub:Math.round(split*100)+'% · divs→cash', alloc:vti,   gross:vtiG,   after:vtiA,   tax:'LTCG+NIIT+NY (34.7%)',   tc:'tp', color:COLORS.vti   },
-    { name:'VXUS',     sub:(100-Math.round(split*100))+'% · divs→cash', alloc:vxus, gross:vxusG, after:vxusA, tax:'LTCG+NIIT+NY (34.7%)', tc:'tp', color:COLORS.vxus },
+    { name:'SPAXX',    sub:'1yr cash buffer · core',              alloc:spaxx, gross:spaxxG, after:spaxxA, tax:'Ordinary (47.9%)',       tc:'to', color:C.spaxx },
+    { name:'T-bills',  sub:'3yr ladder · NY exempt',              alloc:tbill, gross:tbG,    after:tbA,    tax:'Federal only (37%)',      tc:'tp', color:C.tbill },
+    { name:'NY Munis', sub:'4yr ladder · fully exempt',           alloc:muni,  gross:muG,    after:muA,    tax:'Fully exempt',            tc:'tf', color:C.muni  },
+    { name:'VTI',      sub:Math.round(split*100)+'% · divs→cash', alloc:vti,   gross:vtiG,   after:vtiA,   tax:'LTCG+NIIT+NY (34.7%)',   tc:'tp', color:C.vti   },
+    { name:'VXUS',     sub:(100-Math.round(split*100))+'% · divs→cash', alloc:vxus, gross:vxusG, after:vxusA, tax:'LTCG+NIIT+NY (34.7%)', tc:'tp', color:C.vxus },
   ];
 
   // ── Table ──
@@ -566,7 +620,7 @@ function render() {
   // ── Waterfall ──
   const maxWF = totG || 1;
   // Negative bars are the theme's --err at 40% alpha, appended as a hex-alpha
-  // pair the way the line chart does (COLORS.vti+'18'). cssVar() resolves it
+  // pair the way the line chart does (C.vti+'18'). cssVar() resolves it
   // per render, so a theme switch re-renders it correctly; every theme in the
   // pack defines --err as a 6-digit hex, which is what makes the append safe.
   function wfrow(lbl, val, color, indent) {
@@ -587,15 +641,15 @@ function render() {
     wfrow('Federal tax drag',  -fedDrag, '', true) +
     wfrow('NY state tax drag', -nyDrag, '', true) +
     '<hr class="wfd">' +
-    wfrow('After-tax income', totA, COLORS.muni, false) +
+    wfrow('After-tax income', totA, C.muni, false) +
     wfrow('Annual spending',  -spend, '', true) +
     '<hr class="wfd">' +
-    wfrow('Surplus', surplus, COLORS.spaxx, false);
+    wfrow('Surplus', surplus, C.spaxx, false);
 
   // ── Chart 1: stacked bar ──
   document.getElementById('leg1').innerHTML = rows.map(r =>
     `<span class="leg"><span class="leg-sq" style="background:${r.color}"></span>${r.name}</span>`
-  ).join('') + `<span class="leg"><span class="leg-sq" style="background:rgba(226,75,74,0.45);border:1px dashed #E24B4A"></span>Tax drag</span>`;
+  ).join('') + `<span class="leg"><span class="leg-sq" style="background:${C.drag}73;border:1px dashed ${C.drag}"></span>Tax drag</span>`;
 
   // Rebuild only when the charts don't exist yet or the theme changed;
   // otherwise just push the new numbers in.
@@ -617,8 +671,8 @@ function render() {
         datasets: [
           { label:'After-tax income', data:afterData, backgroundColor:rows.map(r => tint(r.color)),
             borderColor:rows.map(r => r.color), borderWidth:2, borderSkipped:false, borderRadius:4 },
-          { label:'Tax drag',         data:dragData,  backgroundColor:'rgba(226,75,74,0.38)',
-            borderColor:'#E24B4A', borderWidth:2, borderSkipped:false, borderRadius:4 }
+          { label:'Tax drag',         data:dragData,  backgroundColor:stripes(C.drag, tint(C.drag)),
+            borderColor:C.drag, borderWidth:2, borderSkipped:false, borderRadius:4 }
         ]
       },
       options: {
@@ -673,8 +727,8 @@ function render() {
   const totalVals  = yrs.map(y => Math.round((total-eqBase) + eqBase * Math.pow(1+grY, y)));
 
   document.getElementById('leg3').innerHTML = `
-    <span class="leg"><span class="leg-sq" style="background:${COLORS.vti}"></span>VTI + VXUS</span>
-    <span class="leg"><span class="leg-sq" style="background:${COLORS.tbill}"></span>Total portfolio</span>`;
+    <span class="leg"><span class="leg-sq" style="background:${C.vti}"></span>VTI + VXUS</span>
+    <span class="leg"><span class="leg-sq" style="background:${C.tbill}"></span>Total portfolio</span>`;
 
   if (rebuild) {
     c3 = new Chart(document.getElementById('c3'), {
@@ -682,8 +736,8 @@ function render() {
       data: {
         labels: yrs.map(y => 'Yr '+y),
         datasets: [
-          { label:'VTI + VXUS',     data:growthVals, borderColor:COLORS.vti,   backgroundColor:COLORS.vti+'18',   fill:true, tension:0.3, pointRadius:3, borderWidth:2 },
-          { label:'Total portfolio', data:totalVals,  borderColor:COLORS.tbill, backgroundColor:COLORS.tbill+'12', fill:true, tension:0.3, pointRadius:3, borderWidth:2, borderDash:[4,3] }
+          { label:'VTI + VXUS',     data:growthVals, borderColor:C.vti,   backgroundColor:C.vti+'18',   fill:true, tension:0.3, pointRadius:3, borderWidth:2 },
+          { label:'Total portfolio', data:totalVals,  borderColor:C.tbill, backgroundColor:C.tbill+'12', fill:true, tension:0.3, pointRadius:3, borderWidth:2, borderDash:[4,3] }
         ]
       },
       options: {
