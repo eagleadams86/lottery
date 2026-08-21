@@ -77,6 +77,14 @@ const SHELL = [
   'ny-lottery-calculator.html',
   'lottery-portfolio.html',
   'theme.css',
+  /* The vendored Chart.js. Added 2026-08-21, when it stopped being pasted into
+     lottery-portfolio.html and became a file — until then it was cached for free
+     as part of the page. Without this line the portfolio opens offline and then
+     stops at `new Chart(...)`, which looks like a broken app rather than a
+     missing file. `cache.addAll` is not used here (see topUp below), so a missing
+     entry costs that entry rather than all of offline — but the entry still has
+     to be asked for. */
+  'chart.min.js',
   'privacy.html',
   'favicon.ico'
 ];

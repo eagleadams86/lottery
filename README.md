@@ -16,6 +16,7 @@ A pair of lightweight single-page web tools for calculating **real after-tax lot
 | `sw-kill.js` | The escape hatch — copy it over `sw.js` and push to uninstall every installed worker. |
 | `ny-lottery-calculator.html` | After-tax lottery take-home calculator with live jackpots and winning numbers |
 | `lottery-portfolio.html` | What-if model of investing the lump sum as a tax-aware portfolio |
+| `chart.min.js` | Chart.js 4.4.1, vendored (no CDN) — byte-identical to the copies in Flow Metrics and Money Map. Third-party: never hand-edit it, and if it is ever updated, update all three and this table together |
 | `theme.css` | Shared color tokens + 4 theme palettes, linked by both pages. Generated in the claude-theme-pack repo (the source of truth for all apps); every color pair is script-verified to meet WCAG AA contrast, and the portfolio's five asset colours come from its categorical `--series-*` ramp |
 | `favicon.ico` | The icon both pages share — the fallback a browser fetches from the site root on its own |
 | `make_favicon.py` | Draws `favicon.ico` to match the inline SVG icon in both pages |
@@ -96,7 +97,7 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Remembers your settings** — slider values restored on revisit via `localStorage`. The take-home slider is seeded from the calculator's net take-home, but only when the calculator has produced a *new* figure; if you move that slider yourself it stays where you put it
 - **Mobile-friendly** — portfolio breakdown table reflows to a card layout on narrow screens
 - **Cross-page navigation** — button to jump directly to the calculator
-- **No build step** — plain HTML/CSS/JS, no dependencies beyond Chart.js (bundled inline); shares `theme.css` with the calculator for a unified palette
+- **No build step** — plain HTML/CSS/JS, no dependencies beyond Chart.js 4.4.1, vendored as `chart.min.js` beside the page (no CDN, never hand-edited); shares `theme.css` with the calculator for a unified palette
 
 ---
 
@@ -196,4 +197,4 @@ Run it locally from a server (`python3 -m http.server 8010`, then open `http://l
 
 - **Hosting:** GitHub Pages (this repo, `main` branch)
 - **Proxy:** Cloudflare Workers (free tier) — handles CORS and server-side scraping
-- **No build step** — plain HTML/CSS/JS, no dependencies or bundler required; both pages share a single `theme.css` (generated in the claude-theme-pack repo) for color tokens and the four theme palettes
+- **No build step** — plain HTML/CSS/JS, no dependencies or bundler required; both pages share a single `theme.css` (generated in the claude-theme-pack repo) for color tokens and the four theme palettes, and the portfolio's charts use a vendored `chart.min.js` (Chart.js 4.4.1) rather than a CDN

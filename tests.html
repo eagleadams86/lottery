@@ -447,7 +447,7 @@ t('federal/NY drag rows are computed per holding, not a fixed 77/23 split', () =
    What is worth asserting is the SHAPE of the thing. Cache Storage is keyed by
    ORIGIN and shared with every sibling app, so "only files already public in
    this repo, ever" is the promise holding this up. */
-let SW_SRC = '', KILL_SRC = '', INDEX_SRC = '', CALC_SRC = '', PORT_SRC = '';
+let SW_SRC = '', KILL_SRC = '', INDEX_SRC = '', CALC_SRC = '', PORT_SRC = '', CHART_SRC = '';
 const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 group('Offline — the service worker');
@@ -458,13 +458,56 @@ t('sw.js and its kill switch are both present', () => {
 });
 
 t('the cache list holds only files that are already public', () => {
-  const m = SW_SRC.match(/const SHELL = \[([\s\S]*?)\]/);
+  /* Comments stripped FIRST: the entries are picked out by their quotes, and a
+     comment inside the list that happened to contain an apostrophe would be read
+     as an entry. The list is commented now, so this is not hypothetical. */
+  const m = stripComments(SW_SRC).match(/const SHELL = \[([\s\S]*?)\]/);
   ok(m, 'could not find the SHELL list in sw.js');
   const shell = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort();
   /* Exact equality, not "contains". A new entry has to be added here too, which
      is the moment to ask whether the file is genuinely public. */
-  eq(shell, ['./', 'favicon.ico', 'lottery-portfolio.html', 'ny-lottery-calculator.html',
-             'privacy.html', 'theme.css'], 'the offline shell list changed');
+  eq(shell, ['./', 'chart.min.js', 'favicon.ico', 'lottery-portfolio.html',
+             'ny-lottery-calculator.html', 'privacy.html', 'theme.css'],
+     'the offline shell list changed');
+});
+
+/* ── The vendored library ───────────────────────────────────────────────────
+   Chart.js was pasted into lottery-portfolio.html on a single 200 KB line until
+   2026-08-21. These tests pin the three things that cost, so none of them can
+   come back quietly. */
+t('Chart.js is a FILE, not pasted into the page', () => {
+  ok(/<script src="chart\.min\.js"><\/script>/.test(PORT_SRC),
+     'the portfolio must load chart.min.js as a file');
+  ok(!/<script>!function\(t,e\)/.test(PORT_SRC),
+     'a minified bundle is inlined in the page again — that is what this test is for');
+  ok(CHART_SRC.length > 100000, 'chart.min.js is missing or truncated');
+});
+t('and it is the version the README claims, unmodified', () => {
+  /* The version is not written anywhere in the file — the three copies across
+     this repo, Flow Metrics and Money Map are byte-identical and a header
+     comment here would break that. So it is read out of the bundle instead,
+     which is the only statement of it that cannot drift from the code. */
+  ok(/^!function\(t,e\)\{"object"==typeof exports/.test(CHART_SRC),
+     'chart.min.js is not the Chart.js UMD build');
+  ok(CHART_SRC.includes('"4.4.1"'),
+     'chart.min.js is not 4.4.1 — the README names that version, and Flow Metrics '
+     + 'and Money Map carry the same bytes; update all three and the README together');
+});
+t('the page loads it before its own script runs', () => {
+  const lib = PORT_SRC.indexOf('<script src="chart.min.js">');
+  const app = PORT_SRC.indexOf('const FED=');
+  ok(lib !== -1 && app !== -1 && lib < app,
+     'chart.min.js must be loaded ahead of the app script, or Chart is undefined at render');
+});
+t('nothing is loaded from a CDN', () => {
+  /* The reason the library is vendored at all. Every page on this origin shares
+     the localStorage of the apps holding work data, so a third-party script on
+     any of them is a hole in all of them. */
+  for (const [name, src] of [['calculator', CALC_SRC], ['portfolio', PORT_SRC]]) {
+    const body = stripComments(src);
+    ok(!/<script[^>]+src="https?:/i.test(body), name + ' loads an off-origin script');
+    ok(!/cdnjs|jsdelivr|unpkg|googleapis\.com\/ajax/i.test(body), name + ' names a CDN');
+  }
 });
 
 t('no live figure is ever cached — a stale jackpot is a wrong answer', () => {
@@ -596,9 +639,10 @@ const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
    its own test rather than taking the suite down. */
 async function loadSources() {
   const grab = async (f) => { try { const r = await fetch(f); return r.ok ? await r.text() : ''; } catch (e) { return ''; } };
-  [SW_SRC, KILL_SRC, INDEX_SRC, CALC_SRC, PORT_SRC] = await Promise.all(
+  [SW_SRC, KILL_SRC, INDEX_SRC, CALC_SRC, PORT_SRC, CHART_SRC] = await Promise.all(
     [grab('sw.js'), grab('sw-kill.js'), grab('index.html'),
-     grab('ny-lottery-calculator.html'), grab('lottery-portfolio.html')]);
+     grab('ny-lottery-calculator.html'), grab('lottery-portfolio.html'),
+     grab('chart.min.js')]);
 }
 
 window.addEventListener('load', () => {
