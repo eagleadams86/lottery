@@ -104,3 +104,8 @@ line. What changed here is the markup around it, done to all five together.
   failed.
 - `.foot` sets `margin`, not `margin-top`, so the rule no longer depends on which element
   carries it.
+
+- **`tests.html` fetches `privacy.html` too** (2026-08-21), alongside the sources it already
+  grabbed. It is one more `grab()` in `loadSources()` and one more group; the page had never
+  been read by the suite at all, which is how it stayed the only privacy page in the family
+  with a footer and then, briefly, the only one without landmarks.
