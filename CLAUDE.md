@@ -79,3 +79,28 @@ NY Lottery take-home calculator + investment portfolio model. Two single-file HT
     by then and no focusin fires. That is the way back in for editing rather than
     replacing, and it is why the portfolio page's slider boxes are still editable
     a character at a time.
+
+## The Privacy Page's Footer and Landmarks (2026-08-21)
+
+This page grew the family footer — the repo under **How it works**, and the authorship line —
+before any of its four siblings, and was the only one carrying it until they were brought into
+line. What changed here is the markup around it, done to all five together.
+
+- **The footer is a real `<footer>`, and the policy is in a real `<main>`.** A styled `<p>` is
+  not a landmark, and a page whose only landmark is contentinfo is worse than one with none —
+  the policy itself would sit in no landmark at all. Both went in together.
+- **`</main>` closes BEFORE the `<footer>`, and that ordering is the whole thing.** A
+  `<footer>` nested inside `main`, `article` or `section` is **not** contentinfo — it is a
+  plain footer for that section. So `.wrap` stays an ordinary `<div>` rather than becoming the
+  `<main>`, which would have swallowed the footer and left the page with no contentinfo at all
+  while looking perfectly correct in the source. The test asserts the ORDER, not just the tags.
+- The back link stays outside `<main>` — it is navigation, not the document.
+- **No privacy link in this footer**, unlike the app pages' — you are standing on that page.
+  That absence is asserted, not merely omitted.
+- **The tests strip HTML comments and match the footer by its class**, because the notes beside
+  both elements name them in prose and one of those notes lives in the `<style>` block, which
+  an HTML-comment strip does not reach. Without both, a page that had lost the element and kept
+  the comment explaining it would still pass — which is how the first version of this test
+  failed.
+- `.foot` sets `margin`, not `margin-top`, so the rule no longer depends on which element
+  carries it.

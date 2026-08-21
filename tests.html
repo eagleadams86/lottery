@@ -447,7 +447,8 @@ t('federal/NY drag rows are computed per holding, not a fixed 77/23 split', () =
    What is worth asserting is the SHAPE of the thing. Cache Storage is keyed by
    ORIGIN and shared with every sibling app, so "only files already public in
    this repo, ever" is the promise holding this up. */
-let SW_SRC = '', KILL_SRC = '', INDEX_SRC = '', CALC_SRC = '', PORT_SRC = '', CHART_SRC = '', PKG = '';
+let SW_SRC = '', KILL_SRC = '', INDEX_SRC = '', CALC_SRC = '', PORT_SRC = '', CHART_SRC = '',
+    PKG = '', PRIVACY_SRC = '';
 const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 group('Offline — the service worker');
@@ -684,6 +685,41 @@ t('it links both tools, the privacy policy and How it works', () => {
   ok(/MIT licensed/.test(INDEX_SRC), 'and carries the authorship line every public page has');
 });
 
+/* ── The privacy page ───────────────────────────────────────────────────────
+   It carries the family footer already — this page grew it first and was the
+   only one of the five that had it until 2026-08-21. What is new is that the
+   footer is a real landmark rather than a styled paragraph, family-wide, and
+   that the policy itself sits in <main>: without one, contentinfo would be the
+   only landmark on the page and the actual text would sit in none. The order
+   matters as much as the elements — a <footer> nested inside main, article or
+   section is NOT contentinfo, so main has to close before it. */
+group('privacy.html — the footer, and the two landmarks');
+
+t('it carries the family footer, minus the privacy link', () => {
+  ok(PRIVACY_SRC, 'privacy.html is missing — index.html links straight at it');
+  ok(/>How it works</.test(PRIVACY_SRC),
+    'the repo link is labelled "How it works" family-wide');
+  ok(/MIT licensed/.test(PRIVACY_SRC),
+    'and it carries the authorship line every public page has');
+  ok(!/href="privacy\.html"/.test(PRIVACY_SRC),
+    'but NOT a privacy link, which on the privacy page points at itself');
+});
+
+t('the footer and the policy are both real landmarks, in that order', () => {
+  /* Comments stripped FIRST, and the footer matched by its CLASS. The notes
+     beside both elements name them in prose — and one of those notes is in the
+     <style> block, which an HTML-comment strip does not reach — so a bare
+     /<main>/ or a bare '<footer' would pass on a page that had lost the element
+     and kept the comment explaining it, which is the one way this could rot. */
+  const bare = PRIVACY_SRC.replace(/<!--[\s\S]*?-->/g, '');
+  ok(/<footer class="foot">/.test(bare),
+    'the footer is a real <footer> — a contentinfo landmark, not a styled paragraph');
+  ok(/<main>/.test(bare),
+    'and the policy sits in <main>, or contentinfo is the page\u2019s only landmark');
+  ok(bare.indexOf('</main>') < bare.indexOf('<footer class="foot"'),
+    'with main CLOSED before it: a <footer> inside main is not contentinfo at all');
+});
+
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 
 /* The offline group reads files rather than frames, so it is fetched here and
@@ -692,10 +728,11 @@ const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
    its own test rather than taking the suite down. */
 async function loadSources() {
   const grab = async (f) => { try { const r = await fetch(f); return r.ok ? await r.text() : ''; } catch (e) { return ''; } };
-  [SW_SRC, KILL_SRC, INDEX_SRC, CALC_SRC, PORT_SRC, CHART_SRC, PKG] = await Promise.all(
+  [SW_SRC, KILL_SRC, INDEX_SRC, CALC_SRC, PORT_SRC, CHART_SRC, PKG, PRIVACY_SRC] =
+    await Promise.all(
     [grab('sw.js'), grab('sw-kill.js'), grab('index.html'),
      grab('ny-lottery-calculator.html'), grab('lottery-portfolio.html'),
-     grab('chart.min.js'), grab('package.json')]);
+     grab('chart.min.js'), grab('package.json'), grab('privacy.html')]);
 }
 
 window.addEventListener('load', () => {
