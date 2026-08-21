@@ -499,6 +499,29 @@ t('the page loads it before its own script runs', () => {
   ok(lib !== -1 && app !== -1 && lib < app,
      'chart.min.js must be loaded ahead of the app script, or Chart is undefined at render');
 });
+t('every parseInt spells out its radix', () => {
+  /* worker.js states the rule beside its own two parses: "Radix 10 is explicit
+     on both parses: these strings are digits and commas, but a leading zero
+     should never be anyone's guess." It was true everywhere except two
+     localStorage reads in the portfolio, which is the kind of drift a written
+     rule with nothing enforcing it collects. chart.min.js is excluded — it is
+     third-party and minified, and not ours to hold to a house style. */
+  const sources = { portfolio: PORT_SRC, calculator: CALC_SRC,
+                    worker: SW_SRC, 'kill switch': KILL_SRC, index: INDEX_SRC };
+  for (const [name, src] of Object.entries(sources)) {
+    const body = stripComments(src);
+    let from = 0;
+    for (;;) {
+      const at = body.indexOf('parseInt(', from);
+      if (at === -1) break;
+      from = at + 1;
+      const tail = body.slice(at, at + 200);
+      ok(/^parseInt\([^;]*,\s*(?:10|16|8|2|36)\)/.test(tail),
+         name + ' has a parseInt with no radix: ' + tail.split('\n')[0].slice(0, 70));
+    }
+  }
+});
+
 t('nothing is loaded from a CDN', () => {
   /* The reason the library is vendored at all. Every page on this origin shares
      the localStorage of the apps holding work data, so a third-party script on

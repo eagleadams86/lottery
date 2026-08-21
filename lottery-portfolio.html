@@ -792,8 +792,12 @@ function loadSliders() {
     // take-home since we last adopted one. Seeding unconditionally meant the
     // take-home slider could never be moved and made to stick — drag it, come
     // back, and it had snapped straight back to the calculator's number.
-    const net = parseInt(localStorage.getItem('lottery-net-takehome'));
-    const lastSeeded = parseInt(localStorage.getItem('lottery-portfolio-seeded-from'));
+    /* Radix 10 spelled out on both, the same rule worker.js states beside its own
+       two parses: these are digit strings, but a leading zero should never be
+       anyone's guess. The calculator's own localStorage read passes a radix; these
+       two were the only parses in the repo that did not. */
+    const net = parseInt(localStorage.getItem('lottery-net-takehome'), 10);
+    const lastSeeded = parseInt(localStorage.getItem('lottery-portfolio-seeded-from'), 10);
     if (net > 0 && net !== lastSeeded) {
       document.getElementById('sl-tot').value = mToPos(net / 1e6);
       localStorage.setItem('lottery-portfolio-seeded-from', String(net));
