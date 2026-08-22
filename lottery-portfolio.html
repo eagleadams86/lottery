@@ -179,7 +179,7 @@ body { background:var(--bg); color:var(--text); font: var(--fw-normal) var(--fs-
 .skip { position:absolute; left:-9999px; top:0; z-index:100; }
 .skip:focus { position:fixed; left:8px; top:8px; padding:8px 14px;
   background:var(--surface); color:var(--text); border:2px solid var(--focus-border);
-  border-radius:6px; text-decoration:none; font-weight:600; }
+  border-radius:var(--radius-sm); text-decoration:none; font-weight:600; }
 /* Focus lands on <main id="maincontent" tabindex="-1">, which must not then draw a
    focus ring around the entire page. */
 main:focus { outline:none; }
@@ -383,13 +383,13 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 
   .from-share { display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1rem;
                 padding: 10px 12px; background: var(--accent-bg); border: 1px solid var(--accent);
-                border-radius: 8px; font-size: var(--fs-sm); color: var(--text-primary); }
+                border-radius: var(--radius-sm); font-size: var(--fs-sm); color: var(--text-primary); }
   .from-share.on { display: flex; }
 
   /* The drawdown verdict: one sentence saying whether the money outlasts you,
      with the year it runs out if it doesn't. Never colour alone — the sentence
      says which case it is, and the tint only underlines it. */
-  .verdict { margin: 0 0 14px; padding: 12px 14px; border-radius: 8px; font-size: var(--fs-base);
+  .verdict { margin: 0 0 14px; padding: 12px 14px; border-radius: var(--radius-sm); font-size: var(--fs-base);
              line-height: 1.7; border: 1px solid var(--border); background: var(--bg-card-alt);
              color: var(--text-primary); }
   .verdict.good { border-color: var(--ok); background: var(--ok-bg); }
