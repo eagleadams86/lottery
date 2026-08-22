@@ -76,7 +76,7 @@
        is why this closes before it and why .wrap stays an ordinary <div>. -->
   <main>
   <h1>NY Lottery Calculator &amp; Portfolio — Privacy Policy</h1>
-  <p class="meta">Effective August 18, 2026</p>
+  <p class="meta">Effective August 22, 2026</p>
 
   <p>Both pages — the after-tax calculator and the lump-sum portfolio model — run entirely in
   your browser. There is no account, no sign-in and no server of ours holding anything.</p>
@@ -84,9 +84,13 @@
   <h2>What These Pages Store</h2>
   <p>Two kinds of thing, both in your browser's local storage and both deleted by clearing
   the site's browser data. First, your own settings: the theme you picked, the jackpot game
-  and number of winners you last used, which sections you left open, and the portfolio
-  page's slider values (take-home amount, spending, yields and the equity split). The
-  figures you type are never sent anywhere — every calculation happens on your device.
+  and number of winners you last used, which payout you were asking about, your filing status
+  and whether you live in New York City or Yonkers, which sections you left open, and the
+  portfolio page's slider values (take-home amount, spending, inflation, yields and the equity
+  split). The filing status and the town are kept only so the two pages agree with each other
+  and so you don't have to answer twice; they are two picks from two short lists and they never
+  leave your device. The figures you type are never sent anywhere — every calculation happens
+  on your device.
   Second, <strong>a copy of the public figures the pages fetch</strong> — the current
   jackpots, the latest winning numbers and the Treasury yield — kept for up to six hours so
   a repeat visit doesn't re-query the feeds. Each figure is shown with its date,
@@ -94,11 +98,20 @@
   going blank.</p>
 
   <p>Both pages also keep <strong>a copy of themselves</strong> on your device, so they open
-  offline: the pages, the stylesheet and the icon — the same public files anyone can read on
-  GitHub, and nothing else. None of your figures go there, and neither do the jackpots,
+  offline: the pages, the stylesheet, the tax tables and the icon — the same public files
+  anyone can read on GitHub, and nothing else. None of your figures go there, and neither do the jackpots,
   winning numbers or yields; those live only in the six-hour store above, so once it lapses
   an offline page tells you it couldn't load them rather than inventing a current-looking
   number. Clearing the site's browser data removes the copy along with everything else.</p>
+
+  <h2>Links You Share</h2>
+  <p>Both pages can turn what is on screen into a link. The figures travel <em>inside the link
+  itself</em> — nothing is uploaded, no copy is kept anywhere, and there is no server that could
+  be asked for it later. That also means there is no way to withdraw one once you have sent it,
+  so treat a link the way you would treat emailing a spreadsheet.</p>
+  <p>Opening someone else's link is deliberately a look rather than a save: the page shows their
+  figures, says at the top that it did, and stores none of them, so whatever you had saved is
+  exactly as you left it when you go back to it.</p>
 
   <h2>What Leaves Your Browser</h2>
   <div class="card">
@@ -108,8 +121,10 @@
     numbers back. Nothing about you or your figures is included in the request.</p>
   </div>
   <div class="card">
-    <p><strong>Winning numbers.</strong> Recent draw results come from New York State's own
-    open-data service at <code>data.ny.gov</code>. Again, only a request for public results —
+    <p><strong>Winning numbers.</strong> Recent draw results for six New York games — Powerball,
+    Mega Millions, NY Lotto, Take 5, Pick 10 and Millionaire for Life — come from New York
+    State's own open-data service at <code>data.ny.gov</code>. Only the game you are looking at
+    is ever asked for, and only when you look at it. Again, just a request for public results —
     nothing of yours goes with it.</p>
   </div>
   <div class="card">

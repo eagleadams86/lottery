@@ -2,6 +2,74 @@
 
 NY Lottery take-home calculator + investment portfolio model. Two single-file HTML apps, no build step, deployed via GitHub Pages: https://eagleadams86.github.io/lottery/
 
+- **`tax.js` is the tax law, and it is ONE FILE ON PURPOSE (2026-08-22).** Both pages load it
+  with `<script src="tax.js">` ahead of their own script. Before this the calculator carried
+  `FED_WH/FED_TOP/NY_WH/NY_TOP` and the portfolio carried `FED/NY/LTCG/NIIT` — the same tax law
+  written down twice, in two files, with nothing keeping them in step. Rates move every January.
+  Things to know before touching it:
+  - **The flat rates were right at the top and wrong everywhere else, and that was the bug.** A
+    $100M jackpot really is taxed at ~47.9%, so nothing looked broken. A $500K share was quoted
+    at 47.9% when it is about 34.5%, and the page had supported that case since the take-home
+    slider went log-scaled. **Any change here must keep the $100M answer at 47.9%** — that is
+    what the "a jackpot still lands on the top rates" test is for.
+  - **New York's recapture is the one deliberate approximation**, and it is written out beside
+    the constant. Above $107,650 the state claws back the lower brackets over a $50,000 phase-in
+    until the whole taxable income sits at the top rate reached. Modelled as that general rule
+    rather than as NY's six per-status worksheets, which are re-issued yearly. Exact at the top
+    band (Tax Law §601 says so outright over $25M), and a test asserts it is **never lower**
+    than the plain bracket sum, so it can never flatter the answer.
+  - **Withholding is not a bracket and must not become one.** `FED_WH` 24% and `NY_WH` 10.9%
+    are fixed by law regardless of what is owed; `WH_FLOOR` is $5,000. That asymmetry is why
+    both pages show "withheld" and "settled" as two numbers, and why a smaller prize now
+    produces a REFUND — a case that could not exist while New York was a flat 10.9%.
+  - **`TAX_YEAR` is the one place the year lives**, and a test checks both pages read it from
+    there rather than writing "2026" into their own prose. Bumping the year means bumping the
+    tables with it.
+  - `filingStatus()` and `residence()` are the boundary checks everything else leans on — both
+    values arrive from stored preferences AND from share links, so nothing downstream may index
+    a rate table with a string that has not been through them.
+- **Both pages carry a `↗ Share` button, and a shared link is A LOOK, NOT A SAVE (2026-08-22).**
+  Every sibling app had one and these two did not. The payload is a dozen numbers and two words
+  picked from lists, so it is plain base64url of the JSON behind a `#s=` marker — no deflate
+  step, unlike Sprint Predictability's, because there is nothing to compress.
+  - **`remember()` is the guard, and it is sticky for the whole visit.** A page opened from
+    someone else's link saves none of the figures even if you change every one of them; "Back
+    to mine" drops the fragment and reloads. Cleared on the first edit was the alternative and
+    it is worse: touch one control and the sender's other eleven figures silently become yours.
+    (The theme and which sections you left open are still saved — they are your furniture and
+    no link carries them.)
+  - **A `hashchange` listener is load-bearing.** Pasting a link into a tab already on the page
+    changes only the fragment, which is not a navigation — nothing reloads and nothing runs.
+    That is the most likely way anyone opens one, since the page is already in front of them.
+  - **Because most writes now go through `remember()`, the stored-keys test scans BOTH
+    spellings.** A scan for `localStorage.setItem('…')` alone would quietly stop seeing five
+    keys and go on passing while covering less.
+- **The calculator answers the annuity question too (2026-08-22).** Payout is `lump` /
+  `annuity` / `compare`. Powerball and Mega Millions pay 30 payments growing 5% a year; NY
+  Lotto pays 26 equal ones, and **the plan follows the winning-numbers game selector**, which
+  is the page's one "which game" answer. The first payment is the jackpot over the SUM OF THE
+  GROWTH FACTORS (66.44 for 30 at 5%), not over 30 — getting that wrong overstates the first
+  cheque by a third. `breakEvenRate()` bisects rather than solving, because an after-tax
+  annuity stream is not a closed form once every payment has been through a bracket table.
+- **Six games in the winning numbers, and two of New York's are deliberately absent.** Cash 4
+  Life's dataset is still served but the GAME IS RETIRED, so it would pin "the latest results"
+  to a February draw for ever; Millionaire for Life is its replacement and is in. Quick Draw is
+  out for the opposite reason — it draws every four minutes. `knownGame()` uses
+  `hasOwnProperty`: `WN_GAMES['constructor']` is truthy on any plain object, so a bare lookup
+  let a share link through to a fetch of `undefined.json`.
+- **The portfolio's "Does it last?" section tracks a COST BASIS, and that is the subtle part.**
+  Forty years of the same model: spending rises with inflation, income after tax is taken as
+  cash, shares are sold for the rest plus the capital-gains tax on the sale. The basis is a
+  FRACTION and only GROWTH moves it — the tempting "reduce the basis by the amount sold" is
+  exactly the mistake that would make later years tax-free, and there is a comment saying so at
+  the line where it would be made. Three lines on the chart, your rate ±3 points: a stated
+  spread, not a confidence interval, and the note under it says so.
+- **`tests.html` busts the cache for the frames AND the source fetches, and that is not tidiness
+  (2026-08-22).** The suite reported all-green against a portfolio page three features out of
+  date: the source-level tests were reading the file off the server while the hidden frames ran
+  a copy the browser had cached. One `BUST` constant now feeds both. If a test ever passes when
+  you expect it to fail, check `iframe.contentWindow` has the function you just wrote before
+  believing anything.
 - `theme.css` here is a **copy of the generated file from `~/claude-theme-pack`** (private repo eagleadams86/claude-theme-pack) — the source of truth for the palette of ALL apps. Both HTML pages `<link>` to it. 4 themes: Midnight (default), Dark, Light, Sepia. Never edit `theme.css` directly: change `tokens.json` in the pack, run its `build.py` + `check_contrast.py`, then copy the regenerated file here. If this app ever needs a color the pack doesn't have, follow the drift policy in the pack's CLAUDE.md (flag it, don't diverge silently).
 - **The site is INSTALLABLE on a Mac or a PC (2026-08-21), and offline is a separate, older thing.** `manifest.webmanifest` is what turns Chrome's "Install page as app…" into a real install. Four things have to stay in step or installing silently stops being offered, with nothing but a console line to say so:
   - **`manifest-src 'self'` in the CSP of all three pages.** It falls back to `default-src`, which is `'none'` here, so without the directive the manifest fetch is refused. Suspect this first.
