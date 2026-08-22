@@ -233,6 +233,19 @@
     background-repeat: no-repeat; background-position: right 10px center;
   }
 
+/* The HEADER's palette, not the input palette. `.theme-btn` above paints on
+   --surface with muted text, which is what a field you fill in wears — and
+   right beside it sits "↗ Share" as `.btn small`, on --surface-alt with
+   full-strength text. Side by side the dropdown read as a dark hole in a row of
+   raised controls, which is the very mismatch Golf Handicap fixed in
+   `.headbar select` and the reason the family dresses a header picker as a
+   BUTTON. Same three tokens as the button beside it, so this is not a new
+   colour. Only the dropdown moves: the footer's `.applink` is quieter on
+   purpose. */
+.theme-select { background-color: var(--surface-alt); color: var(--text-primary);
+  border-color: var(--border-strong); }
+.theme-select:hover { border-color: var(--text-muted); }
+
   /* Status bar */
   .fetch-bar {
     display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;
