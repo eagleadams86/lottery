@@ -127,8 +127,7 @@
   :root { --page-w: 1500px; --chrome-h: 30px; }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif;
-    font-size: 14px; line-height: 1.5;
+    font: var(--fw-normal) var(--fs-base)/var(--lh-base) var(--font-sans);
     background: var(--bg); color: var(--text-primary); min-height: 100vh;
     transition: background 0.2s, color 0.2s;
   }
@@ -192,7 +191,7 @@
   /* The family's brand line: mark, name, then the strapline muted behind a middle
      dot — one line, where this page had a title with a second line under it. The
      auto right margin is what pushes the controls to the far edge. */
-  .brand { font-size: 17px; font-weight: 700; color: var(--text-primary);
+  .brand { font-size: var(--fs-lg); font-weight: 700; color: var(--text-primary);
            letter-spacing: -0.01em; margin: 0 auto 0 0; }
   .brand span { color: var(--text-muted); font-weight: 500; }
   /* 22px, the siblings' number, and NOT a flex row: the mark sits in the
@@ -208,7 +207,7 @@
      keep them looking like the small uppercase labels they've always been.
      .sec-hd wraps a disclosure <button> so the section is both navigable as a
      heading and operable from the keyboard. */
-  h3.sec-title { font-size: 11px; font-weight: 600; }
+  h3.sec-title { font-size: var(--fs-xs); font-weight: 600; }
   .sec-hd { margin: 0; font-size: inherit; font-weight: inherit; }
   /* Visible keyboard focus on every control (mouse clicks unaffected) */
   button:focus-visible, select:focus-visible, input:focus-visible,
@@ -219,7 +218,7 @@
     display: flex; align-items: center; gap: 6px;
     /* One height for everything in the header row — see `--chrome-h`. */
     min-height: var(--chrome-h);
-    padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    padding: 4px 12px; font-size: var(--fs-xs); font-weight: 600; cursor: pointer;
     background: var(--bg-card); color: var(--text-secondary);
     border: 1px solid var(--border); border-radius: 8px;
     font-family: inherit; transition: background 0.15s, color 0.15s;
@@ -252,11 +251,11 @@
     background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
     padding: 0.75rem 1rem; flex-wrap: wrap;
   }
-  .fetch-status { font-size: 13px; color: var(--text-secondary); flex: 1; min-width: 0; }
+  .fetch-status { font-size: var(--fs-sm); color: var(--text-secondary); flex: 1; min-width: 0; }
   .fetch-status.err { color: var(--err); }
   .fetch-status.ok  { color: var(--ok); }
   .refresh-btn {
-    padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+    padding: 6px 14px; font-size: var(--fs-xs); font-weight: 600; cursor: pointer;
     background: var(--btn-bg); color: var(--btn-text);
     border: none; border-radius: 7px; font-family: inherit;
     transition: opacity 0.15s;
@@ -281,18 +280,18 @@
   }
   .game-btn.active { border-color: var(--text-primary); background: var(--bg-card-alt); }
   .game-btn-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-  .game-btn-name { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-  .game-btn-draw { font-size: 11px; color: var(--text-muted); }
+  .game-btn-name { font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .game-btn-draw { font-size: var(--fs-xs); color: var(--text-muted); }
   .game-btn-body { display: flex; align-items: baseline; gap: 10px; }
-  .game-btn-amt  { font-size: 22px; font-weight: 700; color: var(--text-primary); }
-  .game-btn-sub  { font-size: 12px; color: var(--text-secondary); }
+  .game-btn-amt  { font-size: var(--fs-xl); font-weight: 700; color: var(--text-primary); }
+  .game-btn-sub  { font-size: var(--fs-xs); color: var(--text-secondary); }
 
   /* Manual inputs */
   .manual-wrap { margin-bottom: 1.25rem; }
   .manual-toggle {
     display: flex; align-items: center; gap: 6px; cursor: pointer;
     background: none; border: none; font-family: inherit;
-    font-size: 12px; color: var(--text-hint); padding: 0 0 0.6rem 0;
+    font-size: var(--fs-xs); color: var(--text-hint); padding: 0 0 0.6rem 0;
     transition: color 0.15s;
   }
   .manual-toggle:hover { color: var(--text-muted); }
@@ -310,24 +309,24 @@
   .input-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
   @media (max-width: 520px) { .input-grid { grid-template-columns: 1fr; } }
   .input-card { background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border); padding: 0.9rem 1rem; }
-  .input-label { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .input-label { font-size: var(--fs-xs); font-weight: 500; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
   .input-wrap { display: flex; align-items: center; gap: 4px; border-bottom: 1.5px solid var(--input-border); padding-bottom: 4px; transition: border-color 0.15s; }
   .input-wrap:focus-within { border-bottom-color: var(--focus-border); }
-  .input-prefix { font-size: 15px; font-weight: 500; color: var(--text-hint); flex-shrink: 0; }
+  .input-prefix { font-size: var(--fs-md); font-weight: 500; color: var(--text-hint); flex-shrink: 0; }
   /* Lets the box give way when its track does; without it the input keeps its
      default size and pushes the card wide again. */
   .input-card input[type=text] { min-width: 0; }
   .input-card input[type=text] {
-    flex: 1; min-width: 0; font-size: 16px; font-weight: 500;
+    flex: 1; min-width: 0; font-size: var(--fs-md); font-weight: 500;
     background: transparent; border: none; padding: 2px 0;
     color: var(--text-primary); outline: none; font-family: inherit;
   }
   .input-card input[type=text]::placeholder { color: var(--text-hint); font-weight: 400; }
-  .input-hint { font-size: 11px; color: var(--text-hint); margin-top: 5px; min-height: 16px; }
+  .input-hint { font-size: var(--fs-xs); color: var(--text-hint); margin-top: 5px; min-height: 16px; }
   .input-hint.err { color: var(--err); }
   .unit-toggle { display: flex; border: 1px solid var(--input-border); border-radius: 6px; overflow: hidden; flex-shrink: 0; }
   .unit-btn {
-    padding: 3px 9px; font-size: 12px; font-weight: 600; cursor: pointer;
+    padding: 3px 9px; font-size: var(--fs-xs); font-weight: 600; cursor: pointer;
     background: var(--bg-card); color: var(--text-muted);
     border: none; font-family: inherit; transition: background 0.15s, color 0.15s;
   }
@@ -336,9 +335,9 @@
 
   /* Winners row */
   .ctrl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap; }
-  .ctrl-lbl { font-size: 13px; color: var(--text-secondary); }
+  .ctrl-lbl { font-size: var(--fs-sm); color: var(--text-secondary); }
   .ctrl-row input[type=number] {
-    width: 60px; font-size: 14px; font-weight: 500;
+    width: 60px; font-size: var(--fs-base); font-weight: 500;
     border: 1px solid var(--input-border); border-radius: 7px; padding: 5px 8px;
     background: var(--bg-card); color: var(--text-primary);
     outline: none; font-family: inherit; transition: border-color 0.15s;
@@ -354,50 +353,50 @@
   .metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
   @media (max-width: 720px) { .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .mc { background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border); padding: 0.9rem 1rem; text-align: center; }
-  .ml { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .ml { font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
   /* Below ~360px three of the four labels wrap to a second line and the fourth doesn't,
      which left the numbers on different baselines across a 2x2 row. Reserving two lines
      is the cheap version of the subgrid the sibling apps use for the same problem. */
   @media (max-width: 360px) { .ml { line-height: 1.5; min-height: 3em; } }
-  .mv { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+  .mv { font-size: var(--fs-lg); font-weight: 600; color: var(--text-primary); }
   .mv.red { color: var(--red); }
   .mv.grn { color: var(--green); }
 
   /* The effective rate, as one line rather than half of a banner. It reads as the
      headline of the breakdown below it — which is what it is, the whole of those two
      tables in a single number — so it is set as a sentence and not as a tile. */
-  .effrate { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
-  .effrate strong { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-left: 6px; }
+  .effrate { font-size: var(--fs-sm); color: var(--text-secondary); margin-bottom: 10px; }
+  .effrate strong { font-size: var(--fs-lg); font-weight: 600; color: var(--text-primary); margin-left: 6px; }
 
   /* Details toggle */
   .details-btn {
     display: flex; align-items: center; justify-content: flex-start; gap: 8px;
     width: fit-content; margin-top: 1.25rem; padding: 0 0 10px 0;
     background: none; border: none;
-    font-family: inherit; font-size: 11px; font-weight: 600;
+    font-family: inherit; font-size: var(--fs-xs); font-weight: 600;
     color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em;
     cursor: pointer; transition: color 0.15s;
   }
   .details-btn:hover { color: var(--text-primary); }
-  .details-chevron { transition: transform 0.2s; font-size: 10px; color: var(--text-muted); }
+  .details-chevron { transition: transform 0.2s; font-size: var(--fs-xs); color: var(--text-muted); }
   .details-chevron.open { transform: rotate(90deg); }
   .details-body { display: none; padding: 1.1rem 1.2rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
   .details-body.open { display: block; }
   .details-body table:last-child { margin-bottom: 0; }
 
   hr { border: none; border-top: 1px solid var(--border); margin: 1.1rem 0; }
-  .sec-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1.1rem; }
-  th { text-align: left; font-size: 10px; font-weight: 600; color: var(--text-hint); padding: 5px 8px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.06em; }
+  .sec-title { font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); margin-bottom: 1.1rem; }
+  th { text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--text-hint); padding: 5px 8px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.06em; }
   td { padding: 8px 8px; border-bottom: 1px solid var(--border); color: var(--text-primary); }
-  td.muted { color: var(--text-secondary); font-size: 12px; }
+  td.muted { color: var(--text-secondary); font-size: var(--fs-xs); }
   td.r   { text-align: right; font-variant-numeric: tabular-nums; }
   td.neg { text-align: right; color: var(--red); font-variant-numeric: tabular-nums; }
   td.pos { text-align: right; color: var(--green); font-variant-numeric: tabular-nums; }
   tr.totrow td { font-weight: 600; border-top: 1.5px solid var(--border-strong); border-bottom: none; padding-top: 10px; }
 
-  .empty { font-size: 13px; color: var(--text-muted); padding: 0.5rem 0; grid-column: 1/-1; }
-  .note  { font-size: 11px; color: var(--text-hint); line-height: 1.8; margin-top: 1.25rem; }
+  .empty { font-size: var(--fs-sm); color: var(--text-muted); padding: 0.5rem 0; grid-column: 1/-1; }
+  .note  { font-size: var(--fs-xs); color: var(--text-hint); line-height: 1.8; margin-top: 1.25rem; }
 
   /* ── Two columns ──────────────────────────────────────────────────────────
      What the page is asking of it and what it tells you back, side by side —
@@ -429,7 +428,7 @@
   /* The tax basis these figures are worked out on. It sat in the header as a
      second line under the title until 2026-08-21; it belongs with the numbers it
      qualifies, and the header is one line now. */
-  .basis { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+  .basis { font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 10px; }
 
   /* A real footer landmark, laid out as the sibling apps' is: the notes on the
      left, the link to the other page pinned right and bottom-aligned with the
@@ -445,20 +444,20 @@
   .wn-game { margin-bottom: 1.25rem; }
   .wn-game:last-child { margin-bottom: 0; }
   .wn-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 4px; }
-  .wn-name { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-  .wn-date { font-size: 12px; color: var(--text-muted); }
+  .wn-name { font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .wn-date { font-size: var(--fs-xs); color: var(--text-muted); }
   .wn-balls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .ball {
     display: flex; align-items: center; justify-content: center;
     width: 34px; height: 34px; border-radius: 50%;
-    font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums;
+    font-size: var(--fs-base); font-weight: 700; font-variant-numeric: tabular-nums;
     background: var(--bg-card); border: 1.5px solid var(--border-strong); color: var(--text-primary);
     flex-shrink: 0;
   }
   .ball.pb  { background: #b91c1c; border-color: #b91c1c; color: #fff; }
   .ball.mb  { background: #d4a017; border-color: #d4a017; color: #111; }
-  .wn-mult  { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 4px; }
-  .wn-loading { font-size: 13px; color: var(--text-muted); }
+  .wn-mult  { font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); margin-left: 4px; }
+  .wn-loading { font-size: var(--fs-sm); color: var(--text-muted); }
 
   /* ── The controls added 2026-08-22 ────────────────────────────────────────
      The page grew three things at once — who you are for tax purposes, which
@@ -470,7 +469,7 @@
      choice is not signalled by colour alone. Same reason the game cards and the
      M/B unit toggle already use it. */
   .seg { display: flex; border: 1px solid var(--border-control); border-radius: var(--radius-sm); overflow: hidden; }
-  .seg-btn { flex: 1 1 0; min-width: 0; padding: 9px 8px; font-size: 13px; font-weight: 600;
+  .seg-btn { flex: 1 1 0; min-width: 0; padding: 9px 8px; font-size: var(--fs-sm); font-weight: 600;
              font-family: inherit; background: var(--bg-card); color: var(--text-secondary);
              border: 0; border-right: 1px solid var(--border-control); cursor: pointer; }
   .seg-btn:last-child { border-right: 0; }
@@ -484,19 +483,19 @@
   .situation { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
                gap: 10px; margin-top: 0.9rem; }
   .fld { min-width: 0; }
-  .fld > label { display: block; font-size: 10px; font-weight: 600; color: var(--text-hint);
+  .fld > label { display: block; font-size: var(--fs-xs); font-weight: 600; color: var(--text-hint);
                  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
-  .fld select, .fld input { width: 100%; font-family: inherit; font-size: 14px; padding: 8px 9px;
+  .fld select, .fld input { width: 100%; font-family: inherit; font-size: var(--fs-base); padding: 8px 9px;
                             color: var(--text-primary); background: var(--bg-card);
                             border: 1px solid var(--input-border); border-radius: var(--radius-sm); }
-  .fld .hint { font-size: 11px; color: var(--text-hint); margin-top: 4px; }
+  .fld .hint { font-size: var(--fs-xs); color: var(--text-hint); margin-top: 4px; }
 
   /* The payout choice and the tax situation live in one bordered card so they
      read as "about you and your question" rather than as two loose rows between
      the jackpot boxes and the winner count. */
   .setup { margin-top: 1.1rem; padding: 1rem 1.1rem; background: var(--bg-card);
            border: 1px solid var(--border); border-radius: 10px; }
-  .setup > .setup-lbl { font-size: 10px; font-weight: 600; color: var(--text-hint);
+  .setup > .setup-lbl { font-size: var(--fs-xs); font-weight: 600; color: var(--text-hint);
                         text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
 
   /* Lump sum against annuity, side by side. Two cards on a laptop, stacked on a
@@ -506,16 +505,16 @@
   .cmp-card { padding: 0.9rem 1rem; background: var(--bg-card-alt); border: 1px solid var(--border);
               border-radius: 10px; }
   .cmp-card.win { border-color: var(--ok); }
-  .cmp-ttl { font-size: 11px; font-weight: 600; color: var(--text-hint); text-transform: uppercase;
+  .cmp-ttl { font-size: var(--fs-xs); font-weight: 600; color: var(--text-hint); text-transform: uppercase;
              letter-spacing: 0.06em; margin-bottom: 6px; }
-  .cmp-big { font-size: 20px; font-weight: 700; color: var(--text-primary);
+  .cmp-big { font-size: var(--fs-lg); font-weight: 700; color: var(--text-primary);
              font-variant-numeric: tabular-nums; }
-  .cmp-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.6; }
+  .cmp-sub { font-size: var(--fs-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.6; }
   /* Never the border alone: the winning card is named in the verdict sentence
      under the pair, and this badge says which one it is in words. */
   .cmp-badge { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: var(--radius-pill);
-               font-size: 11px; font-weight: 600; background: var(--ok-bg); color: var(--ok); }
-  .verdict { margin: 12px 0 0; font-size: 13px; color: var(--text-primary); line-height: 1.7; }
+               font-size: var(--fs-xs); font-weight: 600; background: var(--ok-bg); color: var(--ok); }
+  .verdict { margin: 12px 0 0; font-size: var(--fs-sm); color: var(--text-primary); line-height: 1.7; }
 
   /* The 30-year schedule. Its own scroll box, so a long table never widens the
      page — the family rule for any wide block. */
@@ -540,9 +539,9 @@
   .btn:hover { border-color: var(--text-muted); }
   .btn.primary { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
   .btn.primary:hover { opacity: .88; }
-  .btn.small { padding: 4px 9px; font-size: 13px; min-height: var(--chrome-h); }
+  .btn.small { padding: 4px 9px; font-size: var(--fs-sm); min-height: var(--chrome-h); }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .sub { color: var(--text-secondary); font-size: 13px; line-height: 1.7; }
+  .sub { color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.7; }
   .sub:empty { display: none; }
 
   /* A real <dialog>, opened modally, so focus is trapped and Escape closes it
@@ -582,12 +581,12 @@
               `contain`, not `none`: the dialog's own scrolling is untouched. */
            overscroll-behavior: contain; }
   dialog::backdrop { background: rgba(0, 0, 0, .55); }
-  dialog h3 { margin: 0 0 12px; font-size: 17px; }
+  dialog h3 { margin: 0 0 12px; font-size: var(--fs-lg); }
   fieldset.formpanel { border: 1px solid var(--border); border-radius: var(--radius-sm);
                        padding: 12px; margin: 14px 0 0; background: var(--bg-card-alt); min-width: 0; }
-  legend { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+  legend { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .04em;
            color: var(--text-secondary); font-weight: 700; padding: 0 6px; }
-  dialog input[type="text"] { width: 100%; font-family: var(--font-mono); font-size: 12px; padding: 8px 9px;
+  dialog input[type="text"] { width: 100%; font-family: var(--font-mono); font-size: var(--fs-xs); padding: 8px 9px;
                               color: var(--text-primary); background: var(--bg-card);
                               border: 1px solid var(--input-border); border-radius: var(--radius-sm); }
 
@@ -596,25 +595,25 @@
      at and nothing on screen admits it. */
   .from-share { display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1rem;
                 padding: 10px 12px; background: var(--accent-bg); border: 1px solid var(--accent);
-                border-radius: 8px; font-size: 13px; color: var(--text-primary); }
+                border-radius: 8px; font-size: var(--fs-sm); color: var(--text-primary); }
   .from-share.on { display: flex; }
 
   /* The small game row above the winning numbers. The two cards at the top of
      the page are about MONEY and only Powerball and Mega Millions have a jackpot
      feed; this row is about NUMBERS, where four more New York games have one. */
   .wn-games { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.9rem; }
-  .wn-gbtn { font-family: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px;
+  .wn-gbtn { font-family: inherit; font-size: var(--fs-xs); font-weight: 600; padding: 5px 10px;
              border-radius: var(--radius-pill); border: 1px solid var(--border-control);
              background: var(--bg-card-alt); color: var(--text-secondary); cursor: pointer; }
   .wn-gbtn[aria-pressed="true"] { background: var(--unit-active-bg); color: var(--unit-active-txt);
                                   border-color: var(--unit-active-bg); }
   /* Take 5 draws twice a day, so its block carries two rows of balls with a
      label on each. Nothing else in the app needs this. */
-  .wn-when { font-size: 11px; font-weight: 600; color: var(--text-hint); text-transform: uppercase;
+  .wn-when { font-size: var(--fs-xs); font-weight: 600; color: var(--text-hint); text-transform: uppercase;
              letter-spacing: 0.05em; margin: 10px 0 4px; }
   /* Pick 10 draws twenty numbers. At 20 balls the fixed row would overflow the
      card, so this block wraps and the balls shrink a little. */
-  .wn-balls.many .ball { width: 28px; height: 28px; line-height: 26px; font-size: 12px; }
+  .wn-balls.many .ball { width: 28px; height: 28px; line-height: 26px; font-size: var(--fs-xs); }
 
   /* ── Printing ─────────────────────────────────────────────────────────────
      Printed, this page is a one-sheet answer for somebody else to read: the
@@ -928,7 +927,7 @@
     <div class="row no-print" style="margin-top:1.1rem">
       <button type="button" class="btn small" onclick="copyCSV()" id="csv-btn">Copy As CSV</button>
       <button type="button" class="btn small" onclick="window.print()">Print</button>
-      <span class="hint" id="csv-note" role="status" style="font-size:11px;color:var(--text-hint)"></span>
+      <span class="hint" id="csv-note" role="status" style="font-size:var(--fs-xs);color:var(--text-hint)"></span>
     </div>
   </div>
 
