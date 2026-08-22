@@ -988,7 +988,7 @@ t('Chart.js is a FILE, not pasted into the page', () => {
   ok(CHART_SRC.length > 100000, 'chart.min.js is missing or truncated');
 });
 t('and it is the version the README claims, unmodified', () => {
-  /* The version is not written anywhere in the file — the three copies across
+  /* The version is not written anywhere in the file — the four copies across
      this repo, Flow Metrics and Money Map are byte-identical and a header
      comment here would break that. So it is read out of the bundle instead,
      which is the only statement of it that cannot drift from the code. */
@@ -1041,7 +1041,7 @@ t('package.json and the vendored bundle name the SAME Chart.js', () => {
 
      This is what stops that being quiet. A manifest-only bump fails here, which
      turns the PR into the correct instruction — "a newer Chart.js exists, now
-     update the FILE too, in all three repos" — rather than a false record. Same
+     update the FILE too, in all four repos" — rather than a false record. Same
      discipline as the theme pack's gate: a generated artefact must match its
      source. */
   const pinned = (PKG.match(/"chart\.js"\s*:\s*"([^"]+)"/) || [])[1];
