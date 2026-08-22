@@ -92,6 +92,11 @@
      the page. Loaded here in <head>, before the app script at the foot of the body,
      so `Chart` is defined by the time render() first runs. -->
 <script src="chart.min.js"></script>
+<!-- The tax tables and the bracket maths, shared with the calculator page so
+     the two cannot drift apart. This page carried four flat top-rate constants
+     of its own until 2026-08-22 — right for a $100M portfolio and wrong for a
+     $500K one, which the take-home slider has reached since it went log-scaled. -->
+<script src="tax.js"></script>
 <style>
 /* ── Which way round the page is ──────────────────────────────────────────────
    `color-scheme` is not a colour of ours and overrides nothing in the theme pack
@@ -287,6 +292,64 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 .footer a{color:inherit}
 .foot-links{margin-top:10px}
 .foot-copy{margin-top:6px}
+
+  /* ── Added 2026-08-22 with the tax situation, the drawdown and the link ────
+     The same handful of shapes the calculator grew on the same day, so the two
+     pages still read as one product. */
+  /* Capped rather than 1fr: these are two short pick-lists, and stretched
+     across half a 1500px page each they read as the most important controls
+     on it, which they are not — the sliders are. */
+  .situation { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 260px));
+               gap: 10px; margin-bottom: 14px; justify-content: start; }
+  .fld { min-width: 0; }
+  .fld > label { display: block; font-size: 10px; font-weight: 600; color: var(--text-hint);
+                 text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .fld select { width: 100%; font-family: inherit; font-size: 14px; padding: 8px 9px;
+                color: var(--text-primary); background: var(--bg-card);
+                border: 1px solid var(--input-border); border-radius: var(--radius-sm); }
+
+  .btn { font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px;
+         border-radius: var(--radius-sm); border: 1px solid var(--border-control);
+         background: var(--btn-bg); color: var(--btn-text); cursor: pointer; }
+  .btn:hover { border-color: var(--border-strong); }
+  .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .btn.small { font-size: 12px; padding: 5px 10px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  dialog { max-width: 540px; width: calc(100% - 32px); padding: 1.4rem 1.5rem; border: 1px solid var(--border);
+           border-radius: 12px; background: var(--bg-card); color: var(--text-primary); }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+  dialog h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  dialog .sub { font-size: 12px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
+  dialog input[type="text"] { width: 100%; font-family: var(--font-mono); font-size: 12px; padding: 8px 9px;
+                              color: var(--text-primary); background: var(--bg-card-alt);
+                              border: 1px solid var(--input-border); border-radius: var(--radius-sm); }
+
+  .from-share { display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1rem;
+                padding: 10px 12px; background: var(--accent-bg); border: 1px solid var(--accent);
+                border-radius: 8px; font-size: 13px; color: var(--text-primary); }
+  .from-share.on { display: flex; }
+
+  /* The drawdown verdict: one sentence saying whether the money outlasts you,
+     with the year it runs out if it doesn't. Never colour alone — the sentence
+     says which case it is, and the tint only underlines it. */
+  .verdict { margin: 0 0 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px;
+             line-height: 1.7; border: 1px solid var(--border); background: var(--bg-card-alt);
+             color: var(--text-primary); }
+  .verdict.good { border-color: var(--ok); background: var(--ok-bg); }
+  .verdict.bad  { border-color: var(--err); background: var(--err-bg); }
+  .verdict strong { font-weight: 700; }
+
+  @media print {
+    header, .top-actions, .btn, .row, dialog, .skip, .from-share, .sliders input[type=range] { display: none !important; }
+    body { background: #fff; color: #000; }
+    .wrap, .app { max-width: none; padding: 0; }
+    .sec-body { display: block !important; }
+    .sec-chevron { display: none; }
+    .card, .chart-card, .met, .verdict { border: 1px solid #999; background: #fff; }
+    a[href]::after { content: ""; }
+  }
+
 </style>
 </head>
 <body>
@@ -308,6 +371,9 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
            boot script in <head> has already applied, so the picker never reads
            one theme while the page shows another. THEMES is read back off
            these options below, so this list is the only place they live. -->
+      <!-- Same place, same glyph, same aria-hidden as the calculator's and every
+           sibling app's. -->
+      <button type="button" class="btn small" id="share-btn" onclick="openShare()"><span aria-hidden="true">&#8599;</span> Share</button>
       <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme">
         <option value="dark">☾ Dark</option>
         <option value="light">☀ Light</option>
@@ -320,17 +386,54 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 
 <div class="app">
 <main id="maincontent" tabindex="-1">
+
+<!-- Shown only when the page was opened from a share link, so a link cannot
+     silently replace the settings someone had. -->
+<div class="from-share" id="from-share" role="status">
+  <span>These settings came from a shared link.</span>
+  <button type="button" class="btn small" onclick="clearShare()">Back to mine</button>
+</div>
   <!-- The tax basis every figure below is worked out on. It was a second line under
        the title in the header; it says more sitting with the numbers it qualifies,
        and the header is one line now. -->
-  <p class="basis">Outside NYC &nbsp;·&nbsp; 37% federal + 10.9% NY state</p>
+  <!-- Written by render() now. It named two flat rates that no longer exist and
+       a residence that is a choice, so a fixed one would have contradicted the
+       two selects a few lines below it. -->
+  <p class="basis" id="basis">&mdash;</p>
 
   <div class="section">
     <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('assumptions')" aria-expanded="true" aria-controls="body-assumptions"><span class="sec-chevron open" id="chev-assumptions" aria-hidden="true">&#9654;</span>Assumptions</button></h2>
     <div class="sec-body" id="body-assumptions">
+    <!-- Who is paying the tax. Until 2026-08-22 this page assumed a single filer
+         outside New York City and applied four flat top-marginal rates to any
+         portfolio — which is right at $100M and badly wrong at the $500K the
+         take-home slider can now reach. Both fields are shared with the
+         calculator page, so setting them in one sets them in the other. -->
+    <div class="situation">
+      <div class="fld">
+        <label for="filing">Filing status</label>
+        <select id="filing" onchange="setFiling(this.value)">
+          <option value="single" selected>Single</option>
+          <option value="mfj">Married, filing jointly</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label for="residence">Where you live</label>
+        <select id="residence" onchange="setResidence(this.value)">
+          <option value="ny" selected>New York State</option>
+          <option value="nyc">New York City</option>
+          <option value="yonkers">Yonkers</option>
+        </select>
+      </div>
+    </div>
     <div class="sliders">
       <div class="sl-row"><label for="sl-tot">Take-home (lump sum)</label><input type="range" min="0" max="1000" step="any" value="459" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" aria-label="Take-home (lump sum) value" onchange="syncSlider(this,'sl-tot',0.1,500,1e6,true)"></div>
       <div class="sl-row"><label for="sl-sp">Annual spending</label><input type="range" min="50" max="5000" step="any" value="125" id="sl-sp" oninput="render()"><input type="text" class="sl-val" id="o-sp" value="$125K" aria-label="Annual spending value" onchange="syncSlider(this,'sl-sp',50,5000,1e3)"></div>
+      <!-- Inflation. It changes nothing about this year's income — it is what
+           makes NEXT year's spending bigger, so it only shows up in the
+           drawdown below. That is why it sits next to spending rather than
+           among the yields. -->
+      <div class="sl-row"><label for="sl-inf">Inflation</label><input type="range" min="0" max="6" step="0.1" value="2.5" id="sl-inf" oninput="render()"><input type="text" class="sl-val" id="o-inf" value="2.5%" aria-label="Inflation value" onchange="syncSlider(this,'sl-inf',0,6)"></div>
       <div class="sl-row"><label for="sl-tb">T-bill yield <span class="rate-src" id="tb-src"></span></label><input type="range" min="2" max="7" step="0.1" value="4.3" id="sl-tb" oninput="render()"><input type="text" class="sl-val" id="o-tb" value="4.3%" aria-label="T-bill yield value" onchange="syncSlider(this,'sl-tb',2,7)"></div>
       <div class="sl-row"><label for="sl-mu">Muni yield (stated)</label><input type="range" min="1.5" max="6" step="0.1" value="3.5" id="sl-mu" oninput="render()"><input type="text" class="sl-val" id="o-mu" value="3.5%" aria-label="Muni yield value" onchange="syncSlider(this,'sl-mu',1.5,6)"></div>
       <div class="sl-row"><label for="sl-vti">VTI dividend yield</label><input type="range" min="0.5" max="3" step="0.1" value="1.4" id="sl-vti" oninput="render()"><input type="text" class="sl-val" id="o-vti" value="1.4%" aria-label="VTI dividend yield value" onchange="syncSlider(this,'sl-vti',0.5,3)"></div>
@@ -393,13 +496,43 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
   </div>
 
   <div class="section">
-    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('growth')" aria-expanded="true" aria-controls="body-growth"><span class="sec-chevron open" id="chev-growth" aria-hidden="true">&#9654;</span>10-year growth projection (equity bucket)</button></h2>
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('growth')" aria-expanded="true" aria-controls="body-growth"><span class="sec-chevron open" id="chev-growth" aria-hidden="true">&#9654;</span>10-Year Growth Projection (Equity Bucket)</button></h2>
     <div class="sec-body" id="body-growth">
     <div class="chart-card">
       <div class="legend" id="leg3"></div>
       <div style="position:relative;height:210px"><canvas id="c3" role="img" aria-label="Line chart showing VTI plus VXUS and total portfolio growth over 10 years">10-year growth projection.</canvas></div>
+      <!-- The chart is three lines, not one, and this says what the outer two
+           are. A single line implies a precision nobody has about a decade of
+           equity returns. -->
+      <p class="sub" id="growth-note" style="font-size:11px;color:var(--text-hint);margin-top:8px"></p>
     </div>
     </div>
+  </div>
+
+  <!-- ── Does it last? ────────────────────────────────────────────────────────
+       The question the rest of the page sets up and never answered. Everything
+       above is one year, frozen: this is that year repeated, with spending
+       rising by inflation, equities sold to cover whatever the income doesn't,
+       and capital gains tax charged on the sales. -->
+  <div class="section">
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('drawdown')" aria-expanded="true" aria-controls="body-drawdown"><span class="sec-chevron open" id="chev-drawdown" aria-hidden="true">&#9654;</span>Does It Last?</button></h2>
+    <div class="sec-body" id="body-drawdown">
+    <p class="verdict" id="dd-verdict" role="status">&mdash;</p>
+    <div class="chart-card">
+      <div class="legend" id="leg4"></div>
+      <div style="position:relative;height:230px"><canvas id="c4" role="img" aria-label="Line chart of portfolio value over 40 years under weak, chosen and strong growth">Portfolio value over 40 years.</canvas></div>
+      <p class="sub" id="dd-note" style="font-size:11px;color:var(--text-hint);margin-top:8px"></p>
+    </div>
+    </div>
+  </div>
+
+  <!-- Take it away with you. Copy rather than download, for the reason spelled
+       out on the calculator page: a download can be blocked outright inside an
+       installed app window, and a button that does nothing is worse than none. -->
+  <div class="row" style="margin:1.2rem 0">
+    <button type="button" class="btn small" onclick="copyCSV()">Copy As CSV</button>
+    <button type="button" class="btn small" onclick="window.print()">Print</button>
+    <span id="csv-note" role="status" style="font-size:11px;color:var(--text-hint)"></span>
   </div>
 
 </main>
@@ -432,10 +565,45 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 <style>
 </style>
 
+<!-- ── Share a link to these settings ───────────────────────────────────────
+     Eleven numbers and two words picked from lists. Nothing here is text
+     anybody types, and the recipient's copy re-derives every word on screen
+     from the numbers. -->
+<dialog id="share-dialog" aria-labelledby="share-title">
+  <h3 id="share-title">Share These Settings</h3>
+  <p class="sub">The link carries every slider, the filing status and where you live &mdash;
+    <em>inside the link itself</em>. Nothing is uploaded, and opening it doesn&rsquo;t touch
+    whatever the other person had saved. They can move every slider once it opens.</p>
+  <input type="text" id="share-link" readonly aria-label="Link to these settings">
+  <p class="sub" id="share-meta" role="status" style="margin:8px 0 0"></p>
+  <div class="row" style="margin-top:12px">
+    <button type="button" class="btn primary" onclick="copyShare()">Copy link</button>
+    <button type="button" class="btn" onclick="closeShare()">Done</button>
+  </div>
+</dialog>
+
 <script>
-// Top marginal rates: federal ordinary income, NY state, long-term capital
-// gains, and the 3.8% net investment income tax.
-const FED=0.37, NY=0.109, LTCG=0.20, NIIT=0.038;
+/* The four flat top-marginal rates this page used to carry — 37% federal, 10.9%
+   NY, 20% LTCG, 3.8% NIIT — are gone. They were right for a $100M portfolio and
+   badly wrong for the small ones the log-scaled take-home slider can reach: a
+   $500K portfolio earning $20K of interest does not pay 37% on it. The tables
+   and the bracket maths are in tax.js now, shared with the calculator, and the
+   rates below are COMPUTED per render from the income this portfolio actually
+   throws off.
+
+   Who is paying is a preference shared with the calculator page, under the same
+   two keys, so setting it in one sets it in the other. */
+let filing = 'single';   // see filingStatus() in tax.js
+let lives  = 'ny';       // 'ny' | 'nyc' | 'yonkers'
+let fromShare = false;   // opened from a link: show it, save nothing
+let seededFromShare = false; // a link set the take-home, so don't re-seed it
+
+/* How far either side of the chosen growth rate the drawdown's outer two lines
+   sit. Three percentage points is wide enough to matter over forty years and
+   narrow enough to stay a band rather than a fan; it is a stated assumption,
+   not a confidence interval, and the note under the chart says so. */
+const GROWTH_SPREAD = 0.03;
+const DRAWDOWN_YEARS = 40;
 /* ── The five asset classes take the theme pack's categorical ramp ───────────
    --series-1 to --series-5, used in numeric order, which is the rule the pack
    states: two charts of the same data then agree, and the order is a lightness
@@ -492,7 +660,7 @@ function pct(n) { return (n*100).toFixed(1)+'%'; }
 // Charts are built once and then fed new numbers. Rebuilding all three on every
 // slider `input` event was what made dragging feel heavy. Only a theme change
 // needs a genuine rebuild, since the axis/grid colours are baked into options.
-let c1=null, c2=null, c3=null, _chartsTheme=null;
+let c1=null, c2=null, c3=null, c4=null, _chartsTheme=null;
 
 // The take-home slider is LOG-scaled: 0-1000 on the track maps to $0.1M-$500M.
 // Linear millions couldn't reach a small win — a jackpot-sized $500M top end
@@ -519,6 +687,7 @@ function readAssumptions() {
     vxY:   parseFloat(document.getElementById('sl-vx').value)/100,
     grY:   parseFloat(document.getElementById('sl-gr').value)/100,
     split: parseFloat(document.getElementById('sl-split').value)/100,
+    inf:   parseFloat(document.getElementById('sl-inf').value)/100,
   };
 }
 
@@ -532,7 +701,65 @@ function readAssumptions() {
 // and the model invented principal that isn't there — a $5M portfolio with $1M
 // spending reported $8M of holdings, and every income figure downstream (and
 // the donut) was computed on money the winner doesn't have.
-function computeIncome(total, spend, tbY, muY, vtiY, vxY, split) {
+/* Every rate this portfolio actually meets, given what it earns.
+
+   The five holdings are taxed three different ways and the page has always said
+   so; what it could not do until 2026-08-22 was work out the RATES. Now:
+
+   • SPAXX and T-bill interest are ordinary income, so they walk up the federal
+     brackets from the bottom after the standard deduction. T-bill interest is
+     exempt from New York; SPAXX interest is not.
+   • Muni interest is exempt from both, which is why munis are the only holding
+     whose after-tax income equals its gross.
+   • VTI and VXUS dividends are qualified, so they are taxed in the long-term
+     capital-gain bands STACKED ON TOP of the ordinary income above — which is
+     why a portfolio with a lot of interest pays a higher rate on its dividends
+     than one without.
+   • NIIT is 3.8% on investment income above a threshold that is NOT indexed,
+     and it applies to interest as well as dividends — so it is spread across
+     everything taxable rather than charged to the dividends alone.
+
+   Returned as three average rates rather than one bill, because the breakdown
+   table shows a rate per holding. Each rate is that category's total tax over
+   that category's income, so the per-holding figures still add up to exactly
+   the total tax — which a set of marginal rates would not. */
+function portfolioRates(spaxxG, tbG, divG, status, where) {
+  status = filingStatus(status); where = residence(where);
+  const interest = spaxxG + tbG;
+  const ordTaxable = Math.max(0, interest - FED_STD[status]);
+  const fedOrd = bracketTax(ordTaxable, FED_BRACKETS[status]);
+  /* Whatever the deduction did not use up against interest comes off the
+     dividends — which is the usual case here, because the cash-and-bond ladder
+     is sized to SPENDING rather than to the portfolio, so a large portfolio can
+     easily throw off less interest than the standard deduction. */
+  const unused = Math.max(0, FED_STD[status] - interest);
+  const divTaxable = Math.max(0, divG - unused);
+  /* Stacked, not standalone: the gain bands are measured from the top of the
+     ordinary income, which is the whole of this calculation's subtlety. */
+  const ltcg = bracketTax(ordTaxable + divTaxable, LTCG_BRACKETS[status])
+             - bracketTax(ordTaxable, LTCG_BRACKETS[status]);
+  const nii = interest + divG;
+  const niit = NIIT_RATE * Math.max(0, Math.min(nii, nii - NIIT_FLOOR[status]));
+  /* New York taxes SPAXX interest and dividends. T-bill interest is exempt by
+     federal statute and munis by both, so neither is in the base. */
+  const nyBase = spaxxG + divG;
+  const nyS = nyTax(nyBase, status);
+  const city = where === 'nyc' ? nycTax(nyBase, status) : 0;
+  const yonkers = where === 'yonkers' ? nyS * YONKERS_SURCHARGE : 0;
+  return {
+    ordFed: interest > 0 ? fedOrd / interest : 0,
+    divFed: divG > 0 ? ltcg / divG : 0,
+    niit:   nii > 0 ? niit / nii : 0,
+    ny:     nyBase > 0 ? (nyS + city + yonkers) / nyBase : 0,
+    fedTax: fedOrd + ltcg + niit,
+    nyTaxAmt: nyS + city + yonkers
+  };
+}
+
+/* `status` and `where` are optional and default to a single New York State
+   filer, which is what this page assumed for its whole life before 2026-08-22 —
+   so every existing caller, including the test suite, keeps its meaning. */
+function computeIncome(total, spend, tbY, muY, vtiY, vxY, split, status, where) {
   const ladder = spend * 8;
   const fit    = (ladder > total && ladder > 0) ? total / ladder : 1;
   const spaxx  = spend * 1 * fit;
@@ -541,24 +768,112 @@ function computeIncome(total, spend, tbY, muY, vtiY, vxY, split) {
   const growth = Math.max(0, total - spaxx - tbill - muni);
   const vti    = growth * split;
   const vxus   = growth * (1-split);
-  const spaxxG = spaxx  * 0.043,  spaxxA = spaxxG * (1-FED-NY); // SPAXX yield fixed at 4.3% (no slider)
-  const tbG    = tbill  * tbY,    tbA    = tbG    * (1-FED);
-  const muG    = muni   * muY,    muA    = muG;
-  const vtiG   = vti    * vtiY,   vtiA   = vtiG   * (1-LTCG-NIIT-NY);
-  const vxusG  = vxus   * vxY,    vxusA  = vxusG  * (1-LTCG-NIIT-NY);
-  // The waterfall's federal/NY split, summed per holding from the same rates as
-  // the after-tax figures above (NIIT is federal). The two always add up to
-  // exactly totG − totA. This used to be a hard-coded 77/23 display split,
-  // which overstated NY drag on any T-bill- or muni-heavy allocation — T-bill
-  // interest owes no NY tax at all.
-  const fedDrag = (spaxxG + tbG) * FED + (vtiG + vxusG) * (LTCG + NIIT);
-  const nyDrag  = (spaxxG + vtiG + vxusG) * NY;
+  const spaxxG = spaxx * 0.043; // SPAXX yield fixed at 4.3% (no slider)
+  const tbG    = tbill * tbY;
+  const muG    = muni  * muY;
+  const vtiG   = vti   * vtiY;
+  const vxusG  = vxus  * vxY;
+
+  const r = portfolioRates(spaxxG, tbG, vtiG + vxusG, status, where);
+  const spaxxA = spaxxG * (1 - r.ordFed - r.niit - r.ny);
+  const tbA    = tbG    * (1 - r.ordFed - r.niit);
+  const muA    = muG;
+  const vtiA   = vtiG   * (1 - r.divFed - r.niit - r.ny);
+  const vxusA  = vxusG  * (1 - r.divFed - r.niit - r.ny);
+
+  // The waterfall's federal/state split. NIIT is federal. The two always add up
+  // to exactly totG − totA, which is what makes the waterfall honest.
+  const fedDrag = r.fedTax;
+  const nyDrag  = r.nyTaxAmt;
   return { spaxx, tbill, muni, vti, vxus,
            spaxxG, spaxxA, tbG, tbA, muG, muA, vtiG, vtiA, vxusG, vxusA,
-           fedDrag, nyDrag,
+           fedDrag, nyDrag, rates: r,
            underfunded: fit < 1, // ladder had to be shrunk to fit the principal
            totG: spaxxG+tbG+muG+vtiG+vxusG,
            totA: spaxxA+tbA+muA+vtiA+vxusA };
+}
+
+/* ── Does it last? ─────────────────────────────────────────────────────────
+   Forty years of the model above, one year at a time. Everything else on this
+   page is a single year held still; this is the only thing that answers the
+   question the rest of it raises.
+
+   Each year:
+     1. the allocation is re-derived from what is left and what you now spend,
+        exactly as the snapshot above does it — the ladder follows spending, so
+        it grows in dollars as inflation lifts what a year costs;
+     2. income after tax is taken as cash;
+     3. if that doesn't cover the year, shares are SOLD to make up the
+        difference — and enough extra to pay the capital-gains tax on the sale,
+        which is the cost this page ignored entirely before;
+     4. what is left in equities grows;
+     5. next year costs more, by inflation.
+
+   COST BASIS is tracked as a fraction, because it is what decides the tax on a
+   sale and it falls every year the market rises. Selling out of a bucket that
+   has doubled realises a 50% gain; selling in year one realises almost none.
+   Without it the model would either charge tax on the whole sale or none at
+   all, and both are wrong in the direction that matters. */
+function drawdown(a, growthRate) {
+  let value = a.total;
+  let basisFrac = 1;          // bought today, so nothing is gain yet
+  let spend = a.spend;
+  const path = [];
+  let ranOut = null;
+
+  for (let y = 0; y <= DRAWDOWN_YEARS; y++) {
+    path.push(Math.max(0, value));
+    if (value <= 0) { if (ranOut === null) ranOut = y; continue; }
+
+    const m = computeIncome(value, spend, a.tbY, a.muY, a.vtiY, a.vxY, a.split, filing, lives);
+    let equity = m.vti + m.vxus;
+    const ladder = value - equity;
+    const net = m.totA - spend;
+
+    if (net < 0) {
+      const need = -net;
+      /* The gain rate on a sale: the federal long-term rate for this income,
+         plus New York's — which taxes a capital gain as ordinary income. */
+      const gainRate = ltcgRate(m.totG, filing) + stateMarginalRate(m.totG, filing, lives);
+      const taxable = Math.max(0, 1 - basisFrac);
+      /* Sell enough that what survives the tax IS the shortfall. Guarded
+         against the degenerate case where the tax would eat the whole sale. */
+      const denom = 1 - taxable * gainRate;
+      let sell = denom > 0.01 ? need / denom : need;
+      if (sell > equity) {
+        /* Equities gone. Selling all of them nets this much after the gains
+           tax; whatever is still short comes out of the cash-and-bond ladder,
+           which is held at par and realises nothing. */
+        const netProceeds = equity * denom;
+        const shortfall = Math.max(0, need - netProceeds);
+        equity = 0; basisFrac = 1;
+        value = Math.max(0, ladder - shortfall);
+      } else {
+        equity -= sell;
+        /* Basis leaves with the shares, so the FRACTION is unchanged by a sale
+           — only growth moves it. Kept explicit rather than dropped, because
+           the temptation to "reduce the basis by the amount sold" is exactly
+           the mistake that would make later years tax-free. */
+        value = ladder + equity;
+      }
+    } else {
+      // A surplus goes back in, at today's price — so it is all basis.
+      const added = net;
+      const newEquity = equity + added;
+      basisFrac = newEquity > 0 ? (basisFrac * equity + added) / newEquity : 1;
+      equity = newEquity;
+      value = ladder + equity;
+    }
+
+    if (equity > 0) {
+      const grown = equity * (1 + growthRate);
+      basisFrac = grown > 0 ? basisFrac * (equity / grown) : 1;
+      value = value - equity + grown;
+    }
+    spend *= (1 + a.inf);
+    if (value <= 0) { value = 0; if (ranOut === null) ranOut = y + 1; }
+  }
+  return { path, ranOut, ending: path[path.length - 1] };
 }
 
 // Set annual spending equal to after-tax income, bringing the surplus to 0.
@@ -707,10 +1022,12 @@ function syncSlider(el, sliderId, min, max, scale, log) {
 }
 
 function render() {
-  const { total, spend, tbY, muY, vtiY, vxY, grY, split } = readAssumptions();
+  const A = readAssumptions();
+  const { total, spend, tbY, muY, vtiY, vxY, grY, split, inf } = A;
 
   setVal('o-tot',   fm1(total));
   setVal('o-sp',    fm(spend));
+  setVal('o-inf',   pct(inf));
   setVal('o-tb',    pct(tbY));
   setVal('o-mu',    pct(muY));
   setVal('o-vti',   pct(vtiY));
@@ -720,7 +1037,7 @@ function render() {
 
   const { spaxx, tbill, muni, vti, vxus,
           spaxxG, spaxxA, tbG, tbA, muG, muA, vtiG, vtiA, vxusG, vxusA,
-          fedDrag, nyDrag, underfunded, totG, totA } = computeIncome(total, spend, tbY, muY, vtiY, vxY, split);
+          fedDrag, nyDrag, rates, underfunded, totG, totA } = computeIncome(total, spend, tbY, muY, vtiY, vxY, split, filing, lives);
 
   // Say so plainly when the ladder had to shrink, rather than quietly showing
   // smaller buckets than the 1yr/3yr/4yr labels promise.
@@ -752,12 +1069,19 @@ function render() {
      not thirty, and every mark in this pass is guaranteed the same theme. */
   const C = colors();
 
+  /* The rates in this column used to be four literals — 47.9%, 37%, 34.7% —
+     which were the top marginal rates and were only ever right for a portfolio
+     big enough to reach them. They are computed now, so a modest portfolio
+     shows the modest rate it really pays. */
+  const rOrd  = rates.ordFed + rates.niit + rates.ny;
+  const rTb   = rates.ordFed + rates.niit;
+  const rDiv  = rates.divFed + rates.niit + rates.ny;
   const rows = [
-    { name:'SPAXX',    sub:'1yr cash buffer · core',              alloc:spaxx, gross:spaxxG, after:spaxxA, tax:'Ordinary (47.9%)',       tc:'to', color:C.spaxx },
-    { name:'T-bills',  sub:'3yr ladder · NY exempt',              alloc:tbill, gross:tbG,    after:tbA,    tax:'Federal only (37%)',      tc:'tp', color:C.tbill },
-    { name:'NY Munis', sub:'4yr ladder · fully exempt',           alloc:muni,  gross:muG,    after:muA,    tax:'Fully exempt',            tc:'tf', color:C.muni  },
-    { name:'VTI',      sub:Math.round(split*100)+'% · divs→cash', alloc:vti,   gross:vtiG,   after:vtiA,   tax:'LTCG+NIIT+NY (34.7%)',   tc:'tp', color:C.vti   },
-    { name:'VXUS',     sub:(100-Math.round(split*100))+'% · divs→cash', alloc:vxus, gross:vxusG, after:vxusA, tax:'LTCG+NIIT+NY (34.7%)', tc:'tp', color:C.vxus },
+    { name:'SPAXX',    sub:'1yr cash buffer · core',              alloc:spaxx, gross:spaxxG, after:spaxxA, tax:'Ordinary ('+pct(rOrd)+')',      tc:'to', color:C.spaxx },
+    { name:'T-bills',  sub:'3yr ladder · NY exempt',              alloc:tbill, gross:tbG,    after:tbA,    tax:'Federal only ('+pct(rTb)+')',   tc:'tp', color:C.tbill },
+    { name:'NY Munis', sub:'4yr ladder · fully exempt',           alloc:muni,  gross:muG,    after:muA,    tax:'Fully exempt',                  tc:'tf', color:C.muni  },
+    { name:'VTI',      sub:Math.round(split*100)+'% · divs→cash', alloc:vti,   gross:vtiG,   after:vtiA,   tax:'LTCG+NIIT+NY ('+pct(rDiv)+')',  tc:'tp', color:C.vti   },
+    { name:'VXUS',     sub:(100-Math.round(split*100))+'% · divs→cash', alloc:vxus, gross:vxusG, after:vxusA, tax:'LTCG+NIIT+NY ('+pct(rDiv)+')', tc:'tp', color:C.vxus },
   ];
 
   // ── Table ──
@@ -827,8 +1151,8 @@ function render() {
   const themeNow = document.documentElement.getAttribute('data-theme');
   const rebuild  = !c1 || _chartsTheme !== themeNow;
   if (rebuild) {
-    [c1, c2, c3].forEach(c => c && c.destroy());
-    c1 = c2 = c3 = null;
+    [c1, c2, c3, c4].forEach(c => c && c.destroy());
+    c1 = c2 = c3 = c4 = null;
     _chartsTheme = themeNow;
   }
 
@@ -926,16 +1250,244 @@ function render() {
     c3.update('none');
   }
 
+  document.getElementById('basis').textContent =
+    (filing === 'mfj' ? 'Married, filing jointly' : 'Single filer') + ' · '
+    + (lives === 'nyc' ? 'New York City' : lives === 'yonkers' ? 'Yonkers'
+       : 'New York State, outside NYC and Yonkers') + ' · ' + TAX_YEAR + ' brackets';
+
+  document.getElementById('growth-note').textContent =
+    'One assumption held flat, with nothing taken out. What happens once you '
+    + 'start spending it — and once the rate is not exactly ' + pct(grY) + ' — is below.';
+
+  /* ── Chart 4: does it last? ──────────────────────────────────────────────
+     Three runs of the same model at three growth rates. The middle one is
+     yours; the outer two are it plus and minus three points, which is a stated
+     assumption and not a confidence interval — the note under the chart says
+     so, because a shaded band invites being read as one. */
+  const mid  = drawdown(A, grY);
+  const weak = drawdown(A, Math.max(0, grY - GROWTH_SPREAD));
+  const strong = drawdown(A, grY + GROWTH_SPREAD);
+  const ddYrs = mid.path.map((_, i) => i);
+
+  const v = document.getElementById('dd-verdict');
+  /* The sentence carries the answer; the tint only underlines it. Never colour
+     alone — and "runs out" and "outlasts" are different words, not different
+     greens. */
+  if (mid.ranOut === null) {
+    v.className = 'verdict good';
+    v.innerHTML = 'At ' + pct(grY) + ' growth and ' + pct(inf) + ' inflation, this <strong>outlasts '
+      + DRAWDOWN_YEARS + ' years</strong> — ending at ' + fm(mid.ending)
+      + ', with spending by then at ' + fm(spend * Math.pow(1 + inf, DRAWDOWN_YEARS)) + ' a year. '
+      + (weak.ranOut !== null
+          ? 'Three points of growth worse and it runs out in year ' + weak.ranOut + '.'
+          : 'Three points worse and it still lasts.');
+  } else {
+    v.className = 'verdict bad';
+    v.innerHTML = 'At ' + pct(grY) + ' growth and ' + pct(inf) + ' inflation, this <strong>runs out in year '
+      + mid.ranOut + '</strong>. '
+      + (strong.ranOut === null
+          ? 'Three points of growth better and it would last the full ' + DRAWDOWN_YEARS + '.'
+          : 'Even three points better it runs out in year ' + strong.ranOut + ' — the gap is spending, not returns.');
+  }
+
+  document.getElementById('leg4').innerHTML =
+    '<span class="leg"><span class="leg-sq" style="background:' + C.vti + '"></span>At ' + pct(grY) + '</span>'
+    + '<span class="leg"><span class="leg-sq" style="background:' + C.tbill + '"></span>Three points worse</span>'
+    + '<span class="leg"><span class="leg-sq" style="background:' + C.muni + '"></span>Three points better</span>';
+
+  const ddData = [
+    { label: 'At ' + pct(grY),      data: mid.path,    color: C.vti,   dash: [] },
+    { label: 'Three points worse',  data: weak.path,   color: C.tbill, dash: [4, 3] },
+    { label: 'Three points better', data: strong.path, color: C.muni,  dash: [4, 3] }
+  ];
+  if (rebuild) {
+    c4 = new Chart(document.getElementById('c4'), {
+      type: 'line',
+      data: { labels: ddYrs.map(y => 'Yr ' + y),
+              datasets: ddData.map(d => ({ label: d.label, data: d.data, borderColor: d.color,
+                backgroundColor: 'transparent', borderDash: d.dash, fill: false,
+                tension: 0.25, pointRadius: 0, borderWidth: d.dash.length ? 1.5 : 2.5 })) },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: { legend: { display: false },
+                   tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fm(c.raw)}` } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 }, color: tc(), maxTicksLimit: 9 } },
+          y: { grid: { color: gc() }, beginAtZero: true,
+               ticks: { font: { size: 10 }, color: tc(), callback: val => fmShort(val) } }
+        }
+      }
+    });
+  } else {
+    ddData.forEach((d, i) => { c4.data.datasets[i].data = d.data; c4.data.datasets[i].label = d.label; });
+    c4.update('none');
+  }
+  document.getElementById('dd-note').textContent =
+    'Spending rises by inflation every year, income after tax is taken as cash, and shares are sold '
+    + 'to cover whatever is left — plus the capital-gains tax on the sale, which falls as a share of '
+    + 'each sale in the early years and rises as the bucket grows. The outer two lines are your rate '
+    + 'plus and minus three points: an illustration of how much the answer moves, not a probability.';
+
   saveSliders();
-  document.getElementById('note').textContent = 'VTI and VXUS dividends paid to cash (no reinvestment). Qualified dividends: 20% LTCG + 3.8% NIIT + 10.9% NY = 34.7%. T-bill interest NY-exempt (saves 10.9%). Muni interest fully tax-free at both levels. SPAXX taxed as ordinary income at 47.9% combined. Growth projection assumes a fixed annual return with no withdrawals from the equity bucket.';
+  document.getElementById('note').textContent =
+    'VTI and VXUS dividends paid to cash (no reinvestment). Every rate on this page is worked out from '
+    + 'the ' + TAX_YEAR + ' brackets for a ' + (filing === 'mfj' ? 'married couple filing jointly' : 'single filer')
+    + ' in ' + (lives === 'nyc' ? 'New York City' : lives === 'yonkers' ? 'Yonkers' : 'New York State outside NYC and Yonkers')
+    + ', on the assumption that this portfolio is your only income: qualified dividends in the long-term '
+    + 'gain bands stacked above the interest, T-bill interest exempt from New York, muni interest exempt '
+    + 'from both, SPAXX interest as ordinary income, and NIIT spread across everything taxable. '
+    + 'Estimates only — consult a CPA.';
 }
 
-const SLIDER_IDS = ['sl-tot','sl-sp','sl-tb','sl-mu','sl-vti','sl-vx','sl-gr','sl-split'];
+/* ═══════════════════════════════════════════════════════════════════════════
+   Who is paying, the link, and taking it away
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The same two preferences the calculator writes, under the same two keys, so
+   answering the question on one page answers it on the other. */
+function remember(key, val) { if (!fromShare) localStorage.setItem(key, val); }
+function syncSituation() {
+  document.getElementById('filing').value = filing;
+  document.getElementById('residence').value = lives;
+}
+function setFiling(v) { filing = filingStatus(v); remember('lottery-filing', filing); syncSituation(); render(); }
+function setResidence(v) { lives = residence(v); remember('lottery-residence', lives); syncSituation(); render(); }
+function restoreSituation() {
+  filing = filingStatus(localStorage.getItem('lottery-filing'));
+  lives = residence(localStorage.getItem('lottery-residence'));
+}
+
+/* ── Share links ───────────────────────────────────────────────────────────
+   Nine slider positions and two words picked from lists. Same shape and same
+   rules as the calculator's: plain base64url behind a format marker, every
+   field re-checked on the way in, and a link is a look rather than a save. */
+const SHARE_PREFIX = '#s=';
+const SHARE_V = 1;
+
+function b64urlEncode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let out = '';
+  for (const b of bytes) out += String.fromCharCode(b);
+  return btoa(out).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlDecode(tok) {
+  let b = tok.replace(/-/g, '+').replace(/_/g, '/');
+  while (b.length % 4) b += '=';
+  const bin = atob(b), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function sharePayload() {
+  const s = {};
+  SLIDER_IDS.forEach(id => { s[id] = Number(document.getElementById(id).value); });
+  return { v: SHARE_V, f: filing, r: lives, s };
+}
+
+/* The sliders are the one thing here that arrives as free-form numbers, so each
+   one is put back through its OWN element's min/max rather than a shared guess
+   — the range input is the schema, and it is already in the markup. A value
+   that isn't a finite number leaves that slider where the visitor had it. */
+function readShare(hash) {
+  if (!hash || hash.indexOf(SHARE_PREFIX) !== 0) return null;
+  let p;
+  try { p = JSON.parse(b64urlDecode(hash.slice(SHARE_PREFIX.length))); } catch (e) { return null; }
+  if (!p || typeof p !== 'object' || Number(p.v || 0) > SHARE_V) return null;
+  const out = { f: filingStatus(p.f), r: residence(p.r), s: {} };
+  const src = (p.s && typeof p.s === 'object') ? p.s : {};
+  SLIDER_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    const n = Number(src[id]);
+    if (!isFinite(n)) return;
+    out.s[id] = Math.min(Number(el.max), Math.max(Number(el.min), n));
+  });
+  return out;
+}
+
+function applyShareLink() {
+  const p = readShare(location.hash);
+  if (!p) return;
+  fromShare = true;
+  filing = p.f; lives = p.r;
+  Object.keys(p.s).forEach(id => { document.getElementById(id).value = p.s[id]; });
+  /* A link that set the take-home must not then be overwritten by the
+     calculator's saved figure a moment later. */
+  seededFromShare = true;
+  document.getElementById('from-share').classList.add('on');
+}
+function clearShare() { location.hash = ''; location.reload(); }
+
+function shareURL() {
+  return location.origin + location.pathname + SHARE_PREFIX + b64urlEncode(JSON.stringify(sharePayload()));
+}
+function openShare() {
+  const url = shareURL();
+  document.getElementById('share-link').value = url;
+  document.getElementById('share-meta').textContent = url.length + ' characters — short enough for any mail client.';
+  document.getElementById('share-dialog').showModal();
+  document.getElementById('share-link').select();
+}
+function closeShare() { document.getElementById('share-dialog').close(); }
+function copyShare() {
+  const box = document.getElementById('share-link');
+  box.select();
+  const meta = document.getElementById('share-meta');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(box.value).then(() => { meta.textContent = 'Copied.'; },
+                                                  () => { meta.textContent = 'Press Cmd-C or Ctrl-C to copy.'; });
+  } else { meta.textContent = 'Press Cmd-C or Ctrl-C to copy.'; }
+}
+/* Backdrop click cancels — the family rule for every dialog in every app. */
+document.getElementById('share-dialog').addEventListener('click', function (e) {
+  if (e.target === this) this.close();
+});
+/* Pasting a link into a tab already on this page changes only the fragment,
+   which is not a navigation — without this the link appears to do nothing. */
+window.addEventListener('hashchange', () => {
+  if (!readShare(location.hash)) return;
+  applyShareLink();
+  syncSituation();
+  render();
+});
+
+/* ── Copy as CSV ─────────────────────────────────────────────────────────── */
+function csvCell(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }
+function copyCSV() {
+  const A = readAssumptions();
+  const m = computeIncome(A.total, A.spend, A.tbY, A.muY, A.vtiY, A.vxY, A.split, filing, lives);
+  const rows = [['Item', 'Value']];
+  rows.push(['Filing status', filing === 'mfj' ? 'Married, filing jointly' : 'Single']);
+  rows.push(['Residence', lives === 'nyc' ? 'New York City' : lives === 'yonkers' ? 'Yonkers' : 'New York State']);
+  rows.push(['Tax year', TAX_YEAR]);
+  rows.push(['Take-home invested', Math.round(A.total)]);
+  rows.push(['Annual spending', Math.round(A.spend)]);
+  rows.push(['Inflation', pct(A.inf)]);
+  rows.push([]);
+  rows.push(['Holding', 'Allocation', 'Gross income', 'After-tax income']);
+  [['SPAXX', m.spaxx, m.spaxxG, m.spaxxA], ['T-bills', m.tbill, m.tbG, m.tbA],
+   ['NY Munis', m.muni, m.muG, m.muA], ['VTI', m.vti, m.vtiG, m.vtiA],
+   ['VXUS', m.vxus, m.vxusG, m.vxusA]]
+    .forEach(r => rows.push([r[0], Math.round(r[1]), Math.round(r[2]), Math.round(r[3])]));
+  rows.push(['Total', Math.round(A.total), Math.round(m.totG), Math.round(m.totA)]);
+  rows.push([]);
+  const dd = drawdown(A, A.grY);
+  rows.push(['Year', 'Portfolio value at ' + pct(A.grY) + ' growth']);
+  dd.path.forEach((val, i) => rows.push([i, Math.round(val)]));
+  const csv = rows.map(r => r.map(csvCell).join(',')).join('\n');
+  const note = document.getElementById('csv-note');
+  const done = (msg) => { note.textContent = msg; setTimeout(() => { note.textContent = ''; }, 4000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(csv).then(() => done('Copied — paste it into a spreadsheet.'),
+                                            () => done('Could not copy.'));
+  } else { done('Could not copy.'); }
+}
+
+const SLIDER_IDS = ['sl-tot','sl-sp','sl-inf','sl-tb','sl-mu','sl-vti','sl-vx','sl-gr','sl-split'];
 
 function saveSliders() {
   const vals = { v: 2 };
   SLIDER_IDS.forEach(id => vals[id] = document.getElementById(id).value);
-  localStorage.setItem('lottery-portfolio-sliders', JSON.stringify(vals));
+  remember('lottery-portfolio-sliders', JSON.stringify(vals));
 }
 
 function loadSliders() {
@@ -961,7 +1513,11 @@ function loadSliders() {
        two were the only parses in the repo that did not. */
     const net = parseInt(localStorage.getItem('lottery-net-takehome'), 10);
     const lastSeeded = parseInt(localStorage.getItem('lottery-portfolio-seeded-from'), 10);
-    if (net > 0 && net !== lastSeeded) {
+    /* A share link sets the take-home explicitly, and it must not then be
+       overwritten a line later by whatever this browser's own calculator last
+       worked out — which is exactly what "a new figure since we last adopted
+       one" would look like on someone else's machine. */
+    if (!seededFromShare && net > 0 && net !== lastSeeded) {
       document.getElementById('sl-tot').value = mToPos(net / 1e6);
       localStorage.setItem('lottery-portfolio-seeded-from', String(net));
     }
@@ -1034,7 +1590,7 @@ async function fetchTbillYield(){
 }
 
 // ── Collapsible sections ───────────────────────────────────────────────────────
-const SECTION_KEYS = ['assumptions','summary','breakdown','waterfall','charts','growth'];
+const SECTION_KEYS = ['assumptions','summary','breakdown','waterfall','charts','growth','drawdown'];
 function saveSectionStates() {
   const st = {};
   SECTION_KEYS.forEach(k => st[k] = document.getElementById('body-'+k).classList.contains('collapsed'));
@@ -1063,7 +1619,7 @@ function toggleSection(key) {
     render();
     // A chart built while its section was hidden has zero size, so make
     // Chart.js measure the container again now that it's visible.
-    [c1, c2, c3].forEach(c => c && c.resize());
+    [c1, c2, c3, c4].forEach(c => c && c.resize());
   }
 }
 
@@ -1131,7 +1687,14 @@ document.addEventListener('focusin', function(e){
 // Populate synchronously (this script is at the end of <body>, so all elements
 // exist) so the first paint already has content — avoids layout shift (CLS)
 // from filling empty sections after load.
-loadSliders(); loadSectionStates(); render();
+/* Order matters: the saved settings first, then the link on top of them — so a
+   link that carries only some of the sliders leaves the rest as this visitor
+   had them rather than as the defaults. */
+restoreSituation();
+loadSliders();
+applyShareLink();
+syncSituation();
+loadSectionStates(); render();
 // The live T-bill yield only nudges a slider value (no layout change), so it can
 // run after first paint without causing shift.
 fetchTbillYield();

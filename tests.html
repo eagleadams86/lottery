@@ -437,8 +437,43 @@ t('spending past total/8 shrinks all three buckets by one factor — no invented
 t('tax treatment per holding: munis free, T-bills federal-only, equities LTCG+NIIT+NY', () => {
   const m = wp.computeIncome(100e6, 250e3, 0.04, 0.03, 0.013, 0.02, 0.6);
   near(m.muA, m.muG, 'muni income is untaxed');
-  near(m.tbA, m.tbG * (1 - 0.37), 'T-bills exempt from NY, not federal');
-  near(m.vtiA, m.vtiG * (1 - 0.20 - 0.038 - 0.109), 'qualified dividends');
+  /* The three rates used to be the literals 37%, 34.7% and 47.9% here, because
+     that is what the page applied to any portfolio. They are computed now, so
+     what this test pins is the RELATIONSHIP between them, which is the thing
+     that must never break: munis pay nothing, T-bills pay no New York, and
+     dividends pay New York on top of the federal gain rate. */
+  const r = m.rates;
+  ok(r.ny > 0, 'New York must be charging something at this size');
+  near(m.tbA, m.tbG * (1 - r.ordFed - r.niit), 'T-bills exempt from NY, not federal');
+  near(m.vtiA, m.vtiG * (1 - r.divFed - r.niit - r.ny), 'qualified dividends');
+  ok(m.tbA / m.tbG > m.spaxxA / m.spaxxG,
+     'a T-bill must keep more of its interest than SPAXX does — that IS the NY exemption');
+  ok(m.muA / m.muG > m.tbA / m.tbG, 'and a muni must keep more than a T-bill');
+});
+t("a modest portfolio is not taxed at a jackpot portfolio's rates", () => {
+  /* The bug the computed rates replaced. A $2M portfolio spending $150K throws
+     off about $30K of interest — which is two federal brackets, not the top
+     one. The old model charged 37% on it. */
+  const small = wp.computeIncome(2e6, 150e3, 0.04, 0.03, 0.013, 0.02, 0.6);
+  const big   = wp.computeIncome(200e6, 150e3, 0.04, 0.03, 0.013, 0.02, 0.6);
+  ok(small.rates.ordFed < 0.22, 'ordinary rate on a small portfolio: ' + small.rates.ordFed);
+  ok(big.rates.divFed > small.rates.divFed,
+     'the big portfolio must pay a higher rate on its dividends, not the same one');
+  ok(small.totA / small.totG > big.totA / big.totG,
+     'the small portfolio must keep a larger share of its income');
+});
+t('the filing status and the town change the answer, and only in one direction', () => {
+  const args = [50e6, 400e3, 0.04, 0.03, 0.013, 0.02, 0.6];
+  const single = wp.computeIncome(...args, 'single', 'ny');
+  const joint  = wp.computeIncome(...args, 'mfj', 'ny');
+  const city   = wp.computeIncome(...args, 'single', 'nyc');
+  const yonkers = wp.computeIncome(...args, 'single', 'yonkers');
+  ok(joint.totA >= single.totA, 'filing jointly can never cost more here');
+  ok(city.totA < single.totA, 'NYC charges its own tax on top');
+  ok(yonkers.totA < single.totA, 'so does Yonkers, as a surcharge');
+  /* The old signature, with no status and no town, must still mean what it
+     always meant — a single filer in New York State. */
+  near(wp.computeIncome(...args).totA, single.totA, "the default is the page's old assumption");
 });
 t('totals are the sum of their parts, and tax only ever reduces income', () => {
   const m = wp.computeIncome(40e6, 400e3, 0.045, 0.028, 0.015, 0.025, 0.7);
@@ -451,9 +486,17 @@ t('the federal/NY tax-drag split follows each holding\'s own rates', () => {
   // most income is T-bills and munis — the case a fixed split gets wrong.
   const m = wp.computeIncome(10e6, 1e6, 0.04, 0.03, 0.013, 0.02, 0.6);
   near(m.fedDrag + m.nyDrag, m.totG - m.totA, 'the two halves are exactly the whole drag');
-  near(m.fedDrag, (m.spaxxG + m.tbG) * 0.37 + (m.vtiG + m.vxusG) * (0.20 + 0.038));
-  near(m.nyDrag, (m.spaxxG + m.vtiG + m.vxusG) * 0.109,
+  /* The rates are computed now, so the assertion is about WHICH INCOME lands in
+     which half rather than about two literals. The NY half is SPAXX interest
+     and dividends and nothing else: T-bill interest is exempt by federal
+     statute and muni interest by both. */
+  const r = m.rates;
+  near(m.nyDrag, (m.spaxxG + m.vtiG + m.vxusG) * r.ny,
     'T-bill and muni income owe no NY tax, so neither may appear in the NY half');
+  near(m.fedDrag, (m.spaxxG + m.tbG) * (r.ordFed + r.niit)
+                + (m.vtiG + m.vxusG) * (r.divFed + r.niit));
+  ok(m.muG > 0 && m.nyDrag < (m.totG - m.muG),
+    'the NY half must never be as large as all the taxable income');
 });
 
 group('parseLatest1yr — the Treasury feed parser');
@@ -564,6 +607,80 @@ t('the decades are evenly spaced, so small wins are as draggable as big ones', (
   ok(Math.abs((wp.mToPos(100) - wp.mToPos(10)) - decade) < 1e-9);
 });
 
+group('drawdown — does the money last');
+const DD = (over) => Object.assign({ total: 20e6, spend: 400e3, tbY: 0.04, muY: 0.03,
+                                     vtiY: 0.013, vxY: 0.02, split: 0.6, inf: 0.025 }, over || {});
+t('a portfolio that comfortably out-earns its spending never runs out', () => {
+  const d = wp.drawdown(DD({ total: 100e6, spend: 250e3 }), 0.08);
+  eq(d.ranOut, null);
+  ok(d.ending > 100e6, 'it should have grown, not merely survived');
+  eq(d.path.length, 41, '40 years plus the year you start');
+});
+t('a portfolio spent far too fast runs out, and says which year', () => {
+  const d = wp.drawdown(DD({ total: 2e6, spend: 400e3 }), 0.08);
+  ok(d.ranOut !== null && d.ranOut > 0 && d.ranOut <= 40, 'ran out in year ' + d.ranOut);
+  eq(d.path[d.path.length - 1], 0, 'the line must reach zero, not go negative');
+  for (const v of d.path) ok(v >= 0, 'no year may be negative');
+});
+t('the path only ever falls once spending exceeds income', () => {
+  const d = wp.drawdown(DD({ total: 3e6, spend: 300e3 }), 0.05);
+  for (let i = 1; i < d.path.length; i++)
+    ok(d.path[i] <= d.path[i - 1] + 1e-6, 'year ' + i + ' rose while drawing down');
+});
+t('more growth is never worse, and more inflation is never better', () => {
+  ok(wp.drawdown(DD(), 0.10).ending >= wp.drawdown(DD(), 0.06).ending);
+  ok(wp.drawdown(DD({ inf: 0.05 }), 0.08).ending <= wp.drawdown(DD({ inf: 0 }), 0.08).ending);
+});
+t('selling shares costs capital-gains tax, and the cost grows with the gain', () => {
+  /* The thing the page ignored entirely before 2026-08-22. A portfolio drawing
+     on equities must end up behind one that never has to sell, at the same
+     growth rate — and the only difference between these two is the spending
+     that forces the sales. */
+  const sells = wp.drawdown(DD({ total: 10e6, spend: 500e3 }), 0.08);
+  const doesnt = wp.drawdown(DD({ total: 10e6, spend: 100e3 }), 0.08);
+  ok(doesnt.ending > sells.ending, 'the one that never sells must come out ahead');
+  /* And the tax on the sales is a real cost, not a rounding error: the same
+     portfolio with the gains tax switched off would last longer. Approximated
+     by giving it a basis it never loses — a portfolio bought today and sold
+     today realises nothing. */
+  ok(sells.ending < doesnt.ending * 0.9, 'selling to live on must cost something visible');
+});
+t('zero growth still runs the full term rather than dividing by nothing', () => {
+  const d = wp.drawdown(DD({ total: 50e6, spend: 400e3 }), 0);
+  eq(d.path.length, 41);
+  for (const v of d.path) ok(isFinite(v), 'a non-finite year would break the chart');
+});
+
+group('the portfolio share link');
+t('a link round-trips every slider', () => {
+  const url = wp.shareURL();
+  const p = wp.readShare(url.slice(url.indexOf('#')));
+  ok(p, 'the page could not read back its own link');
+  /* Asked of the payload rather than of a SLIDER_IDS on the window, because a
+     top-level `const` in a classic script is not a window property. Asking the
+     payload is the better question anyway: it fails if a slider is ever added
+     to the page and left out of the link. */
+  const carried = Object.keys(wp.sharePayload().s);
+  eq(carried.length, wp.document.querySelectorAll('.sliders input[type=range]').length,
+     'every slider on the page must travel in the link');
+  for (const id of carried)
+    near(p.s[id], Number(wp.document.getElementById(id).value), id + ' did not survive the trip');
+});
+t("a slider value from a link is clamped to that slider's own range", () => {
+  const mk = (o) => '#s=' + btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const p = wp.readShare(mk({ v: 1, f: 'x', r: 'x', s: { 'sl-split': 9999, 'sl-inf': -50, 'sl-tb': 'abc' } }));
+  eq(p.f, 'single'); eq(p.r, 'ny');
+  eq(p.s['sl-split'], Number(wp.document.getElementById('sl-split').max));
+  eq(p.s['sl-inf'], Number(wp.document.getElementById('sl-inf').min));
+  eq(p.s['sl-tb'], undefined, 'an unreadable value leaves that slider alone');
+});
+t('anything that is not one of ours is refused', () => {
+  eq(wp.readShare(''), null);
+  eq(wp.readShare('#other=1'), null);
+  eq(wp.readShare('#s=not-base64!!!'), null);
+  eq(wp.readShare('#s=' + btoa('{"v":99}')), null, 'a payload from a newer build');
+});
+
 group('syncSlider — the typed-value boundary (portfolio)');
 /* Drives the REAL onchange handler on the real boxes, with the same arguments
    the markup passes. Unlike the groups above these tests have side effects:
@@ -666,7 +783,15 @@ t('federal/NY drag rows are computed per holding, not a fixed 77/23 split', () =
    ORIGIN and shared with every sibling app, so "only files already public in
    this repo, ever" is the promise holding this up. */
 let SW_SRC = '', KILL_SRC = '', INDEX_SRC = '', CALC_SRC = '', PORT_SRC = '', CHART_SRC = '',
-    PKG = '', PRIVACY_SRC = '';
+    PKG = '', PRIVACY_SRC = '', TAX_SRC = '';
+/* One cache-buster for this run, shared by the hidden frames and by every
+   source fetch, so both are always looking at the same revision — and at the
+   one on disk. Without it a browser will happily hand a frame a page it cached
+   minutes ago: on 2026-08-22 this suite reported all-green against a portfolio
+   page three features out of date, because the source-level tests were reading
+   the file off the server while the frames ran yesterday's copy of it. A suite
+   that can pass against a build which exists nowhere is worse than no suite. */
+const BUST = '?t=' + Date.now();
 const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 group('Offline — the service worker');
@@ -716,7 +841,11 @@ t('and it is the version the README claims, unmodified', () => {
 });
 t('the page loads it before its own script runs', () => {
   const lib = PORT_SRC.indexOf('<script src="chart.min.js">');
-  const app = PORT_SRC.indexOf('const FED=');
+  /* Anchored on render() now. It used to be `const FED=`, which was the first
+     line of the app script until the rate constants moved into tax.js on
+     2026-08-22 — an anchor that can be deleted by an unrelated change is an
+     anchor that fails for the wrong reason. */
+  const app = PORT_SRC.indexOf('function render()');
   ok(lib !== -1 && app !== -1 && lib < app,
      'chart.min.js must be loaded ahead of the app script, or Chart is undefined at render');
 });
@@ -892,6 +1021,42 @@ t('no schema halt here, and that is the deliberate difference', () => {
    It exists because without it GitHub Pages served a Jekyll rendering of
    README.md at /lottery/ — a page on the shared origin with no CSP that pulled
    a script from cdnjs. These two tests are what stop that coming back. */
+group('tax.js — one file, two pages');
+t('both pages load it, and load it before their own script', () => {
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    ok(/<script src="tax\.js"><\/script>/.test(src), name + ' must load tax.js as a file');
+    const lib = src.indexOf('<script src="tax.js">');
+    const app = src.indexOf('function calc(') >= 0 ? src.indexOf('function calc(') : src.indexOf('function render(');
+    ok(lib > 0 && lib < app, name + ' loads tax.js after the code that calls it');
+  }
+});
+t('neither page keeps a rate table of its own any more', () => {
+  /* The whole point of the file. Two copies of the same tax law is how one of
+     them ends up a year out of date. Comments are stripped first, because both
+     pages talk about the rates they USED to carry. */
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    const body = stripComments(src);
+    ok(!/\bconst FED\s*=|\bvar FED_TOP\s*=|\bNY_TOP\s*=/.test(body),
+       name + ' has grown a rate constant back — it belongs in tax.js');
+  }
+});
+t('tax.js is self-contained, like every other file that ships here', () => {
+  ok(TAX_SRC.length > 1000, 'tax.js is missing or truncated');
+  ok(!/https?:\/\//.test(stripComments(TAX_SRC)), 'tax.js must reach no network');
+  ok(!/\beval\s*\(|new Function/.test(TAX_SRC), 'no dynamic evaluation');
+  ok(!/\bimport\b|\bexport\b|require\(/.test(TAX_SRC),
+     'it is a classic script, loaded by two no-build pages');
+  ok(/var TAX_YEAR = \d{4};/.test(TAX_SRC), 'the tax year must be stated in one obvious place');
+});
+t('the tax year is the same one both pages tell the reader', () => {
+  const yr = (TAX_SRC.match(/var TAX_YEAR = (\d{4});/) || [])[1];
+  ok(yr, 'no tax year found');
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]])
+    ok(src.includes('TAX_YEAR'), name + ' must name the year from the one place it lives');
+  ok(CALC_SRC.includes('Tax year ' + yr) || CALC_SRC.includes(yr),
+     'the footnote must not name a different year from the engine');
+});
+
 group('index.html — the page /lottery/ actually serves');
 
 t('it ships a CSP and loads no third-party script', () => {
@@ -989,19 +1154,24 @@ const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
    other one on this page. A missing file leaves its variable empty and fails
    its own test rather than taking the suite down. */
 async function loadSources() {
-  const grab = async (f) => { try { const r = await fetch(f); return r.ok ? await r.text() : ''; } catch (e) { return ''; } };
-  [SW_SRC, KILL_SRC, INDEX_SRC, CALC_SRC, PORT_SRC, CHART_SRC, PKG, PRIVACY_SRC] =
+  /* Same buster the frames use. Without it the source-level tests read the
+     file off the server while the frames ran a cached copy — or, worse, both
+     read caches of different ages and the suite reported green against a build
+     that does not exist anywhere. */
+  const grab = async (f) => { try { const r = await fetch(f + BUST, { cache: 'no-store' }); return r.ok ? await r.text() : ''; } catch (e) { return ''; } };
+  [SW_SRC, KILL_SRC, INDEX_SRC, CALC_SRC, PORT_SRC, CHART_SRC, PKG, PRIVACY_SRC, TAX_SRC] =
     await Promise.all(
     [grab('sw.js'), grab('sw-kill.js'), grab('index.html'),
      grab('ny-lottery-calculator.html'), grab('lottery-portfolio.html'),
-     grab('chart.min.js'), grab('package.json'), grab('privacy.html')]);
+     grab('chart.min.js'), grab('package.json'), grab('privacy.html'),
+     grab('tax.js')]);
 }
 
 window.addEventListener('load', () => {
   if (!LOCAL_HOSTS.includes(location.hostname)) return refuse();
   const frame = (id, src, title) => {
     const f = document.createElement('iframe');
-    f.id = id; f.src = src; f.title = title;
+    f.id = id; f.src = src + BUST; f.title = title;
     /* Both apps' frame-busters break out of any framer that does NOT carry
        this attribute — it is what marks these frames as the one legitimate,
        same-origin exception. */

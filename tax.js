@@ -270,3 +270,15 @@ function ordinaryMarginalRate(income, status, where) {
   var b = ordinaryTax(income + 1, status, where);
   return b.total - a.total;
 }
+
+/* The STATE-and-local marginal rate only — no federal. Capital gains are
+   ordinary income to New York, so a portfolio selling shares pays this on the
+   gain on top of the federal long-term rate. Split out rather than folded into
+   ordinaryMarginalRate() because that one includes federal, and adding it to
+   ltcgRate() would charge federal ordinary rates on a long-term gain. */
+function stateMarginalRate(income, status, where) {
+  status = filingStatus(status);
+  where = residence(where);
+  var lo = ordinaryTax(income, status, where), hi = ordinaryTax(income + 1, status, where);
+  return (hi.ny + hi.local) - (lo.ny + lo.local);
+}
