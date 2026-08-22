@@ -415,10 +415,14 @@
      Stacked below 1000px, in exactly the order the markup already had, so the
      phone layout is unchanged and needs no second set of rules.
 
-     5fr / 7fr rather than equal halves: the left column holds two game buttons
-     and two number fields and stops there, while the right holds a four-tile row,
-     the take-home pair, the tax breakdown table and the winning numbers. Equal
-     columns left the inputs padded out and the results cramped.
+     Equal halves — the page splits down the centre. It was 5fr / 7fr, on the
+     reasoning that the results side carried more to say, but the two stacks are
+     closer in weight than that assumed: the left holds the game buttons, the
+     manual fields, the payout/status controls, the four tiles and the winning
+     numbers, and only the breakdown table is long. Two equal columns read as one
+     deliberate split rather than an off-centre one, and the table is the thing
+     that has to survive the narrower half — at 1500px each side is ~720px, which
+     is wider than its three columns need.
 
      `align-items: start`, so the shorter column does not stretch its cards to
      match the taller one — this is two independent stacks that happen to sit
@@ -427,11 +431,11 @@
      1000px, not the `--page-w` 1500: the split is worth having on any laptop, and
      the column floor that matters is the results table's, not the page's. */
   @media (min-width: 1000px) {
-    .cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 0 28px; align-items: start; }
     /* Two-up, not four. The existing four-across rule is keyed to the VIEWPORT, and
        a viewport query cannot see that these tiles are now inside a column roughly
-       a third of it — so at four across in the left column the labels wrapped and
+       half of it — so at four across in the left column the labels wrapped and
        the numbers came out cramped. A container query would say this more directly;
        this is the same answer without adding one for a single rule. */
     .col-inputs .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

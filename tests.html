@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 120;
+const EXPECTED = 121;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -661,6 +661,28 @@ t('zero growth still runs the full term rather than dividing by nothing', () => 
   const d = wp.drawdown(DD({ total: 50e6, spend: 400e3 }), 0);
   eq(d.path.length, 41);
   for (const v of d.path) ok(isFinite(v), 'a non-finite year would break the chart');
+});
+
+group('the two-column split');
+t('the calculator splits down the centre, not off-centre', () => {
+  /* It was `5fr` / `7fr` until 2026-08-22, and the ratio is the kind of thing a
+     later tidy-up re-derives from "the results side has more to say" and quietly
+     puts back. It does not: the left column carries the game buttons, the manual
+     fields, the payout controls, the four tiles AND the winning numbers, so the
+     two stacks come out close in height at equal widths. Pinned as EQUAL, with a
+     matching pair of minmax(0, …) — without the zero minimum a grid column takes
+     its content's min-content width as a floor and the 32-row payment schedule
+     pushes the split off centre by itself. */
+  ok(CALC_SRC, 'the calculator source did not load — the checks below would pass on an empty string');
+  const rule = (CALC_SRC.match(/\.cols \{[^}]*\}/) || [''])[0];
+  ok(rule, 'the .cols rule is gone');
+  ok(/grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)/.test(rule),
+     'the two columns must be equal halves with a zero minimum on each');
+  ok(!/\b[2-9]fr\b/.test(rule), 'an uneven fr ratio is back in .cols');
+  /* The split only exists above the breakpoint; below it the page is one stack
+     in markup order and needs no second set of rules. */
+  ok(/@media \(min-width: 1000px\) \{\s*\n\s*\.cols \{/.test(CALC_SRC),
+     'the split must stay keyed to the 1000px breakpoint');
 });
 
 group('printing — the pack owns the palette, the page owns its own furniture');
