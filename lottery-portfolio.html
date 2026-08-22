@@ -135,7 +135,7 @@
 body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Helvetica,Arial,sans-serif; font-size:14px; line-height:1.5; min-height:100vh; transition:background 0.2s,color 0.2s; }
 /* Width lives with the other layout tokens at the top of the file. The header
    supplies the space above, so there is no top padding here any more. */
-.app { max-width:var(--page-w); margin:0 auto; padding:0 24px 64px; }
+.app { max-width:var(--page-w); margin:0 auto; padding:0 16px 64px; }
 
 /* ── The skip link ────────────────────────────────────────────────────────────
    Visually gone until it takes focus, then the first thing on the page. Without
@@ -171,7 +171,12 @@ main { scroll-margin-top:96px; }
    over the bar as you scroll past them. */
 header { position:sticky; top:0; z-index:20; background:var(--surface);
   border-bottom:1px solid var(--border); padding:10px 0; margin-bottom:20px; }
-.headbar { max-width:var(--page-w); margin:0 auto; padding:0 24px;
+/* 16px, the family's gutter — the bar and the content take the SAME number, or
+   the brand stops lining up with the left edge of the first card. Both were 24px,
+   carried over from the padding these pages had before they took the family's
+   header, which left their rows visibly inset beside the sibling apps: theirs
+   reach to 16px of the window edge. */
+.headbar { max-width:var(--page-w); margin:0 auto; padding:0 16px;
   display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 /* The family's brand line: mark, name, then the strapline muted behind a middle
    dot — one line, where this page had a title with a second line under it. The
