@@ -60,7 +60,7 @@
 /* Bump when the shell list changes, so old caches are purged on activate. It is
    NOT load-bearing for freshness — network-first means a forgotten bump cannot
    serve you stale code — it only stops dead entries accumulating. */
-const CACHE = 'lot-shell-v2';
+const CACHE = 'lot-shell-v3';
 const PREFIX = 'lot-shell-';
 
 /* THE ALLOWLIST, and the security boundary of this file. Every entry is a file
@@ -99,6 +99,12 @@ const SHELL = [
      entry costs that entry rather than all of offline — but the entry still has
      to be asked for. */
   'chart.min.js',
+  /* The shared tax engine. Added 2026-08-22, when the rate tables and the
+     bracket maths stopped being written twice — once inside each page — and
+     became one file both of them load. Without this line both pages open
+     offline and then compute nothing, which looks like a broken app rather
+     than a missing file. */
+  'tax.js',
   'privacy.html',
   'favicon.ico',
   'manifest.webmanifest',

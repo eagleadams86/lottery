@@ -157,6 +157,88 @@ t('a real Mega Millions result renders five whites plus the mega ball', () => {
   const out = wc.mmBlock({ winning_numbers: '5 12 23 34 45', mega_ball: '7', draw_date: '2026-08-04' });
   eq((out.match(/class="ball/g) || []).length, 6);
 });
+t('all six games are known, each with its own dataset', () => {
+  const ids = Object.keys(wc.WN_GAMES);
+  eq(ids.sort(), ['lotto', 'mfl', 'mm', 'pb', 'pick10', 'take5']);
+  const sets = ids.map((g) => wc.WN_GAMES[g].set);
+  eq(sets.length, new Set(sets).size, 'two games must not share a dataset id');
+  for (const g of ids) {
+    ok(/^[a-z0-9]{4}-[a-z0-9]{4}$/.test(wc.WN_GAMES[g].set), g + ' has a malformed dataset id');
+    ok(wc.wnURL(g).startsWith('https://data.ny.gov/resource/'), g + ' must stay on the one feed');
+  }
+  /* Cash 4 Life is a RETIRED game whose dataset is still served. Adding it back
+     would pin "the latest results" to a draw from February for ever. */
+  ok(!sets.includes('kwxv-fwze'), 'that dataset is the retired Cash 4 Life');
+});
+t('a game id that is a property of every object is not a game', () => {
+  /* `WN_GAMES['constructor']` is truthy on any plain object, so a bare lookup
+     would have let a share link or a stale preference through to a fetch of
+     `undefined.json`. */
+  for (const junk of ['constructor', '__proto__', 'toString', 'nope', '', null, 7])
+    eq(wc.knownGame(junk), false, 'knownGame let ' + String(junk) + ' through');
+  for (const g of Object.keys(wc.WN_GAMES)) eq(wc.knownGame(g), true);
+});
+t('every game block refuses hostile data, not just the two original ones', () => {
+  const r = { winning_numbers: '<script>alert(1)<\/script>', mega_ball: '"><img src=x>',
+              bonus: '<b>', mill_ball: 'javascript:', multiplier: '<b>',
+              midday_winning_numbers: '<svg onload=x>', evening_winning_numbers: '"><img src=y>',
+              draw_date: '<svg onload=x>' };
+  for (const g of Object.keys(wc.WN_GAMES)) {
+    const out = wc.gameBlock(g, r);
+    ok(!/onerror|onload|<script|<img|<svg|javascript:/.test(out),
+      g + ' let hostile markup through: ' + out);
+  }
+});
+t('the four newer games render the ball counts their feeds actually return', () => {
+  eq((wc.gameBlock('lotto', { winning_numbers: '16 18 19 22 29 52', bonus: '43',
+      draw_date: '2026-08-19' }).match(/class="ball/g) || []).length, 7, 'six plus a bonus ball');
+  const t5 = wc.gameBlock('take5', { midday_winning_numbers: '15 23 27 32 37',
+      evening_winning_numbers: '02 26 27 33 35', draw_date: '2026-08-21' });
+  eq((t5.match(/class="ball/g) || []).length, 10, 'two draws a day, five each');
+  ok(t5.includes('Midday') && t5.includes('Evening'), 'both draws must be labelled');
+  const p10 = wc.gameBlock('pick10', { winning_numbers:
+      '09 17 19 22 34 37 40 42 45 49 51 56 57 64 65 67 69 70 78 79', draw_date: '2026-08-21' });
+  eq((p10.match(/class="ball/g) || []).length, 20);
+  ok(p10.includes('wn-balls many'), 'twenty balls must wrap, or they overflow the card');
+  eq((wc.gameBlock('mfl', { winning_numbers: '01 20 25 56 57', mill_ball: '2',
+      draw_date: '2026-08-21' }).match(/class="ball/g) || []).length, 6);
+});
+
+group('share links — the least trusted input the page has');
+t('a link round-trips every figure it carries', () => {
+  const url = wc.shareURL();
+  ok(url.includes('#s='), 'the payload rides in the fragment, never a query string');
+  const p = wc.readShare(url.slice(url.indexOf('#')));
+  ok(p, 'the page could not read back its own link');
+  eq(p.f, wc.filingStatus(p.f)); eq(p.r, wc.residence(p.r));
+  ok(wc.PAYOUTS.includes(p.p));
+});
+t('anything that is not one of ours is refused rather than guessed at', () => {
+  eq(wc.readShare(''), null);
+  eq(wc.readShare('#other=1'), null, 'a fragment we did not write is not ours');
+  eq(wc.readShare('#s=not-base64!!!'), null);
+  eq(wc.readShare('#s=' + btoa('{"v":1')), null, 'truncated JSON');
+  eq(wc.readShare('#s=' + btoa('{"v":99}')), null, 'a payload from a newer build');
+});
+t('a hand-edited link cannot put a value anywhere it does not belong', () => {
+  const mk = (o) => '#s=' + btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const p = wc.readShare(mk({ v: 1, g: '<img src=x>', w: 'constructor', p: 'evil',
+                              f: '__proto__', r: 'mars', n: 1e9, d: 99,
+                              j: '9e99', ju: 'Z', l: 'alert(1)', lu: {} }));
+  eq(p.g, 'pb'); eq(p.w, null); eq(p.p, 'lump');
+  eq(p.f, 'single'); eq(p.r, 'ny');
+  eq(p.n, 1000, 'the winner count is clamped, not trusted');
+  eq(p.d, 0.04, 'a 99 discount rate is not a rate');
+  eq(p.j, '', 'an amount past the ceiling is dropped');
+  eq(p.l, '', 'an unreadable amount is dropped');
+  eq(p.ju, 'M'); eq(p.lu, 'M');
+});
+t('a negative or absurd amount never reaches the boxes', () => {
+  const mk = (o) => '#s=' + btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  eq(wc.readShare(mk({ v: 1, j: '-500', ju: 'M' })).j, '');
+  eq(wc.readShare(mk({ v: 1, j: '999999', ju: 'B' })).j, '', 'past MAX_AMOUNT');
+  eq(wc.readShare(mk({ v: 1, j: '500', ju: 'M' })).j, '500', 'a real one survives');
+});
 
 group('calculator formatters');
 t('fmt() rounds to whole dollars with separators; null and NaN are an em dash', () => {
@@ -190,29 +272,144 @@ t('the real schedules always produce a label', () => {
   ok(wc.nextDraw([2, 5]).length > 0, 'Mega Millions (Tue/Fri)');
 });
 
-group('tax rates — the constants the page footnote promises');
-t('withholding and top marginal rates match the published note', () => {
-  eq(wc.FED_WH, 0.24); eq(wc.FED_TOP, 0.37);
-  /* NY law (20 NYCRR 171.11) withholds lottery prizes at the HIGHEST effective
-     state rate, so NY_WH must track NY_TOP — 10.5% was a bug, fixed 2026-08-18. */
-  eq(wc.NY_WH, 0.109); eq(wc.NY_TOP, 0.109);
+group('tax.js — the engine both pages share');
+t('the withholding rules are the ones the footnote promises', () => {
+  /* These two are FIXED BY LAW and are not brackets: 24% federal on any prize of
+     $5,000 or more, and 10.9% to New York whatever you end up owing. They are
+     the reason the page shows "withheld" and "settled at filing" separately. */
+  eq(wc.FED_WH, 0.24);
+  eq(wc.NY_WH, 0.109, 'NY withholds at its highest effective rate (20 NYCRR 171.11)');
+  eq(wc.WH_FLOOR, 5000);
+  eq(wc.TAX_YEAR, 2026, 'the brackets below are this year — bump both together');
+});
+t('the top of each table is the rate the old flat model used', () => {
+  const fed = wc.FED_BRACKETS.single, ny = wc.NY_BRACKETS.single;
+  eq(fed[fed.length - 1][1], 0.37);
+  eq(fed[fed.length - 1][0], Infinity, 'the last band must be open-ended');
+  eq(ny[ny.length - 1][1], 0.109);
+  for (const st of ['single', 'mfj']) {
+    const t2 = wc.FED_BRACKETS[st];
+    for (let i = 1; i < t2.length; i++) {
+      ok(t2[i][0] > t2[i - 1][0], st + ' federal thresholds must ascend');
+      ok(t2[i][1] > t2[i - 1][1], st + ' federal rates must ascend');
+    }
+  }
+});
+t('bracketTax stacks the bands rather than applying one rate to everything', () => {
+  const table = [[100, 0.10], [200, 0.20], [Infinity, 0.30]];
+  eq(wc.bracketTax(0, table), 0);
+  eq(wc.bracketTax(-5, table), 0, 'a prize under the deduction is not a negative tax');
+  near(wc.bracketTax(50, table), 5);
+  near(wc.bracketTax(150, table), 10 + 10);
+  near(wc.bracketTax(300, table), 10 + 20 + 30);
+});
+t('a $500,000 prize is not taxed at a jackpot rate — the bug this replaced', () => {
+  /* The page applied a flat 37% federal and 10.9% NY to any amount until
+     2026-08-22, which overstated the tax on a small share by tens of thousands.
+     Both figures below are the bracket answer, and the old model's 47.9% is the
+     number this test exists to keep from coming back. */
+  const r = wc.payoutYear(500e3, 'single', 'ny');
+  ok(r.eff > 0.30 && r.eff < 0.38, 'effective rate should be around a third, got ' + r.eff);
+  ok(r.eff < 0.479 - 0.05, 'must be well below the old flat 47.9%');
+  ok(r.settle < 0, 'over-withheld at 10.9% state, so filing produces a refund');
+});
+t('a jackpot still lands on the top rates, so the top end did not move', () => {
+  const r = wc.payoutYear(100e6, 'single', 'ny');
+  near(r.ny, 100e6 * 0.109, "NY's recapture flattens a big prize to 10.9%");
+  ok(Math.abs(r.eff - 0.479) < 0.002, 'still ~47.9% at $100M, got ' + r.eff);
+  ok(r.settle > 0, 'a jackpot still owes more at filing');
+});
+t("New York's recapture is never cheaper than the plain bracket sum", () => {
+  /* The recapture only ever ADDS. If this ever inverts, the page would be
+     quoting a state bill lower than the tables alone produce. */
+  for (const st of ['single', 'mfj'])
+    for (const inc of [50e3, 107650, 150e3, 500e3, 3e6, 6e6, 24e6, 25.5e6, 80e6])
+      ok(wc.nyTax(inc, st) >= wc.bracketTax(inc, wc.NY_BRACKETS[st]) - 1e-6,
+        'recapture went backwards at ' + st + ' ' + inc);
+});
+t('the two city options are the only things that change with residence', () => {
+  const base = wc.ordinaryTax(1e6, 'single', 'ny');
+  const nyc = wc.ordinaryTax(1e6, 'single', 'nyc');
+  const yonkers = wc.ordinaryTax(1e6, 'single', 'yonkers');
+  eq(base.local, 0);
+  near(base.fed, nyc.fed, 'the city tax must not disturb the federal figure');
+  ok(nyc.city > 0 && nyc.yonkers === 0);
+  near(yonkers.yonkers, base.ny * wc.YONKERS_SURCHARGE, 'Yonkers is a surcharge on state tax');
+  ok(nyc.total > base.total && yonkers.total > base.total);
+});
+t('nothing is withheld below the $5,000 floor', () => {
+  const small = wc.payoutYear(4000, 'single', 'ny');
+  eq(small.whTotal, 0, 'under the floor the payer withholds nothing');
+  ok(small.settle > 0, 'so the whole (small) bill is settled at filing');
+  ok(wc.payoutYear(5000, 'single', 'ny').whTotal > 0, 'at the floor it starts');
+});
+t('a value that is not a filing status or a residence can never index a table', () => {
+  /* Both arrive from stored preferences and from share links, so this is the
+     boundary check the rest of the engine relies on. */
+  for (const junk of ['__proto__', 'constructor', 'MFJ', '', null, undefined, 0, {}])
+    eq(wc.filingStatus(junk), 'single', 'filingStatus fell through on ' + String(junk));
+  for (const junk of ['__proto__', 'nowhere', null, undefined, 7])
+    eq(wc.residence(junk), 'ny', 'residence fell through on ' + String(junk));
+});
+
+group('annuities — the payout the page could not model before');
+t('a graduated jackpot pays 30 rising payments that add to the advertised figure', () => {
+  const s = wc.annuitySchedule(500e6, 'graduated30');
+  eq(s.length, 30);
+  near(s.reduce((a, b) => a + b, 0), 500e6, 'the payments ARE the jackpot');
+  for (let i = 1; i < s.length; i++) near(s[i] / s[i - 1], 1.05, 'each is 5% above the last');
+  ok(s[0] < 500e6 / 30, 'the first payment is smaller than an equal share, not larger');
+});
+t('NY Lotto pays 26 equal payments instead', () => {
+  const s = wc.annuitySchedule(10e6, 'equal26');
+  eq(s.length, 26);
+  near(s[0], 10e6 / 26);
+  near(s[25], s[0], 'no growth in this plan');
+});
+t('an unknown plan falls back rather than returning nothing', () => {
+  eq(wc.annuitySchedule(1e6, 'no-such-plan').length, 30);
+  eq(wc.annuitySchedule(0, 'graduated30').length, 0, 'no jackpot, no schedule');
+});
+t('present value discounts every payment but the first', () => {
+  const s = [100, 100, 100];
+  near(wc.presentValue(s, 0), 300, 'at 0% it is just the sum');
+  near(wc.presentValue(s, 0.10), 100 + 100 / 1.1 + 100 / 1.21);
+  ok(wc.presentValue(s, 0.05) < 300, 'a positive rate must reduce it');
+});
+t('thirty tax returns beat one, which is the whole argument', () => {
+  /* Each payment is its own year, so each one walks up the brackets from the
+     bottom. The effective rate on the annuity must therefore be LOWER than on
+     a lump sum of the same headline figure. */
+  const a = wc.annuityBreakdown(500e6, 1, 'graduated30');
+  const lump = wc.payoutYear(500e6, 'single', 'ny');
+  ok(a.eff < lump.eff, 'annuity ' + a.eff + ' should be under lump ' + lump.eff);
+  near(a.gross, 500e6);
+  near(a.net, a.gross - a.tax, 'net and tax must account for every dollar');
 });
 
 group('taxBreakdown — the arithmetic behind calc() (calculator)');
-t('one winner: withholding, return top-up and net all follow from the rates', () => {
+t('one winner: withholding, liability and net all follow from the tables', () => {
   const b = wc.taxBreakdown(100e6, 1);
   near(b.share, 100e6);
   near(b.fedWH, 24e6); near(b.nyWH, 10.9e6);
   near(b.afterWH, 100e6 - 34.9e6, 'received after withholding');
-  near(b.fedX, 13e6, 'the 37% − 24% federal gap');
-  near(b.nyX, 0, 'NY withholds at its top rate, so nothing more is due at filing');
-  near(b.net, 100e6 * (1 - 0.37 - 0.109));
-  ok(Math.abs(b.eff - 0.479) < 1e-9, 'effective rate is the two top rates combined');
+  ok(b.fedX > 12.5e6 && b.fedX < 13e6, 'the federal gap, after the standard deduction');
+  near(b.nyX, 0, 'NY withholds at the rate the recapture flattens a jackpot to');
+  near(b.net, b.share - b.tax);
+  near(b.settle, b.fedX + b.nyX + b.local, 'the settle figure must account for city tax too');
 });
 t('splitting divides the share before any tax is applied', () => {
   const b = wc.taxBreakdown(100e6, 4);
   near(b.share, 25e6);
   near(b.net, wc.taxBreakdown(25e6, 1).net, 'a quarter share taxes like a $25M win');
+});
+t('splitting far enough drops every share under the withholding floor', () => {
+  /* 1000 winners on a $2M lump is $2,000 each — below $5,000, so nothing is
+     withheld at all. The old flat model withheld 34.9% of every share no matter
+     how small it was. */
+  const b = wc.taxBreakdown(2e6, 1000);
+  near(b.share, 2000);
+  eq(b.totWH, 0);
 });
 t('a typed $0 lump is a real answer: all zeros, never NaN', () => {
   const b = wc.taxBreakdown(0, 1);
@@ -491,7 +688,7 @@ t('the cache list holds only files that are already public', () => {
   eq(shell, ['./', 'chart.min.js', 'favicon.ico', 'icon-192.png',
      'icon-512-maskable.png', 'icon-512.png', 'lottery-portfolio.html',
      'manifest.webmanifest', 'ny-lottery-calculator.html', 'privacy.html',
-     'theme.css'],
+     'tax.js', 'theme.css'],
      'the offline shell list changed');
 });
 
@@ -674,12 +871,20 @@ t('no schema halt here, and that is the deliberate difference', () => {
      nothing to halt over. If that ever changes, this test is the tripwire. */
   for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]])
     ok(!/haltForNewerData/.test(src), `${name} has grown a halt — has it started saving records?`);
-  const stored = [...(CALC_SRC + PORT_SRC).matchAll(/localStorage\.setItem\('([^']+)'/g)]
+  /* BOTH spellings. Since 2026-08-22 most writes go through `remember(key, …)`,
+     which is `localStorage.setItem` behind the share-link guard — a scan for the
+     bare call alone would have quietly stopped seeing five of the keys below,
+     and this test would have gone on passing while covering less and less. */
+  const src = CALC_SRC + PORT_SRC;
+  const stored = [...src.matchAll(/localStorage\.setItem\('([^']+)'/g),
+                  ...src.matchAll(/\bremember\('([^']+)'/g)]
     .map((m) => m[1]).filter((v, i, a) => a.indexOf(v) === i).sort();
-  eq(stored, ['lottery-details', 'lottery-game', 'lottery-jackpot-cache', 'lottery-net-takehome',
-              'lottery-npeople', 'lottery-portfolio-sections', 'lottery-portfolio-seeded-from',
-              'lottery-portfolio-sliders', 'lottery-tbill-adopted', 'lottery-tbill-cache',
-              'lottery-theme', 'lottery-winning', 'lottery-winning-cache'],
+  eq(stored, ['lottery-details', 'lottery-discount', 'lottery-filing', 'lottery-game',
+              'lottery-jackpot-cache', 'lottery-net-takehome', 'lottery-npeople',
+              'lottery-payout', 'lottery-portfolio-sections', 'lottery-portfolio-seeded-from',
+              'lottery-portfolio-sliders', 'lottery-residence', 'lottery-tbill-adopted',
+              'lottery-tbill-cache', 'lottery-theme', 'lottery-winning',
+              'lottery-winning-cache', 'lottery-wn-game'],
      'the stored keys changed — every one must still be a preference or a cache, or this repo needs a version marker like its siblings');
 });
 

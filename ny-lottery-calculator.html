@@ -282,13 +282,23 @@
   .chevron.open { transform: rotate(90deg); }
   .manual-inputs { display: none; }
   .manual-inputs.open { display: block; }
-  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* minmax(0, 1fr), not 1fr. A bare `1fr` is `minmax(auto, 1fr)`, so a track
+     refuses to shrink below its content's minimum — and these cards hold a text
+     box plus the M/B toggle, whose combined minimum is about 290px. In the
+     narrow left column of the two-column layout the pair therefore overflowed
+     its own grid and the second card's toggle was drawn under the results
+     column. Nothing scrolled and nothing errored; the control was just half
+     there. Found on screen 2026-08-22. */
+  .input-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
   @media (max-width: 520px) { .input-grid { grid-template-columns: 1fr; } }
   .input-card { background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border); padding: 0.9rem 1rem; }
   .input-label { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
   .input-wrap { display: flex; align-items: center; gap: 4px; border-bottom: 1.5px solid var(--input-border); padding-bottom: 4px; transition: border-color 0.15s; }
   .input-wrap:focus-within { border-bottom-color: var(--focus-border); }
   .input-prefix { font-size: 15px; font-weight: 500; color: var(--text-hint); flex-shrink: 0; }
+  /* Lets the box give way when its track does; without it the input keeps its
+     default size and pushes the card wide again. */
+  .input-card input[type=text] { min-width: 0; }
   .input-card input[type=text] {
     flex: 1; min-width: 0; font-size: 16px; font-weight: 500;
     background: transparent; border: none; padding: 2px 0;
@@ -431,6 +441,144 @@
   .ball.mb  { background: #d4a017; border-color: #d4a017; color: #111; }
   .wn-mult  { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 4px; }
   .wn-loading { font-size: 13px; color: var(--text-muted); }
+
+  /* ── The controls added 2026-08-22 ────────────────────────────────────────
+     The page grew three things at once — who you are for tax purposes, which
+     payout you are asking about, and a link you can send someone — and they
+     share this handful of rules rather than each bringing its own.
+
+     `.seg` is the family's segmented control: one row of buttons where exactly
+     one is pressed, built out of real <button>s carrying aria-pressed so the
+     choice is not signalled by colour alone. Same reason the game cards and the
+     M/B unit toggle already use it. */
+  .seg { display: flex; border: 1px solid var(--border-control); border-radius: var(--radius-sm); overflow: hidden; }
+  .seg-btn { flex: 1 1 0; min-width: 0; padding: 9px 8px; font-size: 13px; font-weight: 600;
+             font-family: inherit; background: var(--bg-card); color: var(--text-secondary);
+             border: 0; border-right: 1px solid var(--border-control); cursor: pointer; }
+  .seg-btn:last-child { border-right: 0; }
+  .seg-btn:hover { color: var(--text-primary); }
+  .seg-btn[aria-pressed="true"] { background: var(--unit-active-bg); color: var(--unit-active-txt); }
+
+  /* Who you are, for tax purposes. Two selects and — only while the annuity is
+     on screen — the discount rate that decides the argument between the two
+     payouts. Auto-fit rather than a fixed column count, because the third field
+     comes and goes. */
+  .situation { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+               gap: 10px; margin-top: 0.9rem; }
+  .fld { min-width: 0; }
+  .fld > label { display: block; font-size: 10px; font-weight: 600; color: var(--text-hint);
+                 text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .fld select, .fld input { width: 100%; font-family: inherit; font-size: 14px; padding: 8px 9px;
+                            color: var(--text-primary); background: var(--bg-card);
+                            border: 1px solid var(--input-border); border-radius: var(--radius-sm); }
+  .fld .hint { font-size: 11px; color: var(--text-hint); margin-top: 4px; }
+
+  /* The payout choice and the tax situation live in one bordered card so they
+     read as "about you and your question" rather than as two loose rows between
+     the jackpot boxes and the winner count. */
+  .setup { margin-top: 1.1rem; padding: 1rem 1.1rem; background: var(--bg-card);
+           border: 1px solid var(--border); border-radius: 10px; }
+  .setup > .setup-lbl { font-size: 10px; font-weight: 600; color: var(--text-hint);
+                        text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+
+  /* Lump sum against annuity, side by side. Two cards on a laptop, stacked on a
+     phone — and the verdict line underneath belongs to both of them, so it sits
+     outside the grid rather than inside the winner's card. */
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .cmp-card { padding: 0.9rem 1rem; background: var(--bg-card-alt); border: 1px solid var(--border);
+              border-radius: 10px; }
+  .cmp-card.win { border-color: var(--ok); }
+  .cmp-ttl { font-size: 11px; font-weight: 600; color: var(--text-hint); text-transform: uppercase;
+             letter-spacing: 0.06em; margin-bottom: 6px; }
+  .cmp-big { font-size: 20px; font-weight: 700; color: var(--text-primary);
+             font-variant-numeric: tabular-nums; }
+  .cmp-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.6; }
+  /* Never the border alone: the winning card is named in the verdict sentence
+     under the pair, and this badge says which one it is in words. */
+  .cmp-badge { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: var(--radius-pill);
+               font-size: 11px; font-weight: 600; background: var(--ok-bg); color: var(--ok); }
+  .verdict { margin: 12px 0 0; font-size: 13px; color: var(--text-primary); line-height: 1.7; }
+
+  /* The 30-year schedule. Its own scroll box, so a long table never widens the
+     page — the family rule for any wide block. */
+  .sched-wrap { max-height: 340px; overflow: auto; border: 1px solid var(--border);
+                border-radius: 8px; margin-bottom: 1.1rem; }
+  .sched-wrap table { margin: 0; }
+  .sched-wrap thead th { position: sticky; top: 0; background: var(--bg-card); z-index: 1; }
+
+  /* Buttons, in the family's shape. This page had none before — every control on
+     it was a card, a toggle or a select — so these are the pack's tokens applied
+     to the same markup the sibling apps use. */
+  .btn { font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px;
+         border-radius: var(--radius-sm); border: 1px solid var(--border-control);
+         background: var(--btn-bg); color: var(--btn-text); cursor: pointer; }
+  .btn:hover { border-color: var(--border-strong); }
+  .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .btn.small { font-size: 12px; padding: 5px 10px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  /* The share dialog. A real <dialog>, opened modally, so focus is trapped and
+     Escape closes it without a line of script. Clicking the backdrop cancels —
+     the family rule for every dialog in every app. */
+  dialog { max-width: 540px; width: calc(100% - 32px); padding: 1.4rem 1.5rem; border: 1px solid var(--border);
+           border-radius: 12px; background: var(--bg-card); color: var(--text-primary); }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+  dialog h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  dialog .sub { font-size: 12px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
+  dialog input[type="text"] { width: 100%; font-family: var(--font-mono); font-size: 12px; padding: 8px 9px;
+                              color: var(--text-primary); background: var(--bg-card-alt);
+                              border: 1px solid var(--input-border); border-radius: var(--radius-sm); }
+
+  /* The banner a shared link arrives under. It says where the figures came from,
+     because otherwise a link silently overwrites what the recipient was looking
+     at and nothing on screen admits it. */
+  .from-share { display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1rem;
+                padding: 10px 12px; background: var(--accent-bg); border: 1px solid var(--accent);
+                border-radius: 8px; font-size: 13px; color: var(--text-primary); }
+  .from-share.on { display: flex; }
+
+  /* The small game row above the winning numbers. The two cards at the top of
+     the page are about MONEY and only Powerball and Mega Millions have a jackpot
+     feed; this row is about NUMBERS, where four more New York games have one. */
+  .wn-games { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.9rem; }
+  .wn-gbtn { font-family: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px;
+             border-radius: var(--radius-pill); border: 1px solid var(--border-control);
+             background: var(--bg-card-alt); color: var(--text-secondary); cursor: pointer; }
+  .wn-gbtn[aria-pressed="true"] { background: var(--unit-active-bg); color: var(--unit-active-txt);
+                                  border-color: var(--unit-active-bg); }
+  /* Take 5 draws twice a day, so its block carries two rows of balls with a
+     label on each. Nothing else in the app needs this. */
+  .wn-when { font-size: 11px; font-weight: 600; color: var(--text-hint); text-transform: uppercase;
+             letter-spacing: 0.05em; margin: 10px 0 4px; }
+  /* Pick 10 draws twenty numbers. At 20 balls the fixed row would overflow the
+     card, so this block wraps and the balls shrink a little. */
+  .wn-balls.many .ball { width: 28px; height: 28px; line-height: 26px; font-size: 12px; }
+
+  /* ── Printing ─────────────────────────────────────────────────────────────
+     Printed, this page is a one-sheet answer for somebody else to read: the
+     figures and what they were worked out from. Everything you would only click
+     goes — the header bar, the buttons, the collapsed-section chevrons, the
+     dialog — and the two columns become one, because a printed page is not a
+     laptop screen and the results reading under the inputs is the phone order,
+     which already works.
+
+     `.printback` is the one thing added rather than removed: on paper a card's
+     background is either invisible or a waste of ink, so the borders carry the
+     structure instead. */
+  @media print {
+    header, .top-actions, .fetch-bar, .refresh-btn, .btn, .row, dialog, .skip,
+    .manual-toggle, .from-share, .wn-games { display: none !important; }
+    body { background: #fff; color: #000; }
+    .page { max-width: none; padding: 0; }
+    .cols { display: block; }
+    .details-body, .wn-body, .manual-inputs, .sched-body { display: block !important; }
+    .sched-wrap { max-height: none; overflow: visible; }
+    .details-chevron, .chevron { display: none; }
+    .mc, .cmp-card, .setup, .wn-body { border: 1px solid #999; background: #fff; }
+    a[href]::after { content: ""; }
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
@@ -452,6 +600,11 @@
            boot script in <head> has already applied, so the picker never reads
            one theme while the page shows another. THEMES is read back off
            these options below, so this list is the only place they live. -->
+      <!-- Share sits where it does in Sprint Predictability, Flow Metrics, Money
+           Map and Golf Handicap: to the left of the theme picker, glyph first and
+           the glyph aria-hidden so a screen reader reads the word and not
+           "north east arrow". This page had no button at all before 2026-08-22. -->
+      <button type="button" class="btn small" id="share-btn" onclick="openShare()"><span aria-hidden="true">&#8599;</span> Share</button>
       <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme">
         <option value="dark">☾ Dark</option>
         <option value="light">☀ Light</option>
@@ -464,6 +617,16 @@
 
 <div class="page">
 <main id="maincontent" tabindex="-1">
+
+<!-- Shown only when the page was opened from a share link. A link that quietly
+     replaced the figures you had would look like the app losing your work, so it
+     says where they came from and offers the way back. role=status because it
+     appears after load, without anything on screen having moved. -->
+<div class="from-share" id="from-share" role="status">
+  <span id="from-share-text">These figures came from a shared link.</span>
+  <button type="button" class="btn small" onclick="clearShare()">Back to mine</button>
+</div>
+
 <div class="cols">
 
   <!-- Left: what the page is asking of you. -->
@@ -538,6 +701,46 @@
     </div>
   </div>
 
+  <!-- Which question you are asking, and the facts the answer turns on. Both
+       used to be assumptions written into the code: the payout was always the
+       lump sum, and the filer was always a single New Yorker outside the two
+       cities that charge their own tax. -->
+  <div class="setup">
+    <div class="setup-lbl">Which Payout</div>
+    <div class="seg" role="group" aria-label="Payout option">
+      <button type="button" class="seg-btn" id="pay-lump" onclick="setPayout('lump')" aria-pressed="true">Lump sum</button>
+      <button type="button" class="seg-btn" id="pay-annuity" onclick="setPayout('annuity')" aria-pressed="false">Annuity</button>
+      <button type="button" class="seg-btn" id="pay-compare" onclick="setPayout('compare')" aria-pressed="false">Compare</button>
+    </div>
+
+    <div class="situation">
+      <div class="fld">
+        <label for="filing">Filing status</label>
+        <select id="filing" onchange="setFiling(this.value)">
+          <option value="single" selected>Single</option>
+          <option value="mfj">Married, filing jointly</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label for="residence">Where you live</label>
+        <select id="residence" onchange="setResidence(this.value)">
+          <option value="ny" selected>New York State</option>
+          <option value="nyc">New York City</option>
+          <option value="yonkers">Yonkers</option>
+        </select>
+      </div>
+      <!-- Only on screen for the annuity and the comparison, because it decides
+           nothing about a lump sum. Hidden rather than disabled: a control that
+           cannot affect the answer is noise, not a locked door. -->
+      <div class="fld" id="fld-discount" style="display:none">
+        <label for="discount">Your discount rate</label>
+        <input type="number" id="discount" min="0" max="20" step="0.25" value="4"
+          inputmode="decimal" oninput="onDiscount()" aria-describedby="discount-hint" />
+        <div class="hint" id="discount-hint">What a dollar today is worth to you</div>
+      </div>
+    </div>
+  </div>
+
   <div class="ctrl-row">
     <span class="ctrl-lbl">Splitting among</span>
     <input type="number" id="npeople" min="1" max="1000" step="1" value="1" aria-label="Number of winners" oninput="onWinnersInput()" onchange="onWinnersChange()" />
@@ -560,6 +763,20 @@
       Latest winning numbers
     </button></h2>
     <div class="wn-body open" id="wn-body">
+      <!-- Six games, where the two cards at the top of the page are only two.
+           Powerball and Mega Millions are the ones with a jackpot to calculate
+           on; the other four are here because data.ny.gov publishes them and
+           the section already knew how to draw balls. Written out in the markup
+           at final size, like the theme picker — nothing here is built by the
+           script at the foot of the page. -->
+      <div class="wn-games" id="wn-games" role="group" aria-label="Game">
+        <button type="button" class="wn-gbtn" id="wg-pb" onclick="setWnGame('pb')" aria-pressed="true">Powerball</button>
+        <button type="button" class="wn-gbtn" id="wg-mm" onclick="setWnGame('mm')" aria-pressed="false">Mega Millions</button>
+        <button type="button" class="wn-gbtn" id="wg-lotto" onclick="setWnGame('lotto')" aria-pressed="false">NY Lotto</button>
+        <button type="button" class="wn-gbtn" id="wg-take5" onclick="setWnGame('take5')" aria-pressed="false">Take 5</button>
+        <button type="button" class="wn-gbtn" id="wg-pick10" onclick="setWnGame('pick10')" aria-pressed="false">Pick 10</button>
+        <button type="button" class="wn-gbtn" id="wg-mfl" onclick="setWnGame('mfl')" aria-pressed="false">Millionaire for Life</button>
+      </div>
       <div class="wn-loading" id="wn-loading" role="status"><span class="spinner" aria-hidden="true"></span>Loading latest results&hellip;</div>
       <div id="wn-content"></div>
     </div>
@@ -572,7 +789,11 @@
   <!-- The tax basis every figure below is worked out on. It was a second line
        under the title in the header; it says more sitting with the numbers it
        qualifies, and the header is one line now. -->
-  <p class="basis">Outside NYC &nbsp;&middot;&nbsp; 37% federal + 10.9% NY state</p>
+  <!-- Written by the script now rather than fixed in the markup: it names the
+       filing status and the town as well as the rates, and neither of those is a
+       constant any more. It is the sentence the whole right column is true
+       under, so a stale one would be worse than none. -->
+  <p class="basis" id="basis">&mdash;</p>
 
 
   <div id="results-section">
@@ -582,18 +803,59 @@
          moved down here, where it is the headline for the breakdown it summarises. -->
     <p class="effrate">Effective total tax rate <strong id="eff-rate">&#8212;</strong></p>
 
+    <!-- Lump sum against annuity. Only on screen in Compare, and it is the first
+         thing there because it is the answer to the question that mode asks —
+         the breakdowns below are the working. -->
+    <div id="cmp-section" style="display:none">
+      <div class="cmp" id="cmp-cards"></div>
+      <p class="verdict" id="cmp-verdict"></p>
+      <hr>
+    </div>
+
     <h2 class="sec-hd"><button class="details-btn" onclick="toggleDetails()" aria-expanded="true" aria-controls="details-body" id="details-toggle">
       <span class="details-chevron open" id="details-chevron" aria-hidden="true">&#9654;</span>
-      Tax breakdown details
+      Tax Breakdown Details
     </button></h2>
     <div class="details-body open" id="details-body">
-      <h3 class="sec-title">Withheld at Payment</h3>
+      <!-- Both headings are written by the script. The second one used to say
+           "Additional Owed", which was safe while the state side was a flat 10.9%
+           and every prize owed more at filing. With the brackets in, a smaller
+           prize is over-withheld and the line is a REFUND — a heading that
+           insisted otherwise would contradict the number under it. -->
+      <h3 class="sec-title" id="wt-title">Withheld at Payment</h3>
       <table><thead><tr><th scope="col">Item</th><th scope="col">Rate</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
       <tbody id="wtbody"></tbody></table>
       <hr>
-      <h3 class="sec-title">Additional Owed at Next Tax Return</h3>
+      <h3 class="sec-title" id="rt-title">Settled at Your Next Tax Return</h3>
       <table><thead><tr><th scope="col">Item</th><th scope="col">Details</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
       <tbody id="rtbody"></tbody></table>
+    </div>
+
+    <!-- The payment-by-payment schedule. Collapsed by default and only present
+         for a graduated annuity, because thirty rows below the summary is a
+         reference table, not the answer — unlike the tax breakdown, which is. -->
+    <div id="sched-section" style="display:none">
+      <h2 class="sec-hd"><button class="details-btn" onclick="toggleSched()" aria-expanded="false" aria-controls="sched-body" id="sched-toggle">
+        <span class="details-chevron" id="sched-chevron" aria-hidden="true">&#9654;</span>
+        Payment Schedule
+      </button></h2>
+      <div class="details-body" id="sched-body">
+        <div class="sched-wrap">
+          <table><thead><tr><th scope="col">Year</th><th scope="col" style="text-align:right">Payment</th>
+            <th scope="col" style="text-align:right">Tax</th><th scope="col" style="text-align:right">After tax</th></tr></thead>
+          <tbody id="schedbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Take it away with you. Copy rather than download: a data: or blob: link
+         is inert inside some of the places these pages get opened, and the
+         clipboard works everywhere the page does. Print is the browser's own,
+         against the print rules in the stylesheet. -->
+    <div class="row" style="margin-top:1.1rem">
+      <button type="button" class="btn small" onclick="copyCSV()" id="csv-btn">Copy As CSV</button>
+      <button type="button" class="btn small" onclick="window.print()">Print</button>
+      <span class="hint" id="csv-note" role="status" style="font-size:11px;color:var(--text-hint)"></span>
     </div>
   </div>
 
@@ -610,7 +872,20 @@
        and Flow Metrics. -->
   <footer>
   <div class="footnotes">
-  <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.9% &mdash; by law the state's highest rate, so no further NY tax is due at filing. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge &mdash; those only apply to residents of those cities. Lottery winnings are ordinary income; FICA does not apply. Estimates only &mdash; consult a CPA for exact liability. Jackpot data via usamega.com. Winning numbers via data.ny.gov.</p>
+  <p class="note">Tax year 2026. Federal tax is worked out on the 2026 brackets
+    (IRS Rev.&nbsp;Proc.&nbsp;2025-32) after the standard deduction, and New&nbsp;York on its
+    2026 brackets with the tax&nbsp;benefit&nbsp;recapture that flattens a large prize to a
+    single rate &mdash; so a $500,000 share is taxed as $500,000, not at a jackpot&rsquo;s
+    top rate. Withholding is fixed by law and does not follow those brackets:
+    24% federal on any prize of $5,000 or more, and 10.9% to New&nbsp;York, which is the
+    state&rsquo;s highest effective rate (20&nbsp;NYCRR&nbsp;171.11, Pub&nbsp;140-W) whatever you
+    end up owing &mdash; which is why a smaller prize comes back as a refund at filing.
+    NYC and Yonkers residents pay their own tax on top and none of it is withheld.
+    Assumes the prize is your only income for the year, no itemised deductions and
+    no credits; annuity payments are taxed on today&rsquo;s brackets, since nobody knows
+    2055&rsquo;s. Lottery winnings are ordinary income; FICA does not apply.
+    Estimates only &mdash; consult a CPA for exact liability. Jackpot data via usamega.com.
+    Winning numbers via data.ny.gov.</p>
 
   <p class="note foot-links"><a href="privacy.html">Privacy policy</a> &middot;
     <a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a></p>
@@ -634,17 +909,49 @@
 .foot-copy{margin-top:6px}
 </style>
 
+<!-- ── Share a link to these figures ────────────────────────────────────────
+     A <dialog> opened modally, which is what gives it a focus trap and an
+     Escape key for free. Nothing in here is a text field the sender writes:
+     the link carries a dozen numbers and two picked-from-a-list strings, and
+     the recipient's copy re-derives every word on screen from those. -->
+<dialog id="share-dialog" aria-labelledby="share-title">
+  <h3 id="share-title">Share These Figures</h3>
+  <p class="sub">The link carries the amounts, the winner count, the payout you picked and
+    the filing status &mdash; <em>inside the link itself</em>. Nothing is uploaded, and opening
+    it doesn&rsquo;t touch whatever the other person had saved in their own browser.
+    They can change every figure once it opens; this is a starting point, not a locked view.</p>
+  <input type="text" id="share-link" readonly aria-label="Link to these figures">
+  <p class="sub" id="share-meta" role="status" style="margin:8px 0 0"></p>
+  <div class="row" style="margin-top:12px">
+    <button type="button" class="btn primary" onclick="copyShare()">Copy link</button>
+    <button type="button" class="btn" onclick="closeShare()">Done</button>
+  </div>
+</dialog>
+
+<!-- The tax tables and the bracket maths, shared with the portfolio page so the
+     two cannot drift apart. Loaded ahead of the app script: everything below
+     calls into it on the first render. -->
+<script src="tax.js"></script>
+
 <script>
 // Jackpot proxy (Cloudflare Worker; source in worker.js). Its CORS policy only
 // allows the live GitHub Pages origin, so this fetch fails from localhost.
 var WORKER = 'https://lottery-proxy.charlie-adams-176.workers.dev';
-// _WH = withheld at payment; _TOP = top marginal rate (true liability).
-// The gap between the two is what's still owed at the next tax return.
-// NY law (20 NYCRR 171.11; Pub 140-W) withholds lottery prizes at the HIGHEST
-// effective state rate — currently 10.9% — so NY_WH equals NY_TOP and the only
-// filing-time top-up is federal. They stay separate constants because the
-// bracket and the withholding rule could diverge again.
-var FED_WH=0.24, FED_TOP=0.37, NY_WH=0.109, NY_TOP=0.109;
+// The rates and the bracket maths live in tax.js, loaded above and shared with
+// the portfolio page. This page held four flat constants until 2026-08-22 —
+// 24% and 37% federal, 10.9% twice for New York — which were right for a
+// jackpot and wrong for every smaller share, and which the portfolio page
+// separately wrote down again in its own numbers.
+//
+// What stays here is the ANSWER TO A QUESTION, not a rate: which payout you
+// asked about, who you are for tax purposes, and what a dollar today is worth
+// to you. Each is a preference, restored on the next visit and carried in a
+// share link.
+var payout='lump';            // 'lump' | 'annuity' | 'compare'
+var filing='single';          // see filingStatus() in tax.js
+var lives='ny';               // 'ny' | 'nyc' | 'yonkers' — see residence()
+var discount=0.04;            // the annuity comparison's discount rate
+var fromShare=false;          // opened from a link: don't overwrite their prefs
 var jUnit='M', lUnit='M'; // current unit (Millions/Billions) for the two manual inputs
 // Powerball: Mon(1) Wed(3) Sat(6) · Mega Millions: Tue(2) Fri(5)
 function nextDraw(drawDays) {
@@ -677,7 +984,13 @@ function fetchWithTimeout(url){
 }
 
 var gameData={pb:null, mm:null};
+/* Which JACKPOT is being calculated on: only the two games the proxy scrapes.
+   `wnGame` is which game's NUMBERS are on screen, which since 2026-08-22 is a
+   longer list — picking a jackpot card sets both, picking one of the extra four
+   sets only the second. They are separate because they answer different
+   questions and only one of them can ever be Pick 10. */
 var activeGame='pb';
+var wnGame='pb';
 var _t=null;
 // Debounce: while typing, recalculate at most once per 80ms
 function dbc(fn){ clearTimeout(_t); _t=setTimeout(fn,80); }
@@ -706,15 +1019,34 @@ function setTheme(theme) {
 }
 // Restore saved preference, default to midnight
 setTheme(localStorage.getItem('lottery-theme') || 'midnight');
-// Restore the rest of the persisted UI state: winner count, selected game,
-// and which collapsible sections were left open last visit.
-(function(){
+/* Restore the rest of the persisted UI state: winner count, selected game, the
+   tax situation, the payout choice, and which collapsible sections were left
+   open last visit.
+
+   A named function CALLED AT THE FOOT of this script rather than the
+   run-where-it-sits block it used to be. It now reads two tables — the payout
+   list and the six games — that are declared further down, and `var` hoisting
+   makes those undefined rather than absent, so running here failed with
+   "cannot read properties of undefined" instead of anything that named the
+   real problem. */
+function restoreState(){
   // Clamp on restore too — older versions could have saved junk here.
   var n=parseInt(localStorage.getItem('lottery-npeople'),10);
   if(!isNaN(n)) document.getElementById('npeople').value=Math.min(1000,Math.max(1,n));
   // Only the two real ids — anything else saved here (older builds, another
   // page on the origin) would leave no game selectable until a manual click.
   var g=localStorage.getItem('lottery-game'); if(g==='pb'||g==='mm') activeGame=g;
+  var wg=localStorage.getItem('lottery-wn-game');
+  wnGame = knownGame(wg) ? wg : activeGame;
+  /* The tax situation and the payout choice. Each is validated against the same
+     list the <select> is built from — a value from an older build, or from
+     another page on this shared origin, must never end up indexing a rate
+     table. filingStatus() and residence() in tax.js are that check. */
+  payout = PAYOUTS.indexOf(localStorage.getItem('lottery-payout'))>=0 ? localStorage.getItem('lottery-payout') : 'lump';
+  filing = filingStatus(localStorage.getItem('lottery-filing'));
+  lives  = residence(localStorage.getItem('lottery-residence'));
+  var dr = parseFloat(localStorage.getItem('lottery-discount'));
+  if(!isNaN(dr) && dr>=0 && dr<=0.2) discount = dr;
   // Open by default; only collapse if this visitor closed it before. It was the
   // other way round — shut unless you had opened it — which made the page's whole
   // answer to "where does the money go" something you had to know to ask for.
@@ -730,7 +1062,12 @@ setTheme(localStorage.getItem('lottery-theme') || 'midnight');
     setExpanded('wn-toggle', false);
   }
   refreshDrawLabels();
-})();
+  /* A share link overrides all of the above, and is read AFTER them so a link
+     that carries only some of the figures leaves the rest as this visitor had
+     them rather than as the defaults. */
+  applyShareLink();
+  syncSetup();
+}
 
 // "Tonight"/"Tomorrow" were worked out once at load, so a page left open
 // overnight kept showing yesterday's answer. Recheck when the tab is brought
@@ -743,6 +1080,263 @@ document.addEventListener('visibilitychange', function(){
   if(!document.hidden) refreshDrawLabels();
 });
 setInterval(refreshDrawLabels, 10*60*1000);
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   The payout choice, the tax situation, and the link
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+var PAYOUTS = ['lump','annuity','compare'];
+
+/* Everything the three new controls need to agree with the three new pieces of
+   state. Called after a restore, after a share link, and after every change, so
+   there is exactly one place where the screen is made to match the variables —
+   the alternative is nine lines of DOM poking at four call sites and one of
+   them being forgotten. */
+function syncSetup(){
+  for(var i=0;i<PAYOUTS.length;i++){
+    var btn=document.getElementById('pay-'+PAYOUTS[i]);
+    btn.setAttribute('aria-pressed', String(payout===PAYOUTS[i]));
+  }
+  document.getElementById('filing').value=filing;
+  document.getElementById('residence').value=lives;
+  document.getElementById('discount').value=+(discount*100).toFixed(2);
+  document.getElementById('fld-discount').style.display = payout==='lump' ? 'none' : '';
+  for(var g in WN_GAMES){
+    if(!Object.prototype.hasOwnProperty.call(WN_GAMES,g)) continue;
+    document.getElementById('wg-'+g).setAttribute('aria-pressed', String(wnGame===g));
+  }
+}
+
+/* Each of these writes the preference and recalculates. `remember()` is where
+   the share-link rule lives, and the rule is that A SHARED LINK IS A LOOK, NOT
+   A SAVE: a page opened from someone else's link saves none of the figures, for
+   the whole visit, even if you change every one of them. (Which sections you
+   left open, and the theme, are still yours and still saved — they are your
+   furniture, and no link carries them.) You can still play with
+   it — everything recalculates — and "Back to mine" drops the fragment and
+   reloads into your own saved settings, which are exactly as you left them.
+
+   Sticky for the session rather than cleared on your first edit, because the
+   alternative is a rule nobody can predict: touch one control and the sender's
+   other eleven figures silently become yours. */
+function remember(key,val){ if(!fromShare) localStorage.setItem(key,val); }
+function setPayout(p){
+  if(PAYOUTS.indexOf(p)<0) return;
+  payout=p; remember('lottery-payout',p); syncSetup(); calc();
+}
+function setFiling(v){ filing=filingStatus(v); remember('lottery-filing',filing); syncSetup(); calc(); }
+function setResidence(v){ lives=residence(v); remember('lottery-residence',lives); syncSetup(); calc(); }
+function onDiscount(){
+  var v=parseFloat(document.getElementById('discount').value);
+  /* Out of range or unreadable leaves the last good rate in place rather than
+     jumping to a default — the box is stepped with arrow keys, and a moment of
+     emptiness mid-edit should not redraw the verdict at 0%. */
+  if(isNaN(v)||v<0||v>20) return;
+  discount=v/100; remember('lottery-discount',discount); calc();
+}
+
+function toggleSched(){
+  var open=document.getElementById('sched-body').classList.toggle('open');
+  document.getElementById('sched-chevron').classList.toggle('open', open);
+  setExpanded('sched-toggle', open);
+}
+
+/* One decimal is right for a tax rate and wrong for a discount rate, where 4%
+   and 4.25% are a different answer and "4.0%" and "4.3%" would hide it. */
+function pctN(r){
+  var v=r*100;
+  return (Math.abs(v-Math.round(v))<0.005 ? Math.round(v) : v.toFixed(2).replace(/0$/,''))+'%';
+}
+
+/* ── Copy as CSV ───────────────────────────────────────────────────────────
+   Copied to the clipboard rather than offered as a download. A page inside an
+   installed app window, or an in-app browser, can have downloads blocked
+   outright — a link that does nothing is worse than no link — and the clipboard
+   works in every place these pages open. Everything written here is a number
+   this page computed; nothing from a feed or a link is echoed into it. */
+function csvCell(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }
+function copyCSV(){
+  var lump=parseField('lump-input',lUnit), jack=parseField('jackpot-input',jUnit);
+  if(lump===null&&jack!==null) lump=jack*0.60;
+  var advertised = jack!==null ? jack : (lump!==null ? lump/0.60 : null);
+  var np=winnersValue(), rows=[['Item','Amount']];
+  rows.push(['Filing status', filing==='mfj'?'Married, filing jointly':'Single']);
+  rows.push(['Residence', RESIDENCE_WORDS[lives]]);
+  rows.push(['Tax year', TAX_YEAR]);
+  rows.push(['Winners', np]);
+  if(lump!==null&&payout!=='annuity'){
+    var b=taxBreakdown(lump,np);
+    rows.push(['Lump sum share', Math.round(b.share)]);
+    rows.push(['Federal withheld', Math.round(b.fedWH)]);
+    rows.push(['NY State withheld', Math.round(b.nyWH)]);
+    rows.push(['Federal liability', Math.round(b.fedTrue)]);
+    rows.push(['NY State liability', Math.round(b.nyTrue)]);
+    if(b.city>0) rows.push(['NYC resident tax', Math.round(b.city)]);
+    if(b.yonkers>0) rows.push(['Yonkers surcharge', Math.round(b.yonkers)]);
+    rows.push([b.settle>=0?'Owed at filing':'Refunded at filing', Math.round(Math.abs(b.settle))]);
+    rows.push(['Lump sum after tax', Math.round(b.net)]);
+    rows.push(['Effective rate', pct(b.eff)]);
+  }
+  if(advertised!==null&&payout!=='lump'){
+    var a=annuityBreakdown(advertised,np,annuityPlan());
+    rows.push(['Annuity payments', a.rows.length]);
+    rows.push(['Annuity gross total', Math.round(a.gross)]);
+    rows.push(['Annuity tax total', Math.round(a.tax)]);
+    rows.push(['Annuity after tax', Math.round(a.net)]);
+    rows.push(['Annuity in today’s money at '+pctN(discount), Math.round(a.pvNet)]);
+    rows.push([]);
+    rows.push(['Year','Payment','Tax','After tax']);
+    for(var i=0;i<a.rows.length;i++)
+      rows.push([i+1, Math.round(a.rows[i].gross), Math.round(a.rows[i].tax), Math.round(a.rows[i].net)]);
+  }
+  var csv=rows.map(function(r){ return r.map(csvCell).join(','); }).join('\n');
+  var note=document.getElementById('csv-note');
+  var done=function(msg){ note.textContent=msg; setTimeout(function(){ note.textContent=''; }, 4000); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(csv).then(function(){ done('Copied — paste it into a spreadsheet.'); },
+                                           function(){ done('Could not copy.'); });
+  } else { done('Could not copy.'); }
+}
+
+/* ── Share links ───────────────────────────────────────────────────────────
+   The payload is a dozen numbers and two words picked from lists, so there is
+   nothing to compress and no reason for the sibling apps' deflate step — plain
+   base64url of the JSON, behind a format marker so a later shape can be told
+   apart from this one rather than guessed at.
+
+   A link is the least trusted input this page has: it arrives from somebody
+   else by definition. Every field is therefore re-derived through the same
+   checks a stored preference goes through, and the two amounts are clamped to a
+   sane range instead of being trusted to be numbers at all. Nothing from the
+   link is ever put on screen as text. */
+var SHARE_PREFIX='#s=';
+var SHARE_V=1;
+var MAX_AMOUNT=1e13; // ten trillion: past any conceivable jackpot, short of Infinity
+
+function b64urlEncode(str){
+  var bytes=new TextEncoder().encode(str), out='';
+  for(var i=0;i<bytes.length;i++) out+=String.fromCharCode(bytes[i]);
+  return btoa(out).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64urlDecode(tok){
+  var b=tok.replace(/-/g,'+').replace(/_/g,'/');
+  while(b.length%4) b+='=';
+  var bin=atob(b), bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function sharePayload(){
+  return { v:SHARE_V, g:activeGame, w:wnGame, p:payout, f:filing, r:lives,
+           d:Math.round(discount*10000)/10000, n:winnersValue(),
+           j:document.getElementById('jackpot-input').value, ju:jUnit,
+           l:document.getElementById('lump-input').value, lu:lUnit };
+}
+
+/* Returns the applied payload, or null. Deliberately silent on a bad link
+   rather than showing an error: a mangled fragment is far more often a mail
+   client wrapping a line than anyone attacking anything, and the page behind it
+   is perfectly usable. */
+function readShare(hash){
+  if(!hash || hash.indexOf(SHARE_PREFIX)!==0) return null;
+  var p;
+  try { p=JSON.parse(b64urlDecode(hash.slice(SHARE_PREFIX.length))); } catch(e){ return null; }
+  if(!p || typeof p!=='object' || Number(p.v||0)>SHARE_V) return null;
+  var amt=function(v,unit){
+    /* The value is put back in the BOX, so it has to survive as the same string
+       the sender typed — but only if it parses to a real amount inside the
+       range this page can draw. Anything else is dropped and the box is left
+       empty, which is a state the page already handles. */
+    var str=String(v==null?'':v).slice(0,24);
+    if(str==='') return '';
+    var n=parseFloat(str.replace(/[$,\s]/g,''));
+    if(isNaN(n)||n<0) return '';
+    var mult=unit==='B'?1e9:1e6;
+    return n*mult>MAX_AMOUNT ? '' : str;
+  };
+  var unit=function(u){ return u==='B'?'B':'M'; };
+  return {
+    g: (p.g==='pb'||p.g==='mm') ? p.g : 'pb',
+    w: knownGame(p.w) ? p.w : null,
+    p: PAYOUTS.indexOf(p.p)>=0 ? p.p : 'lump',
+    f: filingStatus(p.f),
+    r: residence(p.r),
+    d: (typeof p.d==='number' && isFinite(p.d) && p.d>=0 && p.d<=0.2) ? p.d : 0.04,
+    n: Math.min(1000, Math.max(1, Math.round(Number(p.n))||1)),
+    ju: unit(p.ju), lu: unit(p.lu),
+    j: amt(p.j, unit(p.ju)), l: amt(p.l, unit(p.lu))
+  };
+}
+
+function applyShareLink(){
+  var p=readShare(location.hash);
+  if(!p) return;
+  fromShare=true;
+  activeGame=p.g; wnGame=p.w||p.g; payout=p.p; filing=p.f; lives=p.r; discount=p.d;
+  document.getElementById('npeople').value=p.n;
+  jUnit=p.ju; lUnit=p.lu;
+  document.getElementById('jackpot-input').value=p.j;
+  document.getElementById('lump-input').value=p.l;
+  ['M','B'].forEach(function(u){
+    document.getElementById('j-'+u).setAttribute('aria-pressed', String(jUnit===u));
+    document.getElementById('j-'+u).className='unit-btn'+(jUnit===u?' active':'');
+    document.getElementById('l-'+u).setAttribute('aria-pressed', String(lUnit===u));
+    document.getElementById('l-'+u).className='unit-btn'+(lUnit===u?' active':'');
+  });
+  /* The amounts arrived with the link, so the boxes that hold them have to be
+     visible — otherwise the figures on the right have no visible source. */
+  if(p.j||p.l) openManual();
+  document.getElementById('from-share').classList.add('on');
+}
+
+/* Pasting a link into the address bar of a tab ALREADY ON THIS PAGE changes
+   only the fragment, and a fragment change is not a navigation — nothing
+   reloads and nothing runs. Without this the link appears to do nothing, which
+   is the most likely way anyone will actually open one: the page is already
+   open in front of them. Applied in place rather than by reloading, so the
+   figures simply change. */
+window.addEventListener('hashchange', function(){
+  if(!readShare(location.hash)) return;
+  applyShareLink();
+  syncSetup();
+  calc();
+});
+
+/* Back to your own settings: drop the fragment and reload. A reload rather than
+   an in-place restore, because "mine" means every stored preference, and this
+   page has no second code path that rebuilds all of them from storage. */
+function clearShare(){
+  location.hash='';
+  location.reload();
+}
+
+function shareURL(){
+  return location.origin+location.pathname+SHARE_PREFIX+b64urlEncode(JSON.stringify(sharePayload()));
+}
+function openShare(){
+  var url=shareURL();
+  document.getElementById('share-link').value=url;
+  document.getElementById('share-meta').textContent=url.length+' characters — short enough for any mail client.';
+  var d=document.getElementById('share-dialog');
+  d.showModal();
+  document.getElementById('share-link').select();
+}
+function closeShare(){ document.getElementById('share-dialog').close(); }
+function copyShare(){
+  var box=document.getElementById('share-link');
+  box.select();
+  var meta=document.getElementById('share-meta');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(box.value).then(function(){ meta.textContent='Copied.'; },
+                                                  function(){ meta.textContent='Press Cmd-C or Ctrl-C to copy.'; });
+  } else { meta.textContent='Press Cmd-C or Ctrl-C to copy.'; }
+}
+/* Backdrop click cancels, the family rule for every dialog in every app. A
+   click ON the <dialog> lands on the element itself only when it fell outside
+   the box, because everything inside it is a child. */
+document.getElementById('share-dialog').addEventListener('click', function(e){
+  if(e.target===this) this.close();
+});
 
 // ── Manual / details toggles ──────────────────────────────────────────────────
 // Every disclosure keeps its button's aria-expanded in step with the panel, so
@@ -767,21 +1361,48 @@ function toggleDetails(){
   setExpanded('details-toggle', open);
   localStorage.setItem('lottery-details', open ? '1' : '0');
 }
-var _wnLoaded=false;
 function toggleWinning(){
   var open = document.getElementById('wn-body').classList.toggle('open');
   document.getElementById('wn-chevron').classList.toggle('open', open);
   setExpanded('wn-toggle', open);
   localStorage.setItem('lottery-winning', open ? '1' : '0');
-  if(open && !_wnLoaded) fetchWinning();
+  /* Fetch on first open only. The per-game cache is what remembers whether this
+     game has been asked for — there is no longer a single "loaded" flag, because
+     there is no longer a single set of results. */
+  if(open && !winData[wnGame]) fetchWinning();
 }
 
-// ── Winning numbers ───────────────────────────────────────────────────────────
-var PB_URL='https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=1';
-var MM_URL='https://data.ny.gov/resource/5xaw-6ayf.json?$order=draw_date%20DESC&$limit=1';
-// API fields below are untrusted before they reach innerHTML: only render
-// values that match the expected shape (digits for balls/multiplier,
-// YYYY-MM-DD for dates); anything else is dropped.
+/* ── Winning numbers ──────────────────────────────────────────────────────
+   Six New York games since 2026-08-22, where this was Powerball and Mega
+   Millions. The other four are here because data.ny.gov publishes them on the
+   same open-data API this already talks to, so they cost no new endpoint and
+   no change to the page's CSP — which is the test any new feed has to pass.
+
+   Cash 4 Life is deliberately NOT here: its dataset is still served but the
+   game is retired, so it would have shown a February draw as "the latest
+   results" for the rest of time. Millionaire for Life is its replacement and is
+   here instead. Quick Draw is left out for the opposite reason — it draws every
+   four minutes, and "the latest results" is meaningless at that rate.
+
+   Each game names its dataset, the fields the balls come out of, and the days
+   it draws. API fields are untrusted before they reach innerHTML: only values
+   matching the expected shape (digits for balls and multipliers, YYYY-MM-DD for
+   dates) are rendered, and anything else is dropped. */
+var NY_DATA='https://data.ny.gov/resource/';
+var WN_GAMES={
+  pb:     { name:'Powerball',            set:'d6yy-54nr', draws:[1,3,6], special:'pb' },
+  mm:     { name:'Mega Millions',        set:'5xaw-6ayf', draws:[2,5],   special:'mb', ball:'mega_ball' },
+  lotto:  { name:'NY Lotto',             set:'6nbc-h7bj', draws:[3,6],   special:'mb', ball:'bonus', ballLabel:'Bonus ball' },
+  take5:  { name:'Take 5',               set:'dg63-4siq', draws:[0,1,2,3,4,5,6], twice:true },
+  pick10: { name:'Pick 10',              set:'bycu-cw7c', draws:[0,1,2,3,4,5,6], many:true },
+  mfl:    { name:'Millionaire for Life', set:'a4w9-a3tp', draws:[0,1,2,3,4,5,6], special:'mb', ball:'mill_ball' }
+};
+function wnURL(g){ return NY_DATA+WN_GAMES[g].set+'.json?$order=draw_date%20DESC&$limit=1'; }
+/* hasOwnProperty, not a bare lookup: `WN_GAMES['constructor']` is truthy on any
+   plain object, so a link or a stale preference carrying that word would sail
+   through a `if (WN_GAMES[g])` check and end up fetching `undefined.json`. */
+function knownGame(g){ return typeof g==='string' && Object.prototype.hasOwnProperty.call(WN_GAMES, g); }
+
 function fmtDrawDate(s){
   if(!/^\d{4}-\d{2}-\d{2}/.test(String(s))) return '';
   var d=new Date(String(s).slice(0,10)+'T00:00:00');
@@ -792,78 +1413,118 @@ function ball(n,cls){
   if(!/^\d{1,2}$/.test(n)) return '';
   return '<div class="ball'+(cls?' '+cls:'')+'">'+n+'</div>';
 }
+/* One row of balls. `many` is Pick 10's twenty, which wrap and shrink. */
+function ballRow(nums, special, cls, many){
+  var html='<div class="wn-balls'+(many?' many':'')+'">';
+  nums.forEach(function(n){ html+=ball(n); });
+  if(special) html+=ball(special, cls);
+  return html;
+}
+function wnWrap(name,date,inner){
+  return '<div class="wn-game"><div class="wn-head"><span class="wn-name">'+name+'</span>'+
+    '<span class="wn-date">'+fmtDrawDate(date)+'</span></div>'+inner+'</div>';
+}
 function pbBlock(r){
   var nums=String(r.winning_numbers||'').trim().split(/\s+/);
-  var whites=nums.slice(0,5), power=nums[5];
-  var html='<div class="wn-balls">';
-  whites.forEach(function(n){ html+=ball(n); });
-  html+=ball(power,'pb');
+  var html=ballRow(nums.slice(0,5), nums[5], 'pb');
   var mult=parseInt(r.multiplier,10);
   if(mult>0) html+='<span class="wn-mult">Power Play &times;'+mult+'</span>';
   html+='</div>';
-  return '<div class="wn-game"><div class="wn-head"><span class="wn-name">Powerball</span>'+
-    '<span class="wn-date">'+fmtDrawDate(r.draw_date)+'</span></div>'+html+'</div>';
+  return wnWrap('Powerball', r.draw_date, html);
 }
 function mmBlock(r){
   var whites=String(r.winning_numbers||'').trim().split(/\s+/).slice(0,5);
-  var html='<div class="wn-balls">';
-  whites.forEach(function(n){ html+=ball(n); });
-  html+=ball(r.mega_ball,'mb');
-  html+='</div>';
-  return '<div class="wn-game"><div class="wn-head"><span class="wn-name">Mega Millions</span>'+
-    '<span class="wn-date">'+fmtDrawDate(r.draw_date)+'</span></div>'+html+'</div>';
+  return wnWrap('Mega Millions', r.draw_date, ballRow(whites, r.mega_ball, 'mb')+'</div>');
 }
-var winData={pb:null, mm:null};
+/* The four added in 2026. Take 5 draws twice a day and the API returns both in
+   one row, so it is the only block with two ball rows and a label on each. */
+function gameBlock(g,r){
+  if(g==='pb') return pbBlock(r);
+  if(g==='mm') return mmBlock(r);
+  var def=WN_GAMES[g];
+  if(def.twice){
+    var mid=String(r.midday_winning_numbers||'').trim().split(/\s+/).filter(Boolean);
+    var eve=String(r.evening_winning_numbers||'').trim().split(/\s+/).filter(Boolean);
+    var html='';
+    if(mid.length) html+='<div class="wn-when">Midday</div>'+ballRow(mid,null,null,false)+'</div>';
+    if(eve.length) html+='<div class="wn-when">Evening</div>'+ballRow(eve,null,null,false)+'</div>';
+    return wnWrap(def.name, r.draw_date, html);
+  }
+  var nums=String(r.winning_numbers||'').trim().split(/\s+/).filter(Boolean);
+  var extra=def.ball ? r[def.ball] : null;
+  var html2=ballRow(nums, extra, def.special, !!def.many);
+  if(extra&&def.ballLabel) html2+='<span class="wn-mult">'+def.ballLabel+'</span>';
+  return wnWrap(def.name, r.draw_date, html2+'</div>');
+}
+
+/* One entry per game, each with its own timestamp: the games are fetched one at
+   a time, as you ask for them, rather than all six on open. Six requests to see
+   one set of numbers would be six times the load on a public feed for no gain. */
+var winData={};
+function setWnGame(g){
+  if(!knownGame(g)) return;
+  wnGame=g;
+  remember('lottery-wn-game', g);
+  syncSetup();
+  renderWinning();
+  if(!winData[g]) fetchWinning();
+  /* The annuity shape follows the game — NY Lotto pays 26 equal payments where
+     the two big games pay 30 growing ones — so the figures on the right change
+     with this row whenever an annuity is on screen. */
+  calc();
+}
 function renderWinning(){
-  if(!_wnLoaded) return;
   var content=document.getElementById('wn-content');
-  var r=winData[activeGame];
+  var r=winData[wnGame];
   if(!r){ content.innerHTML='<div class="wn-loading">No recent results for this game.</div>'; return; }
-  content.innerHTML = activeGame==='pb' ? pbBlock(r) : mmBlock(r);
+  content.innerHTML=gameBlock(wnGame,r);
 }
 var WINNING_TTL = 6*60*60*1000; // 6 hours — results only change after draws
-async function fetchWinning(force){
-  var loading=document.getElementById('wn-loading');
-  // Use cached results if fresh and this isn't a manual refresh
+
+function readWinCache(){
   try {
-    var c=force?null:JSON.parse(localStorage.getItem('lottery-winning-cache'));
-    if(c && c.ts && (Date.now()-c.ts)<WINNING_TTL && (c.pb||c.mm)){
-      winData.pb=c.pb; winData.mm=c.mm;
-      loading.style.display='none';
-      _wnLoaded=true;
-      renderWinning();
-      return;
-    }
-  } catch(e){}
+    var c=JSON.parse(localStorage.getItem('lottery-winning-cache'));
+    /* Only this shape. Until 2026-08-22 the cache was {ts, pb, mm} for both
+       games at once; an old one left in a browser is ignored rather than
+       migrated, and costs one refetch. */
+    return (c && c.games && typeof c.games==='object') ? c.games : {};
+  } catch(e){ return {}; }
+}
+function writeWinCache(games){
+  try { localStorage.setItem('lottery-winning-cache', JSON.stringify({games:games})); } catch(e){}
+}
+
+async function fetchWinning(force){
+  var g=wnGame, loading=document.getElementById('wn-loading');
+  var cache=readWinCache();
+  var hit=cache[g];
+  if(!force && hit && hit.ts && (Date.now()-hit.ts)<WINNING_TTL && hit.row){
+    winData[g]=hit.row;
+    loading.style.display='none';
+    renderWinning();
+    return;
+  }
   loading.innerHTML='<span class="spinner" aria-hidden="true"></span>Loading latest results&hellip;';
   loading.style.display='block';
   try {
-    var results=await Promise.all([
-      fetchWithTimeout(PB_URL).then(function(r){return r.json();}),
-      fetchWithTimeout(MM_URL).then(function(r){return r.json();})
-    ]);
-    winData.pb = (results[0]&&results[0][0]) || null;
-    winData.mm = (results[1]&&results[1][0]) || null;
-    if(!winData.pb && !winData.mm) throw new Error('No data');
-    localStorage.setItem('lottery-winning-cache', JSON.stringify({ts:Date.now(), pb:winData.pb, mm:winData.mm}));
+    var res=await fetchWithTimeout(wnURL(g)).then(function(r){return r.json();});
+    var row=(res&&res[0])||null;
+    if(!row) throw new Error('No data');
+    winData[g]=row;
+    cache[g]={ts:Date.now(), row:row};
+    writeWinCache(cache);
     loading.style.display='none';
-    _wnLoaded=true;
     renderWinning();
   } catch(e) {
     // On failure fall back to the cache with the TTL ignored — stale numbers
-    // beat none. Leaving _wnLoaded false while old numbers were still on
-    // screen made renderWinning()'s early return stop the panel tracking
-    // game-card clicks until a full reload.
-    try {
-      var stale=JSON.parse(localStorage.getItem('lottery-winning-cache'));
-      if(stale && (stale.pb||stale.mm)){ winData.pb=stale.pb; winData.mm=stale.mm; }
-    } catch(e2){}
-    if(winData.pb||winData.mm){
-      _wnLoaded=true;
-      loading.innerHTML='Could not refresh \u2014 showing earlier results.';
+    // beat none, as long as they are labelled as earlier ones.
+    if(hit&&hit.row){
+      winData[g]=hit.row;
+      loading.innerHTML='Could not refresh — showing earlier results.';
       renderWinning();
     } else {
       loading.innerHTML='Could not load winning numbers.';
+      renderWinning();
     }
   }
 }
@@ -909,10 +1570,7 @@ function applyJackpots(data, ts){
 // numbers if that section is currently open (skip it while collapsed).
 function refreshAll(){
   fetchJackpots(true);
-  if(document.getElementById('wn-body').classList.contains('open')){
-    _wnLoaded=false;
-    fetchWinning(true);
-  }
+  if(document.getElementById('wn-body').classList.contains('open')) fetchWinning(true);
 }
 
 async function fetchJackpots(force){
@@ -957,12 +1615,19 @@ async function fetchJackpots(force){
 // ── Game select ───────────────────────────────────────────────────────────────
 function selectGame(g){
   activeGame=g;
-  localStorage.setItem('lottery-game', g);
+  remember('lottery-game', g);
   ['pb','mm'].forEach(function(k){
     var b=document.getElementById('btn-'+k);
     b.className='game-btn'+(g===k?' active':'');
     b.setAttribute('aria-pressed', String(g===k));
   });
+  /* Picking a jackpot card moves the numbers row with it — the two cards are
+     the same two games — but not the other way round: picking Pick 10 down
+     there says nothing about which jackpot you are calculating on. */
+  if(wnGame!==g){
+    wnGame=g; remember('lottery-wn-game', g); syncSetup();
+    if(!winData[g] && document.getElementById('wn-body').classList.contains('open')) fetchWinning();
+  }
   renderWinning();
   var gd=gameData[g];
   if(!gd||!gd.jackpot) return;
@@ -1045,31 +1710,65 @@ function winnersValue(){
 function onWinnersInput(){
   // Persist only a usable value; don't normalise the box mid-keystroke.
   var n=parseInt(document.getElementById('npeople').value,10);
-  if(!isNaN(n)) localStorage.setItem('lottery-npeople', String(Math.min(MAX_WINNERS, Math.max(1,n))));
+  if(!isNaN(n)) remember('lottery-npeople', String(Math.min(MAX_WINNERS, Math.max(1,n))));
   calc();
 }
 function onWinnersChange(){
   // Once they're done typing, snap the box to what's actually being used.
   var el=document.getElementById('npeople');
   el.value=winnersValue();
-  localStorage.setItem('lottery-npeople', el.value);
+  remember('lottery-npeople', el.value);
   calc();
 }
 
 // ── Calc ──────────────────────────────────────────────────────────────────────
-// Withheld at payment vs. true liability at the top marginal rate; fedX/nyX is
-// the extra owed when filing the return. Pure arithmetic, split from calc() so
-// tests.html can pin it. `lump` is the full pre-tax lump sum in dollars.
+/* ── What one payment is worth ─────────────────────────────────────────────
+   The whole tax model is in tax.js now; this is the page's shape around it.
+   Kept as a named function taking a lump and a winner count because tests.html
+   pins it by that name and calls it directly. */
 function taxBreakdown(lump, np){
-  var share=lump/np;
-  var fedWH=share*FED_WH, nyWH=share*NY_WH, totWH=fedWH+nyWH, afterWH=share-totWH;
-  var fedTrue=share*FED_TOP, nyTrue=share*NY_TOP;
-  var fedX=Math.max(0,fedTrue-fedWH), nyX=Math.max(0,nyTrue-nyWH);
-  var net=share-(fedTrue+nyTrue);
-  // A typed $0 lump is legitimate input; without the guard 0/0 reads "NaN%".
-  var eff=share>0?(fedTrue+nyTrue)/share:0;
-  return { share:share, fedWH:fedWH, nyWH:nyWH, totWH:totWH, afterWH:afterWH,
-           fedTrue:fedTrue, nyTrue:nyTrue, fedX:fedX, nyX:nyX, net:net, eff:eff };
+  var r = payoutYear(lump/np, filing, lives);
+  /* The old names the rest of the page and the suite already use. `eff` is now
+     a computed effective rate rather than a constant sum of two top rates, and
+     `fedX`/`nyX` can be NEGATIVE — that is a refund, and the case that did not
+     exist while New York was modelled as a flat 10.9%. */
+  return { share:r.gross, fedWH:r.whFed, nyWH:r.whNY, totWH:r.whTotal, afterWH:r.afterWH,
+           fedTrue:r.fed, nyTrue:r.ny, city:r.city, yonkers:r.yonkers, local:r.local,
+           fedX:r.fed-r.whFed, nyX:r.ny-r.whNY, settle:r.settle,
+           tax:r.tax, net:r.net, eff:r.eff };
+}
+
+/* An annuity, payment by payment. Each year is its own tax return, which is the
+   entire reason the annuity can beat the lump sum on tax: thirty trips through
+   the bottom of the brackets instead of one. */
+function annuityBreakdown(advertised, np, plan){
+  var sched = annuitySchedule(advertised/np, plan);
+  var rows = sched.map(function(pmt){ return payoutYear(pmt, filing, lives); });
+  var gross=0, tax=0, net=0, i;
+  for(i=0;i<rows.length;i++){ gross+=rows[i].gross; tax+=rows[i].tax; net+=rows[i].net; }
+  return { rows:rows, plan:plan, gross:gross, tax:tax, net:net,
+           first:rows.length?rows[0]:null,
+           pvGross:presentValue(sched, discount),
+           pvNet:presentValue(rows.map(function(r){return r.net;}), discount),
+           eff: gross>0 ? tax/gross : 0 };
+}
+
+/* Which annuity a game pays. Powerball and Mega Millions both pay 30 payments
+   growing 5% a year; New York Lotto pays 26 equal ones. The game comes from the
+   winning-numbers selector, which is the page's one "which game" answer — the
+   two cards at the top only know the two with a jackpot feed. */
+function annuityPlan(){ return wnGame==='lotto' ? 'equal26' : 'graduated30'; }
+function planWords(plan){
+  return plan==='equal26' ? '26 equal yearly payments'
+                          : '30 yearly payments, each 5% larger than the last';
+}
+
+/* The sentence the whole right column is true under. */
+var RESIDENCE_WORDS = { ny:'New York State, outside NYC and Yonkers', nyc:'New York City', yonkers:'Yonkers' };
+function updateBasis(){
+  document.getElementById('basis').textContent =
+    (filing==='mfj' ? 'Married, filing jointly' : 'Single filer') + ' · ' +
+    RESIDENCE_WORDS[lives] + ' · ' + TAX_YEAR + ' brackets';
 }
 
 function calc(){
@@ -1079,50 +1778,160 @@ function calc(){
   showFieldError('lump-input','l-hint','Not a number — try 106 or 1.2B',
     'Leave blank to estimate at 60%');
 
+  updateBasis();
   var lump=parseField('lump-input',lUnit);
   var jack=parseField('jackpot-input',jUnit);
   // === null, not falsy: a typed $0 is an answer, not a blank to re-estimate.
   if(lump===null&&jack!==null) lump=jack*0.60; // no cash value entered — estimate lump at 60% of advertised
+  /* The other way round, for the annuity. The advertised jackpot is what an
+     annuity pays out, so a page told only the cash value has to work back to
+     it — the same 60% rule, inverted, and labelled as an estimate wherever it
+     is used rather than quietly standing in for a real figure. */
+  var estJack = jack===null && lump!==null ? lump/0.60 : null;
+  var advertised = jack!==null ? jack : estJack;
   var np=winnersValue();
 
-  if(lump===null){
-    document.getElementById('mgrid').innerHTML='<div class="empty">Tap a game above to see the breakdown.</div>';
+  var mgrid=document.getElementById('mgrid');
+  if(lump===null&&advertised===null){
+    mgrid.innerHTML='<div class="empty">Tap a game above to see the breakdown.</div>';
     document.getElementById('results-section').style.display='none';
     return;
   }
 
-  var b=taxBreakdown(lump,np);
-  var share=b.share, fedWH=b.fedWH, nyWH=b.nyWH, totWH=b.totWH, afterWH=b.afterWH,
-      fedTrue=b.fedTrue, nyTrue=b.nyTrue, fedX=b.fedX, nyX=b.nyX, net=b.net, eff=b.eff;
+  var b = lump!==null ? taxBreakdown(lump,np) : null;
+  var plan = annuityPlan();
+  var a = advertised!==null ? annuityBreakdown(advertised,np,plan) : null;
+  var wantsAnnuity = payout==='annuity'||payout==='compare';
 
-  document.getElementById('mgrid').innerHTML=
-    mc('Your lump share',fmtM1(share),'')+
-    mc('Withheld upfront',fmtM1(totWH),'red')+
-    mc('Owed at return',fmtM1(fedX+nyX),'red')+
-    mc('Net take-home',fmtM1(net),'grn');
+  /* The tiles say something different in each mode, because the headline figure
+     of an annuity is not a single share of anything. */
+  if(payout==='lump'){
+    mgrid.innerHTML=
+      mc('Your lump share',fmtM1(b.share),'')+
+      mc('Withheld upfront',fmtM1(b.totWH),'red')+
+      mc(b.settle>=0?'Owed at return':'Refunded at return',fmtM1(Math.abs(b.settle)),b.settle>=0?'red':'grn')+
+      mc('Net take-home',fmtM1(b.net),'grn');
+  } else if(payout==='annuity'){
+    mgrid.innerHTML=
+      mc('First payment',fmtM1(a.first.gross),'')+
+      mc('Your share of the jackpot',fmtM1(a.gross),'')+
+      mc('Tax over the run',fmtM1(a.tax),'red')+
+      mc('Net over the run',fmtM1(a.net),'grn');
+  } else {
+    var better = a.pvNet >= b.net;
+    mgrid.innerHTML=
+      mc('Lump sum, after tax',fmtM1(b.net),better?'':'grn')+
+      mc('Annuity, after tax',fmtM1(a.net),'')+
+      mc('Annuity in today’s money',fmtM1(a.pvNet),better?'grn':'')+
+      mc('Ahead by',fmtM1(Math.abs(a.pvNet-b.net)),'');
+  }
 
-  document.getElementById('wtbody').innerHTML=
-    tr(np>1?'Your share (1/'+np+' of '+fmtM(lump)+')':'Full lump sum','',fmt(share),'r')+
-    tr('Federal withholding',pct(FED_WH)+' mandatory','\u2212'+fmt(fedWH),'neg')+
-    tr('NY State withholding',pct(NY_WH)+' mandatory','\u2212'+fmt(nyWH),'neg')+
-    trtot('Received after withholding','',fmt(afterWH),'r');
+  /* ── Compare ─────────────────────────────────────────────────────────────
+     Two cards and a sentence. The sentence is the point: the cards can only
+     show that one number is bigger, and the reason it is bigger is the
+     discount rate the reader chose a moment ago. */
+  var cmpSec=document.getElementById('cmp-section');
+  if(payout==='compare'&&b&&a){
+    var lumpWins = b.net > a.pvNet;
+    document.getElementById('cmp-cards').innerHTML =
+      cmpCard('Lump sum', fmtM1(b.net), 'Paid once, taxed once. '+
+        pct(b.eff)+' of it goes in tax.', lumpWins) +
+      cmpCard('Annuity', fmtM1(a.pvNet), fmtM1(a.net)+' over '+a.rows.length+
+        ' years, worth this much in today’s money at '+pctN(discount)+
+        '. Each year is its own tax return, so the effective rate is '+pct(a.eff)+'.', !lumpWins);
+    document.getElementById('cmp-verdict').innerHTML =
+      'At a discount rate of <strong>'+pctN(discount)+'</strong> the <strong>'+
+      (lumpWins?'lump sum':'annuity')+'</strong> is ahead by '+fmtM1(Math.abs(b.net-a.pvNet))+
+      '. The two are level at about <strong>'+pctN(breakEvenRate(b.net,a))+'</strong> — '+
+      'below that the annuity wins, above it the lump sum does.' +
+      (estJack!==null||jack===null&&lump!==null ? ' The advertised jackpot was estimated from the cash value.' : '');
+    cmpSec.style.display='block';
+  } else {
+    cmpSec.style.display='none';
+  }
 
-  document.getElementById('rtbody').innerHTML=
-    tr('Federal \u2014 true liability',pct(FED_TOP)+' top marginal','\u2212'+fmt(fedTrue),'neg')+
-    tr('Less: federal withheld','Paid at source','+'+fmt(fedWH),'pos')+
-    trbold('Additional federal due',pct(FED_TOP-FED_WH)+' gap','\u2212'+fmt(fedX),'neg')+
-    trspace()+
-    tr('NY State \u2014 true liability',pct(NY_TOP)+' top marginal','\u2212'+fmt(nyTrue),'neg')+
-    tr('Less: NY State withheld','Paid at source','+'+fmt(nyWH),'pos')+
-    trbold('Additional NY State due',pct(NY_TOP-NY_WH)+' gap','\u2212'+fmt(nyX),'neg')+
-    trtot('Total additional owed','','\u2212'+fmt(fedX+nyX),'neg');
+  /* ── The breakdown tables ────────────────────────────────────────────────
+     In annuity mode they describe the FIRST payment, which is the one you can
+     check against a real cheque; the schedule below carries the rest. */
+  var t = payout==='annuity' ? a.first : (b ? payoutYear(b.share,filing,lives) : null);
+  if(t){
+    var isAnn = payout==='annuity';
+    document.getElementById('wt-title').textContent = isAnn ? 'Withheld From Your First Payment' : 'Withheld at Payment';
+    document.getElementById('rt-title').textContent =
+      (t.settle>=0 ? 'Settled at Your Next Tax Return' : 'Refunded at Your Next Tax Return');
+
+    document.getElementById('wtbody').innerHTML=
+      tr(isAnn ? 'First of '+a.rows.length+' payments' : (np>1?'Your share (1/'+np+' of '+fmtM(lump)+')':'Full lump sum'),
+         isAnn ? planWords(plan) : '', fmt(t.gross),'r')+
+      (t.whTotal>0
+        ? tr('Federal withholding',pct(FED_WH)+' mandatory','−'+fmt(t.whFed),'neg')+
+          tr('NY State withholding',pct(NY_WH)+' mandatory','−'+fmt(t.whNY),'neg')
+        : tr('Nothing withheld','Under the $5,000 floor',fmt(0),'r'))+
+      trtot('Received after withholding','',fmt(t.afterWH),'r');
+
+    var rows =
+      tr('Federal — actual liability',pct(t.gross>0?t.fed/t.gross:0)+' effective','−'+fmt(t.fed),'neg')+
+      tr('Less: federal withheld','Paid at source','+'+fmt(t.whFed),'pos')+
+      trbold(t.fed>=t.whFed?'Additional federal due':'Federal refund','',
+             (t.fed>=t.whFed?'−':'+')+fmt(Math.abs(t.fed-t.whFed)),t.fed>=t.whFed?'neg':'pos')+
+      trspace()+
+      tr('NY State — actual liability',pct(t.gross>0?t.ny/t.gross:0)+' effective, after recapture','−'+fmt(t.ny),'neg')+
+      tr('Less: NY State withheld','Paid at source','+'+fmt(t.whNY),'pos')+
+      trbold(t.ny>=t.whNY?'Additional NY State due':'NY State refund','',
+             (t.ny>=t.whNY?'−':'+')+fmt(Math.abs(t.ny-t.whNY)),t.ny>=t.whNY?'neg':'pos');
+    if(t.city>0) rows += trspace()+trbold('New York City resident tax','Never withheld from a prize','−'+fmt(t.city),'neg');
+    if(t.yonkers>0) rows += trspace()+trbold('Yonkers surcharge',pctN(YONKERS_SURCHARGE)+' of your state tax','−'+fmt(t.yonkers),'neg');
+    rows += trtot(t.settle>=0?'Total additional owed':'Total refunded','',
+                  (t.settle>=0?'−':'+')+fmt(Math.abs(t.settle)),t.settle>=0?'neg':'pos');
+    document.getElementById('rtbody').innerHTML=rows;
+  }
+
+  /* ── The schedule ────────────────────────────────────────────────────────── */
+  var schedSec=document.getElementById('sched-section');
+  if(wantsAnnuity&&a){
+    var html='';
+    for(var i=0;i<a.rows.length;i++){
+      var r=a.rows[i];
+      html+='<tr><td>'+(i+1)+'</td><td class="r">'+fmt(r.gross)+'</td>'+
+            '<td class="neg">−'+fmt(r.tax)+'</td><td class="pos">'+fmt(r.net)+'</td></tr>';
+    }
+    html+=trtot('Total','',fmt(a.net)+' after '+fmt(a.tax)+' tax','r');
+    document.getElementById('schedbody').innerHTML=html;
+    schedSec.style.display='block';
+  } else {
+    schedSec.style.display='none';
+  }
 
   // Shared with lottery-portfolio.html, which seeds its portfolio size from it.
-  // Written here rather than beside the deleted banner it used to sit under — it is
-  // a side effect of the calculation, not of anything being displayed.
-  localStorage.setItem('lottery-net-takehome', Math.round(net));
-  document.getElementById('eff-rate').textContent=pct(eff);
+  // Always the LUMP figure even when the annuity is on screen: that page models
+  // a sum invested on day one, which is what a lump sum is and what an annuity
+  // deliberately isn't.
+  if(b) remember('lottery-net-takehome', Math.round(b.net));
+  document.getElementById('eff-rate').textContent=
+    pct(payout==='annuity'&&a ? a.eff : (b?b.eff:0));
   document.getElementById('results-section').style.display='block';
+}
+
+/* The discount rate at which the two payouts are worth the same. Bisection
+   rather than algebra: the after-tax annuity stream is not a closed form once
+   every payment has been through a bracket table. 60 halvings takes a 0–100%
+   span well past the precision anything on screen is shown to. */
+function breakEvenRate(lumpNet, a){
+  var nets=a.rows.map(function(r){return r.net;});
+  var lo=0, hi=1, mid, i;
+  if(presentValue(nets,lo)<lumpNet) return 0;
+  if(presentValue(nets,hi)>lumpNet) return hi;
+  for(i=0;i<60;i++){
+    mid=(lo+hi)/2;
+    if(presentValue(nets,mid)>lumpNet) lo=mid; else hi=mid;
+  }
+  return (lo+hi)/2;
+}
+
+function cmpCard(title,big,sub,win){
+  return '<div class="cmp-card'+(win?' win':'')+'"><div class="cmp-ttl">'+title+'</div>'+
+    '<div class="cmp-big">'+big+'</div><div class="cmp-sub">'+sub+'</div>'+
+    (win?'<div class="cmp-badge">Ahead here</div>':'')+'</div>';
 }
 
 function mc(l,v,c){ return '<div class="mc"><div class="ml">'+l+'</div><div class="mv '+c+'">'+v+'</div></div>'; }
@@ -1192,6 +2001,13 @@ document.addEventListener('focusin', function(e){
     }, { once: true });
   }
 });
+
+/* Draw once from whatever is already on the page — a restored preference, or a
+   share link — before anything is fetched. Until 2026-08-22 the first render was
+   a side effect of the jackpot feed answering, so a link carrying its own
+   amounts showed nothing at all until the network came back. */
+restoreState();
+calc();
 
 // Initial load: jackpots always; winning numbers unless that section was collapsed
 fetchJackpots();
