@@ -214,13 +214,18 @@
   a:focus-visible, summary:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; border-radius: 4px; }
 
   /* Theme toggle */
+  /* WEIGHT 400 and the family's radius and padding, not 600 and 8px (2026-08-22).
+     This row is the same row as every sibling app's — a header button beside a
+     header picker — and it was the only one in the family wearing semibold text in
+     a wider, rounder box, which is exactly what makes two of these pages open side
+     by side stop looking like one product. Same three values as `.btn` above it. */
   .theme-btn {
     display: flex; align-items: center; gap: 6px;
     /* One height for everything in the header row — see `--chrome-h`. */
     min-height: var(--chrome-h);
-    padding: 4px 12px; font-size: var(--fs-xs); font-weight: 600; cursor: pointer;
+    padding: 4px 9px; font-size: var(--fs-xs); font-weight: var(--fw-normal); cursor: pointer;
     background: var(--bg-card); color: var(--text-secondary);
-    border: 1px solid var(--border); border-radius: 8px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
     font-family: inherit; transition: background 0.15s, color 0.15s;
     white-space: nowrap; flex-shrink: 0;
   }
@@ -539,7 +544,7 @@
   .btn:hover { border-color: var(--text-muted); }
   .btn.primary { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
   .btn.primary:hover { opacity: .88; }
-  .btn.small { padding: 4px 9px; font-size: var(--fs-sm); min-height: var(--chrome-h); }
+  .btn.small { padding: 4px 9px; font-size: var(--fs-xs); min-height: var(--chrome-h); }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .sub { color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.7; }
   .sub:empty { display: none; }

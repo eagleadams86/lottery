@@ -139,7 +139,12 @@
 :root { --page-w:1500px; --chrome-h:30px; }
 * { box-sizing:border-box; margin:0; padding:0; }
 /* One height for everything in the header row — see `--chrome-h`. */
-.theme-btn { display:flex; align-items:center; gap:6px; min-height:var(--chrome-h); padding:4px 12px; font-size:var(--fs-xs); font-weight:600; cursor:pointer; background:var(--surface); color:var(--text2); border:1px solid var(--border2); border-radius:8px; font-family:inherit; transition:background 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
+/* WEIGHT 400 and the family's radius and padding, not 600 and 8px (2026-08-22).
+   This row is the same row as every sibling app's — a header button beside a
+   header picker — and it was the only one in the family wearing semibold text in
+   a wider, rounder box, which is exactly what makes two of these pages open side
+   by side stop looking like one product. Same three values as `.btn` above it. */
+.theme-btn { display:flex; align-items:center; gap:6px; min-height:var(--chrome-h); padding: 4px 9px; font-size:var(--fs-xs); font-weight: var(--fw-normal); cursor:pointer; background:var(--surface); color:var(--text2); border:1px solid var(--border2); border-radius: var(--radius-sm); font-family:inherit; transition:background 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
 .theme-btn:hover { color:var(--text); border-color:var(--border2); }
 .theme-select { -webkit-appearance:none; appearance:none; padding-right:26px; background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23888'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
 
@@ -337,7 +342,7 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
   .btn:hover { border-color: var(--text-muted); }
   .btn.primary { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
   .btn.primary:hover { opacity: .88; }
-  .btn.small { padding: 4px 9px; font-size: var(--fs-sm); min-height: var(--chrome-h); }
+  .btn.small { padding: 4px 9px; font-size: var(--fs-xs); min-height: var(--chrome-h); }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   /* `.sub` is the family's muted paragraph. It already had two users on this
      page — the notes under the two projection charts — which were carrying
