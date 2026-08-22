@@ -9,7 +9,13 @@
      access to the two feeds this page actually uses, plus default-src 'none'
      and base-uri 'none'.
      Note: frame-ancestors is ignored in a meta tag; it needs a real header. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://lottery-proxy.charlie-adams-176.workers.dev https://data.ny.gov; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<!-- manifest-src is 'self' for the install manifest, and it has to be spelled
+     out: it falls back to default-src, which is 'none' here, so without this the
+     fetch of manifest.webmanifest is refused and "Install app" silently stops
+     being offered — no error anywhere except the console. What it allows is a
+     static JSON file on this origin and nothing else; a manifest executes nothing
+     and reads no data. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://lottery-proxy.charlie-adams-176.workers.dev https://data.ny.gov; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <!-- The mark is the NATIVE APPS' ball in the app family's blue: the numbered ball
      from lottery-ios and lottery-android, on the midnight field with its two
      drifting corner glows, recoloured to the family accent. The
@@ -36,6 +42,28 @@
      img-src allows data: URIs, so the SVG costs no extra request. -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108 108'> <defs><clipPath id='r'><rect width='108' height='108' rx='24'/></clipPath><clipPath id='b'><circle cx='54' cy='54' r='34.5'/></clipPath></defs> <g clip-path='url(%23r)'> <rect width='108' height='108' fill='%230a0e1a'/> <circle cx='82' cy='18' r='44' fill='%23121829'/> <circle cx='18' cy='94' r='36' fill='%231b2238'/> <circle cx='54' cy='54' r='34.5' fill='%23a5b4fc'/> <circle cx='63.288' cy='64.615' r='41.135' fill='%23818cf8' clip-path='url(%23b)'/> <circle cx='54' cy='54' r='20.567' fill='%23a5b4fc' stroke='%230a0e1a' stroke-width='3.317'/> <path d='M54.032 65.518L54.032 47.089L48.438 50.874L48.438 45.938L54.525 41.824L58.968 41.824L58.968 65.518Z' fill='%230a0e1a'/> </g> </svg>">
 <link rel="alternate icon" href="favicon.ico?v=4">
+<!-- Installing the app. The manifest is what turns Chrome's "Install page as
+     app…" into a real install: its own window with no browser chrome, its own
+     icon in the Dock or on the taskbar, and its own entry in the app switcher.
+     Offline was already here — that is sw.js, and it predates this; what the
+     manifest adds is the window and the icon, not the caching.
+
+     ONE manifest for all three pages, not one each, and that is deliberate. Both
+     app pages wear the SAME mark (see the note on it in CLAUDE.md), so two
+     installs would put two identical icons in the Dock with no way to tell them
+     apart. Instead this installs the pair — `start_url` is the landing page,
+     which is already a two-card launcher — and the manifest's `shortcuts` put
+     both pages one right-click away on the icon itself.
+
+     The icons it names are FILES rather than the inline SVG data URI above,
+     because a manifest's icons are fetched by URL. make_favicon.py writes them
+     from the same drawing, so every copy of the mark stays one picture. -->
+<link rel="manifest" href="manifest.webmanifest">
+<!-- The colour of the window's title bar in an installed app, and of the address
+     bar on Android. Set to midnight's page colour to start with, because that is
+     the default theme; setTheme() rewrites it, so an installed window follows the
+     theme rather than staying dark behind a light page. -->
+<meta name="theme-color" content="#0a0e1a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
   /* Frame-buster. GitHub Pages can't send frame-ancestors (a meta CSP ignores
@@ -628,12 +656,20 @@ var THEMES = [
 document.getElementById('theme-select').innerHTML = THEMES.map(function(t){
   return '<option value="'+t.id+'">'+t.icon+' '+t.label+'</option>';
 }).join('');
+/* Keeps the installed app window's title bar with the theme. Read back out of the
+   pack's `--bg` rather than listed here, so a palette change in the theme pack
+   carries across without a second place to remember it. Only an installed window
+   and mobile browser chrome read it; in an ordinary tab it does nothing. */
 function setTheme(theme) {
   if (theme === 'slate') theme = 'dark'; // renamed family-wide: same palette (see theme.css)
   if (!THEMES.some(function(t){ return t.id === theme; })) theme = 'midnight';
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('lottery-theme', theme);
   document.getElementById('theme-select').value = theme;
+  var bar = document.querySelector('meta[name="theme-color"]');
+  var bg = getComputedStyle(document.documentElement)
+    .getPropertyValue('--bg').trim();
+  if (bar && bg) bar.setAttribute('content', bg);
 }
 // Restore saved preference, default to midnight
 setTheme(localStorage.getItem('lottery-theme') || 'midnight');

@@ -9,11 +9,40 @@
      browser origin with the apps that hold work data, so a third-party script on
      any of them is a hole in all of them. `.nojekyll` beside this file turns that
      rendering off for good; this file is what the address now serves. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<!-- manifest-src is 'self' for the install manifest, and it has to be spelled
+     out: it falls back to default-src, which is 'none' here, so without this the
+     fetch of manifest.webmanifest is refused and "Install app" silently stops
+     being offered — no error anywhere except the console. What it allows is a
+     static JSON file on this origin and nothing else; a manifest executes nothing
+     and reads no data. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NY Lottery Calculator &amp; Portfolio</title>
 <meta name="description" content="After-tax take-home calculator for New York State lottery winners, and a what-if model of investing the lump sum.">
 <link rel="icon" href="favicon.ico?v=4">
+<!-- Installing the app. The manifest is what turns Chrome's "Install page as
+     app…" into a real install: its own window with no browser chrome, its own
+     icon in the Dock or on the taskbar, and its own entry in the app switcher.
+     Offline was already here — that is sw.js, and it predates this; what the
+     manifest adds is the window and the icon, not the caching.
+
+     ONE manifest for all three pages, not one each, and that is deliberate. Both
+     app pages wear the SAME mark (see the note on it in CLAUDE.md), so two
+     installs would put two identical icons in the Dock with no way to tell them
+     apart. Instead this installs the pair — `start_url` is the landing page,
+     which is already a two-card launcher — and the manifest's `shortcuts` put
+     both pages one right-click away on the icon itself.
+
+     The icons it names are FILES rather than the inline SVG data URI above,
+     because a manifest's icons are fetched by URL. make_favicon.py writes them
+     from the same drawing, so every copy of the mark stays one picture. -->
+<link rel="manifest" href="manifest.webmanifest">
+<!-- The colour of the window's title bar in an installed app, and of the address
+     bar on Android. Midnight's page colour, because that is the default theme;
+     the boot script below rewrites it from the saved preference, so an installed
+     window follows the theme rather than staying dark behind a light page. It
+     must stay ABOVE that script, which reads it. -->
+<meta name="theme-color" content="#0a0e1a">
 <script>
   /* The same pre-paint boot as the app pages: honour the saved theme, so this
      page doesn't open midnight on someone who chose Light. Keep the list in step
@@ -24,6 +53,16 @@
     var ok = ['light','dark','midnight','sepia'];
     document.documentElement.setAttribute('data-theme',
       ok.indexOf(t) === -1 ? 'midnight' : t);
+  } catch (e) {}
+  /* And the installed window's title bar with it. This page has no theme picker,
+     so unlike the app pages it only ever needs setting once, here. It runs before
+     the stylesheet has loaded, so --bg is not readable yet — the four values are
+     listed rather than read back. Keep them in step with theme.css. */
+  try {
+    var BG = { midnight: '#0a0e1a', dark: '#13151b', light: '#f5f5f3', sepia: '#f3ead7' };
+    var bar = document.querySelector('meta[name="theme-color"]');
+    var bg = BG[document.documentElement.getAttribute('data-theme')];
+    if (bar && bg) bar.setAttribute('content', bg);
   } catch (e) {}
 </script>
 <link rel="stylesheet" href="theme.css">

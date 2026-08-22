@@ -60,7 +60,7 @@
 /* Bump when the shell list changes, so old caches are purged on activate. It is
    NOT load-bearing for freshness — network-first means a forgotten bump cannot
    serve you stale code — it only stops dead entries accumulating. */
-const CACHE = 'lot-shell-v1';
+const CACHE = 'lot-shell-v2';
 const PREFIX = 'lot-shell-';
 
 /* THE ALLOWLIST, and the security boundary of this file. Every entry is a file
@@ -71,7 +71,21 @@ const PREFIX = 'lot-shell-';
    its own terms, since a stale one is a wrong answer rather than an old page.
    A request that is not on this list is not intercepted at all: it goes to the
    network as if this worker did not exist. Adding a line here is a
-   security decision, so justify it in the commit. */
+   security decision, so justify it in the commit.
+
+   The manifest and the three install icons joined on 2026-08-21, when the pages
+   became installable on a Mac or a PC. Each is a file already committed here, so
+   the origin-wide-cache rule above is unchanged by them. They earn their place
+   because an INSTALLED app is the copy most likely to be opened with no network
+   at all: a launcher re-reads the manifest and its icons to draw the window, and
+   without them a cold offline start shows a blank icon and can drop back out of
+   standalone display.
+
+   Their justification is written HERE rather than between the entries, unlike the
+   chart.min.js note below. The suite pins this list twice: once over the source
+   with comments stripped, and once over the raw source, and that second pass
+   pulls every quoted string out of the array. A comment sitting inside it with an
+   apostrophe in the prose would hand that pass a fake entry to check. */
 const SHELL = [
   './',
   'ny-lottery-calculator.html',
@@ -86,7 +100,11 @@ const SHELL = [
      to be asked for. */
   'chart.min.js',
   'privacy.html',
-  'favicon.ico'
+  'favicon.ico',
+  'manifest.webmanifest',
+  'icon-192.png',
+  'icon-512.png',
+  'icon-512-maskable.png'
 ];
 
 /* Resolved against this file's own URL, so the same list works unchanged on

@@ -467,8 +467,10 @@ t('the cache list holds only files that are already public', () => {
   const shell = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort();
   /* Exact equality, not "contains". A new entry has to be added here too, which
      is the moment to ask whether the file is genuinely public. */
-  eq(shell, ['./', 'chart.min.js', 'favicon.ico', 'lottery-portfolio.html',
-             'ny-lottery-calculator.html', 'privacy.html', 'theme.css'],
+  eq(shell, ['./', 'chart.min.js', 'favicon.ico', 'icon-192.png',
+     'icon-512-maskable.png', 'icon-512.png', 'lottery-portfolio.html',
+     'manifest.webmanifest', 'ny-lottery-calculator.html', 'privacy.html',
+     'theme.css'],
      'the offline shell list changed');
 });
 

@@ -20,14 +20,16 @@ right instruction — update the file too, in all three repos that carry it.
 | File | Description |
 |------|-------------|
 | `index.html` | The landing page at [eagleadams86.github.io/lottery/](https://eagleadams86.github.io/lottery/) — links to both tools. It exists so GitHub Pages serves *our* page there; without it Pages rendered this README instead, on a page with no Content-Security-Policy that pulled a script from a CDN. `.nojekyll` beside it turns that rendering off for good. |
-| `sw.js` | Service worker: keeps both pages, the stylesheet and the icon on your device so they open offline. Never caches a jackpot, a winning number or a yield — those are live figures, and a stale one is a wrong answer. |
+| `sw.js` | Service worker: keeps both pages, the stylesheet, the icons and the install manifest on your device so they open offline. Never caches a jackpot, a winning number or a yield — those are live figures, and a stale one is a wrong answer. |
 | `sw-kill.js` | The escape hatch — copy it over `sw.js` and push to uninstall every installed worker. |
 | `ny-lottery-calculator.html` | After-tax lottery take-home calculator with live jackpots and winning numbers |
 | `lottery-portfolio.html` | What-if model of investing the lump sum as a tax-aware portfolio |
 | `chart.min.js` | Chart.js 4.4.1, vendored (no CDN) — byte-identical to the copies in Flow Metrics and Money Map. Third-party: never hand-edit it, and if it is ever updated, update all three and this table together |
 | `theme.css` | Shared color tokens + 4 theme palettes, linked by both pages. Generated in the claude-theme-pack repo (the source of truth for all apps); every color pair is script-verified to meet WCAG AA contrast, and the portfolio's five asset colours come from its categorical `--series-*` ramp |
-| `favicon.ico` | The icon both pages share — the fallback a browser fetches from the site root on its own |
-| `make_favicon.py` | Draws `favicon.ico` to match the inline SVG icon in both pages |
+| `favicon.ico` | The icon all three pages share — the fallback a browser fetches from the site root on its own |
+| `manifest.webmanifest` | The install manifest — what makes Chrome and Edge offer "Install app" on a Mac or a PC. One for the whole site, not one per page: both tools wear the same mark, so two installs would be two identical icons in the Dock. It installs the pair, opening on the landing page, and its **shortcuts** put either tool one right-click away on the icon |
+| `icon-192.png`, `icon-512.png`, `icon-512-maskable.png` | The install icons the manifest names. The first two are rounded (nothing masks a `purpose: any` icon); the maskable one is the same drawing with square corners, because a launcher crops it to its own outline |
+| `make_favicon.py` | Draws `favicon.ico` to match the inline SVG icon in the pages, and the three install icons above, from the one drawing |
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
 | `tests.html` | Dev-only test page pinning both pages' pure functions (input parsing, feed validation, tax/allocation math, formatters); run by CI on every push |
 | `privacy.html` | Privacy policy for both pages — what is kept in the browser, and the three public feeds they read |
@@ -89,6 +91,7 @@ Native mobile ports have shipped and their build plans now live in their own (pr
 
 ### Both pages
 
+- **Install it like an app** — on a Mac or a PC, open the site in Chrome or Edge and choose "Install NY Lottery". It gets its own window with no browser chrome and its own icon in the Dock or on the taskbar, opening on the two-card landing page; right-click that icon and you can jump straight to either tool. On an iPhone or iPad, Safari's Share ▸ "Add to Home Screen" does the same
 - **The app family's layout** — the same page width and the same header as [Sprint Predictability](https://github.com/eagleadams86/sprint-velocity), [Flow Metrics](https://github.com/eagleadams86/team-dashboard) and [PAPTrack](https://github.com/eagleadams86/paptrack). The header is a bar across the top that **stays put as you scroll**, so the theme picker and the link to the other page are always a click away rather than somewhere above the first card
 - **Wider, and actually using it** — the portfolio's holdings table and charts have the room they always wanted, and the calculator splits in two on a laptop screen: what it's asking of you on the left (jackpots, amounts, how many winners, the latest draw) and what it tells you back on the right (your share, tax, take-home). On a phone both pages stack exactly as they always did
 - **Keyboard and screen-reader landmarks** — a skip link straight to the content, and real `main` and `footer` regions to jump between

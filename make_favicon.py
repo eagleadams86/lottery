@@ -75,6 +75,29 @@ VIEW = 108                      # the viewport the coordinates above are in
 SCALE = 8                       # supersample, then reduce
 SIZES = [16, 32, 48, 64, 128, 256]
 
+# The INSTALL icons, named by manifest.webmanifest and cached by sw.js. Renaming
+# one means editing both of those files as well as this line.
+#
+# 192 and 512 are the two sizes Chrome asks for when it offers "Install app" on a
+# Mac or a PC. They are the same drawing as favicon.ico, ROUNDED: nothing masks a
+# `purpose: any` icon, so the corners have to be in the file.
+PWA_ICONS = [(192, 'icon-192.png'), (512, 'icon-512.png')]
+
+# The maskable one is the same drawing with SQUARE corners, and that is the only
+# difference. A launcher crops it to whatever outline it likes — a circle on a lot
+# of Android ones — so anything in the corners is thrown away and rounding it as
+# well would round a picture that is about to be rounded again.
+#
+# Nothing has to move for the crop, and that is worth stating rather than leaving
+# to be rediscovered: the ball is already centred on the tile at (54,54), and
+# `BALL_SCALE` puts its radius at 34.5 of this 108 viewport. The circular safe
+# zone is a disc of 80% of the width — radius 43.2 here — so the ball, its
+# crescent and its numeral all sit inside it with room to spare. Only the two
+# corner glows are cropped, and they are background weather. If BALL_SCALE is ever
+# raised past 43.2, this stops being true and the maskable icon needs its own
+# smaller scale.
+MASKABLE = (512, 'icon-512-maskable.png')
+
 F = SCALE                       # one viewport unit -> F pixels on the canvas
 
 
@@ -93,7 +116,7 @@ def circle(d, cx, cy, r, **kw):
     d.ellipse([(cx - r) * F, (cy - r) * F, (cx + r) * F, (cy + r) * F], **kw)
 
 
-def build():
+def build(rounded=True):
     n = VIEW * SCALE
     img = Image.new('RGBA', (n, n), BG)
     d = ImageDraw.Draw(img)
@@ -127,6 +150,10 @@ def build():
     # the native icon is drawn square; this is the file that ends up on a
     # bookmarks bar, where nothing masks it and a square tile reads as a bug.
     # The radius is the family's 14-in-64, scaled to this viewport.
+    if not rounded:
+        # Full bleed, for the maskable icon — see MASKABLE. The glows are drawn to
+        # overflow the tile, so without the mask they need cutting back to it.
+        return img.convert('RGB')
     mask = Image.new('L', (n, n), 0)
     ImageDraw.Draw(mask).rounded_rectangle(
         [0, 0, n - 1, n - 1], radius=round(14 / 64 * VIEW) * SCALE, fill=255)
@@ -140,9 +167,21 @@ def main():
     frames[-1].save('favicon.ico', format='ICO',
                     sizes=[(s, s) for s in SIZES])
     print('favicon.ico written at ' + ', '.join(f'{s}px' for s in SIZES))
-    print('Now bump the ?v= on every favicon.ico reference — both pages carry '
-          'two apiece — browsers cache an icon for a long time and will keep '
-          'showing the old one otherwise.')
+
+    for size, name in PWA_ICONS:
+        art.resize((size, size), Image.LANCZOS).save(name, format='PNG',
+                                                     optimize=True)
+        print(f'{name} written (rounded — nothing masks a `purpose: any` icon)')
+
+    size, name = MASKABLE
+    build(rounded=False).resize((size, size), Image.LANCZOS).save(
+        name, format='PNG', optimize=True)
+    print(f'{name} written (full bleed — the launcher supplies the shape)')
+
+    print('Now bump the ?v= on every favicon.ico reference — the three pages '
+          'carry two apiece — browsers cache an icon for a long time and will '
+          'keep showing the old one otherwise. The manifest icons are versioned '
+          "by sw.js's CACHE constant instead; bump that too.")
 
 
 if __name__ == '__main__':

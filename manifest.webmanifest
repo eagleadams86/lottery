@@ -1,0 +1,32 @@
+{
+  "id": "/lottery/",
+  "name": "NY Lottery Calculator & Portfolio",
+  "short_name": "NY Lottery",
+  "description": "What a Powerball or Mega Millions win pays a New York State resident after tax, and a what-if model of investing the lump sum.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#0a0e1a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Take-Home Calculator",
+      "short_name": "Calculator",
+      "description": "What a jackpot pays after federal and NY State tax",
+      "url": "ny-lottery-calculator.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Lump-Sum Portfolio Model",
+      "short_name": "Portfolio",
+      "description": "What the take-home earns invested, and what tax it carries",
+      "url": "lottery-portfolio.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
