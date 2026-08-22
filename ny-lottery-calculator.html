@@ -511,27 +511,61 @@
   .sched-wrap table { margin: 0; }
   .sched-wrap thead th { position: sticky; top: 0; background: var(--bg-card); z-index: 1; }
 
-  /* Buttons, in the family's shape. This page had none before — every control on
-     it was a card, a toggle or a select — so these are the pack's tokens applied
-     to the same markup the sibling apps use. */
-  .btn { font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px;
-         border-radius: var(--radius-sm); border: 1px solid var(--border-control);
-         background: var(--btn-bg); color: var(--btn-text); cursor: pointer; }
-  .btn:hover { border-color: var(--border-strong); }
-  .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-  .btn.small { font-size: 12px; padding: 5px 10px; }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  /* ── Buttons and the dialog, copied from the family rather than invented ──
+     This page had no button and no dialog at all before 2026-08-22 — every
+     control on it was a card, a toggle or a select — so when the Share window
+     arrived it got a set of rules of its own, and they did not match the four
+     apps it sits beside. These are Sprint Predictability's, token for token.
+     Two of them were actually WRONG rather than merely different: `.btn` had
+     `--btn-bg` as its default background, which is the PRIMARY style, so the
+     header's Share button rendered as the filled accent button where every
+     sibling draws a plain one; and `.btn.primary` used `--accent`, which is the
+     link colour, not the button one. */
+  .btn { background: var(--bg-card-alt); color: var(--text-primary);
+         border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+         padding: 7px 12px; cursor: pointer; white-space: nowrap; font: inherit; }
+  .btn:hover { border-color: var(--text-muted); }
+  .btn.primary { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
+  .btn.primary:hover { opacity: .88; }
+  .btn.small { padding: 4px 9px; font-size: 13px; min-height: var(--chrome-h); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .sub { color: var(--text-secondary); font-size: 13px; line-height: 1.7; }
+  .sub:empty { display: none; }
 
-  /* The share dialog. A real <dialog>, opened modally, so focus is trapped and
-     Escape closes it without a line of script. Clicking the backdrop cancels —
-     the family rule for every dialog in every app. */
-  dialog { max-width: 540px; width: calc(100% - 32px); padding: 1.4rem 1.5rem; border: 1px solid var(--border);
-           border-radius: 12px; background: var(--bg-card); color: var(--text-primary); }
-  dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
-  dialog h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-  dialog .sub { font-size: 12px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
+  /* A real <dialog>, opened modally, so focus is trapped and Escape closes it
+     without a line of script. Clicking the backdrop cancels — the family rule
+     for every dialog in every app.
+
+     560px is the family's NARROW dialog: the width Flow Metrics and Golf
+     Handicap use, and the one Sprint Predictability drops to for Back up.
+     Sprint Predictability's own base is 880px because its forms are four fields
+     across; this window is one panel and a paragraph, and at 880px each of
+     those reads as a single very long line. */
+  dialog { border: 1px solid var(--border-strong); border-radius: var(--radius);
+           background: var(--bg-card); color: var(--text-primary);
+           padding: 20px; max-width: 560px; width: calc(100% - 32px);
+           /* A tall dialog on a short laptop screen opens already scrolled past
+              its own heading — showModal() focuses the first control and drags
+              it into view. Cap the height so the scrolling happens inside a
+              dialog that fits. vh, not dvh: dvh resolves to 0 in some embedded
+              engines. */
+           max-height: calc(100vh - 32px); overflow: auto;
+           /* SCROLL CHAINING off. A scroll container that has run out of scroll
+              hands the rest of the gesture to its parent, so reaching the foot
+              of a dialog carried straight on into the page behind it — the app
+              scrolling away under a dialog still covering it. Found on real iOS
+              Safari 2026-08-17 in Money Map and fixed across the family;
+              these two pages had no dialog then, so they never got it.
+              `contain`, not `none`: the dialog's own scrolling is untouched. */
+           overscroll-behavior: contain; }
+  dialog::backdrop { background: rgba(0, 0, 0, .55); }
+  dialog h3 { margin: 0 0 12px; font-size: 17px; }
+  fieldset.formpanel { border: 1px solid var(--border); border-radius: var(--radius-sm);
+                       padding: 12px; margin: 14px 0 0; background: var(--bg-card-alt); min-width: 0; }
+  legend { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+           color: var(--text-secondary); font-weight: 700; padding: 0 6px; }
   dialog input[type="text"] { width: 100%; font-family: var(--font-mono); font-size: 12px; padding: 8px 9px;
-                              color: var(--text-primary); background: var(--bg-card-alt);
+                              color: var(--text-primary); background: var(--bg-card);
                               border: 1px solid var(--input-border); border-radius: var(--radius-sm); }
 
   /* The banner a shared link arrives under. It says where the figures came from,
@@ -922,15 +956,30 @@
      the recipient's copy re-derives every word on screen from those. -->
 <dialog id="share-dialog" aria-labelledby="share-title">
   <h3 id="share-title">Share These Figures</h3>
-  <p class="sub">The link carries the amounts, the winner count, the payout you picked and
-    the filing status &mdash; <em>inside the link itself</em>. Nothing is uploaded, and opening
-    it doesn&rsquo;t touch whatever the other person had saved in their own browser.
-    They can change every figure once it opens; this is a starting point, not a locked view.</p>
-  <input type="text" id="share-link" readonly aria-label="Link to these figures">
-  <p class="sub" id="share-meta" role="status" style="margin:8px 0 0"></p>
-  <div class="row" style="margin-top:12px">
-    <button type="button" class="btn primary" onclick="copyShare()">Copy link</button>
-    <button type="button" class="btn" onclick="closeShare()">Done</button>
+  <p class="sub">The amounts, the winner count, the payout you picked and the filing status
+    travel <em>inside</em> the link itself &mdash; nothing is uploaded anywhere, and opening it
+    doesn&rsquo;t touch whatever the other person has saved in their own browser.
+    <strong>Unlike the links my other apps make, this one is not read-only:</strong> they can
+    change every figure once it opens. It is a starting point, not a locked view.</p>
+
+  <fieldset class="formpanel">
+    <legend>Your Link</legend>
+    <input type="text" id="share-link" readonly aria-label="Link to these figures">
+    <p class="sub" id="share-meta" role="status" style="margin:8px 0 0"></p>
+    <div class="row" style="margin-top:10px">
+      <button type="button" class="btn primary" onclick="copyShare()">Copy link</button>
+      <button type="button" class="btn" onclick="previewShare()">Preview it</button>
+    </div>
+  </fieldset>
+
+  <p class="sub" style="margin-top:14px">This is a <strong>snapshot</strong>, frozen as it looks
+    right now &mdash; move a slider afterwards and the link still says what it said, so send a
+    fresh one when the numbers move. There is no way to withdraw one once sent, so treat it like
+    emailing a spreadsheet. Nothing identifying rides along: no account, no email, not even your
+    theme.</p>
+
+  <div class="row" style="justify-content:flex-end;margin-top:18px">
+    <button type="button" class="btn primary" onclick="closeShare()">Done</button>
   </div>
 </dialog>
 
@@ -1338,6 +1387,15 @@ function openShare(){
   document.getElementById('share-link').select();
 }
 function closeShare(){ document.getElementById('share-dialog').close(); }
+/* "Preview it" — the family's second button, and the only way to answer "what
+   does the person I send this to actually see?" without mailing it to yourself.
+   A new tab rather than this one: the dialog is open in front of the figures
+   the link was made from, and replacing them would lose the thing being
+   compared. `noopener` because the opened page is same-origin but there is no
+   reason to hand it a handle on this one. */
+function previewShare(){
+  window.open(document.getElementById('share-link').value, '_blank', 'noopener');
+}
 function copyShare(){
   var box=document.getElementById('share-link');
   box.select();

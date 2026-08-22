@@ -313,21 +313,44 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
                 color: var(--text-primary); background: var(--bg-card);
                 border: 1px solid var(--input-border); border-radius: var(--radius-sm); }
 
-  .btn { font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px;
-         border-radius: var(--radius-sm); border: 1px solid var(--border-control);
-         background: var(--btn-bg); color: var(--btn-text); cursor: pointer; }
-  .btn:hover { border-color: var(--border-strong); }
-  .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-  .btn.small { font-size: 12px; padding: 5px 10px; }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  /* ── Buttons and the dialog, copied from the family rather than invented ──
+     Identical to the calculator page's, which is Sprint Predictability's token
+     for token. See the note there for what was wrong with the first version:
+     `.btn` defaulted to the PRIMARY background, and `.btn.primary` used the
+     link colour rather than the button one. */
+  .btn { background: var(--bg-card-alt); color: var(--text-primary);
+         border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+         padding: 7px 12px; cursor: pointer; white-space: nowrap; font: inherit; }
+  .btn:hover { border-color: var(--text-muted); }
+  .btn.primary { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
+  .btn.primary:hover { opacity: .88; }
+  .btn.small { padding: 4px 9px; font-size: 13px; min-height: var(--chrome-h); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  /* `.sub` is the family's muted paragraph. It already had two users on this
+     page — the notes under the two projection charts — which were carrying
+     their colour and size as inline styles because the class did nothing here. */
+  .sub { color: var(--text-secondary); font-size: 13px; line-height: 1.7; }
+  .sub:empty { display: none; }
+  .chart-card .sub { font-size: 11px; color: var(--text-hint); margin-top: 8px; }
 
-  dialog { max-width: 540px; width: calc(100% - 32px); padding: 1.4rem 1.5rem; border: 1px solid var(--border);
-           border-radius: 12px; background: var(--bg-card); color: var(--text-primary); }
-  dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
-  dialog h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-  dialog .sub { font-size: 12px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
+  /* 560px is the family's narrow dialog — Flow Metrics' and Golf Handicap's
+     width, and what Sprint Predictability drops to for a window that is one
+     panel rather than a form. The height cap and `overscroll-behavior` are the
+     iOS fixes every sibling dialog carries; these pages had no dialog when
+     those landed, so they never got them. */
+  dialog { border: 1px solid var(--border-strong); border-radius: var(--radius);
+           background: var(--bg-card); color: var(--text-primary);
+           padding: 20px; max-width: 560px; width: calc(100% - 32px);
+           max-height: calc(100vh - 32px); overflow: auto;
+           overscroll-behavior: contain; }
+  dialog::backdrop { background: rgba(0, 0, 0, .55); }
+  dialog h3 { margin: 0 0 12px; font-size: 17px; }
+  fieldset.formpanel { border: 1px solid var(--border); border-radius: var(--radius-sm);
+                       padding: 12px; margin: 14px 0 0; background: var(--bg-card-alt); min-width: 0; }
+  legend { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+           color: var(--text-secondary); font-weight: 700; padding: 0 6px; }
   dialog input[type="text"] { width: 100%; font-family: var(--font-mono); font-size: 12px; padding: 8px 9px;
-                              color: var(--text-primary); background: var(--bg-card-alt);
+                              color: var(--text-primary); background: var(--bg-card);
                               border: 1px solid var(--input-border); border-radius: var(--radius-sm); }
 
   .from-share { display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1rem;
@@ -510,7 +533,7 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
       <!-- The chart is three lines, not one, and this says what the outer two
            are. A single line implies a precision nobody has about a decade of
            equity returns. -->
-      <p class="sub" id="growth-note" style="font-size:11px;color:var(--text-hint);margin-top:8px"></p>
+      <p class="sub" id="growth-note"></p>
     </div>
     </div>
   </div>
@@ -527,7 +550,7 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
     <div class="chart-card">
       <div class="legend" id="leg4"></div>
       <div style="position:relative;height:230px"><canvas id="c4" role="img" aria-label="Line chart of portfolio value over 40 years under weak, chosen and strong growth">Portfolio value over 40 years.</canvas></div>
-      <p class="sub" id="dd-note" style="font-size:11px;color:var(--text-hint);margin-top:8px"></p>
+      <p class="sub" id="dd-note"></p>
     </div>
     </div>
   </div>
@@ -577,14 +600,30 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
      from the numbers. -->
 <dialog id="share-dialog" aria-labelledby="share-title">
   <h3 id="share-title">Share These Settings</h3>
-  <p class="sub">The link carries every slider, the filing status and where you live &mdash;
-    <em>inside the link itself</em>. Nothing is uploaded, and opening it doesn&rsquo;t touch
-    whatever the other person had saved. They can move every slider once it opens.</p>
-  <input type="text" id="share-link" readonly aria-label="Link to these settings">
-  <p class="sub" id="share-meta" role="status" style="margin:8px 0 0"></p>
-  <div class="row" style="margin-top:12px">
-    <button type="button" class="btn primary" onclick="copyShare()">Copy link</button>
-    <button type="button" class="btn" onclick="closeShare()">Done</button>
+  <p class="sub">Every slider, the filing status and where you live travel <em>inside</em> the
+    link itself &mdash; nothing is uploaded anywhere, and opening it doesn&rsquo;t touch whatever
+    the other person has saved in their own browser.
+    <strong>Unlike the links my other apps make, this one is not read-only:</strong> they can
+    move every slider once it opens. It is a starting point, not a locked view.</p>
+
+  <fieldset class="formpanel">
+    <legend>Your Link</legend>
+    <input type="text" id="share-link" readonly aria-label="Link to these settings">
+    <p class="sub" id="share-meta" role="status" style="margin:8px 0 0"></p>
+    <div class="row" style="margin-top:10px">
+      <button type="button" class="btn primary" onclick="copyShare()">Copy link</button>
+      <button type="button" class="btn" onclick="previewShare()">Preview it</button>
+    </div>
+  </fieldset>
+
+  <p class="sub" style="margin-top:14px">This is a <strong>snapshot</strong>, frozen as it looks
+    right now &mdash; move a slider afterwards and the link still says what it said, so send a
+    fresh one when the numbers move. There is no way to withdraw one once sent, so treat it like
+    emailing a spreadsheet. Nothing identifying rides along: no account, no email, not even your
+    theme.</p>
+
+  <div class="row" style="justify-content:flex-end;margin-top:18px">
+    <button type="button" class="btn primary" onclick="closeShare()">Done</button>
   </div>
 </dialog>
 
@@ -1445,6 +1484,13 @@ function openShare() {
   document.getElementById('share-link').select();
 }
 function closeShare() { document.getElementById('share-dialog').close(); }
+/* "Preview it" — the family's second button, and the only way to answer "what
+   does the person I send this to actually see?" without mailing it to yourself.
+   A new tab rather than this one, so the settings the link was made from are
+   still there to compare against. */
+function previewShare() {
+  window.open(document.getElementById('share-link').value, '_blank', 'noopener');
+}
 function copyShare() {
   const box = document.getElementById('share-link');
   box.select();

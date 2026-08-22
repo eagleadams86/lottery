@@ -32,6 +32,34 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   Every sibling app had one and these two did not. The payload is a dozen numbers and two words
   picked from lists, so it is plain base64url of the JSON behind a `#s=` marker — no deflate
   step, unlike Sprint Predictability's, because there is nothing to compress.
+  - **The window itself is Sprint Predictability's, token for token (2026-08-22).**
+    These two pages had no button and no dialog at all until the day Share arrived, so the
+    first version invented its own rules and did not match the four apps it sits beside.
+    What it now copies: `dialog` at **560px** (the family's NARROW width — Flow Metrics'
+    and Golf Handicap's, and what Sprint Predictability drops to for a window that is one
+    panel rather than a form), 20px padding, `--bg-card` on `--border-strong`, an `h3` at
+    17px, the link inside a `fieldset.formpanel` under a `<legend>Your Link</legend>`, and
+    **Copy link / Preview it / Done** in that order with only the first and last primary.
+    Two of the original rules were WRONG rather than merely different, and `tests.html`
+    pins both: `.btn` had `--btn-bg` as its default background, which is the PRIMARY
+    treatment, so the header's Share button drew filled where every sibling draws it plain;
+    and `.btn.primary` used `--accent`, which is the link colour, not the button one.
+  - **The dialog carries the two iOS fixes the rest of the family got in August and these
+    pages missed**, because they had no dialog when those landed: `max-height: calc(100vh
+    - 32px)` with `overflow: auto` (a tall dialog on a short laptop otherwise opens already
+    scrolled past its own heading, because `showModal()` focuses the first control and drags
+    it into view — and **vh, not dvh**, since dvh resolves to 0 in some embedded engines),
+    and `overscroll-behavior: contain` (without it the page behind carries on scrolling once
+    the dialog runs out — found on real iOS Safari in Money Map).
+  - **"Preview it" opens a new tab, not this one.** It is the family's second button and the
+    only way to answer "what does the person I send this to actually see?" without mailing it
+    to yourself — and the figures the link was made from have to still be there to compare
+    against, which is why it is not a navigation.
+  - **One thing deliberately NOT copied: Sprint Predictability's `box-shadow: var(--shadow)`.**
+    `--shadow` is not a theme-pack token — that app defines it locally, four times, once per
+    theme — so bringing it here would mean four new local colour values in a repo whose whole
+    palette comes from the pack. Golf Handicap's dialog has no shadow either. If the shadow is
+    ever wanted family-wide it belongs in the pack, not in this file.
   - **`remember()` is the guard, and it is sticky for the whole visit.** A page opened from
     someone else's link saves none of the figures even if you change every one of them; "Back
     to mine" drops the fragment and reloads. Cleared on the first edit was the alternative and
