@@ -93,6 +93,23 @@
      so `Chart` is defined by the time render() first runs. -->
 <script src="chart.min.js"></script>
 <style>
+/* ── Which way round the page is ──────────────────────────────────────────────
+   `color-scheme` is not a colour of ours and overrides nothing in the theme pack
+   — it is how a page TELLS the browser which way round it is, so the parts of a
+   control the browser draws itself follow the theme. Without it they are always
+   drawn light: on the dark themes the calendar button inside a date field is a
+   near-black glyph on a near-black box, and it is the one control that cannot be
+   restyled from CSS. It fixes the number spinners, checkboxes and scrollbars too,
+   which have the same problem more quietly.
+
+   All four pages carry it, and the pairing follows the PALETTE rather than the
+   theme's name: sepia is a warm LIGHT theme and takes `light`. Same block, same
+   reasoning, in PAPTrack, Golf Handicap and Money Map. */
+:root                 { color-scheme: dark; }
+[data-theme="dark"]   { color-scheme: dark; }
+[data-theme="light"]  { color-scheme: light; }
+[data-theme="sepia"]  { color-scheme: light; }
+
 /* Color tokens + theme live in the shared theme.css (linked above). */
 /* ── Layout tokens ────────────────────────────────────────────────────────────
    The app family's two, added 2026-08-21 when both lottery pages took the
