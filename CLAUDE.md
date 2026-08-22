@@ -96,6 +96,19 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   out for the opposite reason — it draws every four minutes. `knownGame()` uses
   `hasOwnProperty`: `WN_GAMES['constructor']` is truthy on any plain object, so a bare lookup
   let a share link through to a fetch of `undefined.json`.
+  **CodeQL reports four `js/remote-property-injection` alerts on `winData[g]` and `cache[g]`
+  in `fetchWinning()`, and they are dismissed as false positives (2026-08-22) — don't
+  "fix" them.** The analyzer cannot see through `knownGame()`, so it treats `wnGame` as
+  attacker-controlled at the write; it is not, because that helper is the only way the
+  variable is ever set and it is a `hasOwnProperty` whitelist over the six-key table. The
+  READ path was audited in the same pass and is what actually matters here, since a poisoned
+  `lottery-winning-cache` really is reachable from any page on the shared origin: `ball()`
+  refuses anything that is not `/^\d{1,2}$/`, `fmtDrawDate()` anything that is not
+  `/^\d{4}-\d{2}-\d{2}/`, the game name and CSS class are hardcoded constants, and the Power
+  Play multiplier goes through `parseInt`. A crafted cache entry therefore renders nothing at
+  all. Rewriting a correct, already-defended guard into something the analyzer happens to
+  recognise — a `Map`, or an inlined six-way comparison — would cost readability and buy no
+  safety, which is why the alerts were dismissed rather than coded around.
 - **The portfolio's "Does it last?" section tracks a COST BASIS, and that is the subtle part.**
   Forty years of the same model: spending rises with inflation, income after tax is taken as
   cash, shares are sold for the rest plus the capital-gains tax on the sale. The basis is a
