@@ -1054,6 +1054,9 @@ t('nothing is loaded from a CDN', () => {
      the localStorage of the apps holding work data, so a third-party script on
      any of them is a hole in all of them. */
   for (const [name, src] of [['calculator', CALC_SRC], ['portfolio', PORT_SRC]]) {
+    /* Guarded before the negations. Both assertions here are NOTs, and a NOT over an
+       empty string passes — a page that failed to load would report green. */
+    ok(src, name + ' did not load — the two negations below would pass on an empty string');
     const body = stripComments(src);
     ok(!/<script[^>]+src="https?:/i.test(body), name + ' loads an off-origin script');
     ok(!/cdnjs|jsdelivr|unpkg|googleapis\.com\/ajax/i.test(body), name + ' names a CDN');
@@ -1077,6 +1080,11 @@ t('no live figure is ever cached — a stale jackpot is a wrong answer', () => {
 });
 
 t('the worker touches nothing cross-origin, and has no eval', () => {
+  /* Guarded before the negations below. Every assertion in this test is a NOT,
+     and a NOT over an empty string passes — so a file that failed to load would
+     report green here while proving nothing. The test that reads the file says
+     so too, but its failure does not stop this one printing a tick. */
+  ok(SW_SRC, 'sw.js did not load — the negations below would all pass on an empty string');
   const code = stripComments(SW_SRC);
   ok(!/https?:\/\//.test(code), 'sw.js names an off-origin URL in executable code');
   /* A worker on Pages runs with NO CSP at all, so these are not merely untidy. */
@@ -1182,6 +1190,9 @@ t('neither page keeps a rate table of its own any more', () => {
      them ends up a year out of date. Comments are stripped first, because both
      pages talk about the rates they USED to carry. */
   for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    /* Guarded before the negation: a NOT over an empty string passes, so a page
+       that failed to load would report green here having proved nothing. */
+    ok(src, name + ' did not load — the negation below would pass on an empty string');
     const body = stripComments(src);
     ok(!/\bconst FED\s*=|\bvar FED_TOP\s*=|\bNY_TOP\s*=/.test(body),
        name + ' has grown a rate constant back — it belongs in tax.js');
@@ -1200,8 +1211,14 @@ t('the tax year is the same one both pages tell the reader', () => {
   ok(yr, 'no tax year found');
   for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]])
     ok(src.includes('TAX_YEAR'), name + ' must name the year from the one place it lives');
-  ok(CALC_SRC.includes('Tax year ' + yr) || CALC_SRC.includes(yr),
-     'the footnote must not name a different year from the engine');
+  /* Matched on the FOOTNOTE, not on the bare four digits. `CALC_SRC.includes(yr)`
+     was the fallback here until 2026-08-22, and it could not fail: the page
+     carries "&copy; 2026 Charles Adams" and two dozen other 2026s, so the
+     assertion was satisfied by the copyright line whatever the engine said. */
+  const stated = [...CALC_SRC.matchAll(/Tax year (\d{4})/g)].map((m) => m[1]);
+  ok(stated.length, 'the calculator states no tax year at all — the footnote has gone');
+  eq([...new Set(stated)], [yr],
+     'the footnote names a different year from tax.js — bump them together');
 });
 
 group('index.html — the page /lottery/ actually serves');
