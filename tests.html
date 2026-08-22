@@ -717,6 +717,25 @@ t('the dialog carries the two iOS fixes every sibling dialog has', () => {
     ok(/max-width:\s*560px/.test(rule), name + ": 560px is the family's narrow dialog width");
   }
 });
+t('the dialog spells out the auto margin the reset takes away', () => {
+  /* A modal <dialog> is centred by the browser's own stylesheet, via
+     `margin: auto` on a `position: fixed; inset: 0` box. Both these pages open
+     with a universal `margin: 0` reset, which beats that — so the window opened
+     in the top-left corner while every sibling's opened centred. None of the
+     four sibling apps has that reset, which is why their dialog rule could be
+     copied token for token and still come out wrong here.
+
+     Pinned as a PAIR: the reset is the reason the margin has to be written
+     down, so if the reset ever goes, this test should be the thing that says
+     the margin no longer needs to be. */
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    const reset = /\*[^{}]*\{[^}]*margin:\s*0[^}]*\}/.test(src);
+    const rule = (src.match(/\n\s*dialog \{([\s\S]*?)\n\s*\}/) || [])[1] || '';
+    ok(reset, name + ': the universal reset has gone — check whether the dialog still needs its margin');
+    ok(/margin:\s*auto/.test(rule),
+       name + ': the dialog will open in the top-left corner without an explicit auto margin');
+  }
+});
 t('clicking the backdrop closes it, which is the family rule for every dialog', () => {
   /* Whitespace-tolerant on purpose: the two pages are written in different
      styles (one ES5-ish, one not) and this test is about the behaviour, not

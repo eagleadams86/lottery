@@ -44,6 +44,17 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
     pins both: `.btn` had `--btn-bg` as its default background, which is the PRIMARY
     treatment, so the header's Share button drew filled where every sibling draws it plain;
     and `.btn.primary` used `--accent`, which is the link colour, not the button one.
+  - **`margin: auto` is written out on the dialog, and it is the one line the siblings do
+    NOT need.** A modal `<dialog>` is centred by the browser's own stylesheet, which gives
+    it `position: fixed; inset: 0; margin: auto` — that auto margin IS the centring. Both
+    these pages open with a `*, *::before, *::after { margin: 0 }` reset, which beats the UA
+    rule, so the window opened jammed in the top-left corner while every sibling's opened in
+    the middle. **None of the four sibling apps has that reset**, which is exactly why
+    copying their dialog rule token for token was not enough: the rule leans on a default
+    this repo had already knocked out, and nothing about the copied CSS says so. `tests.html`
+    pins the margin AND the reset together, so if the reset ever goes the test is what says
+    the margin no longer has to be written down. The general lesson is the useful one — when
+    a rule is lifted from a sibling app, check what it was relying on that this repo removes.
   - **The dialog carries the two iOS fixes the rest of the family got in August and these
     pages missed**, because they had no dialog when those landed: `max-height: calc(100vh
     - 32px)` with `overflow: auto` (a tall dialog on a short laptop otherwise opens already

@@ -549,6 +549,16 @@
               it into view. Cap the height so the scrolling happens inside a
               dialog that fits. vh, not dvh: dvh resolves to 0 in some embedded
               engines. */
+           /* CENTRED, and this line is the one the sibling apps don't need.
+              A modal <dialog> is centred by the browser's own stylesheet, which
+              gives it `position: fixed; inset: 0; margin: auto` — the `auto`
+              margin is the whole centring mechanism. Both these pages open with
+              a `*, *::before, *::after { margin: 0 }` reset, which beats that UA
+              rule, so the dialog collapsed into the top-left corner. None of the
+              four sibling apps carries that reset, which is why copying their
+              dialog rule verbatim was not enough: the rule leans on a default
+              this repo had already knocked out. */
+           margin: auto;
            max-height: calc(100vh - 32px); overflow: auto;
            /* SCROLL CHAINING off. A scroll container that has run out of scroll
               hands the rest of the gesture to its parent, so reaching the foot
