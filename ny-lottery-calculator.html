@@ -614,19 +614,29 @@
      `.printback` is the one thing added rather than removed: on paper a card's
      background is either invisible or a waste of ink, so the borders carry the
      structure instead. */
+  /* Only what this PAGE owes a sheet of paper. The palette, the header buttons,
+     the sticky header, `@page`, the repeating table headings and the
+     don't-tear-a-row rules all live in the theme pack now, which grew a print
+     block on 2026-08-22. This block hard-coded #fff, #000 and #999 for one day
+     before that landed — literal colours in a repo whose whole palette comes
+     from the pack, and they would now be fighting a print palette that was
+     chosen properly. They are gone; nothing here names a colour.
+
+     `.no-print` is the pack's handle for furniture an app owns and the pack
+     cannot see. The theme picker carries it because the pack knows the sibling
+     apps' `#themeSel` / `.theme-sel` and this page calls its own
+     `theme-select`. */
   @media print {
-    header, .top-actions, .fetch-bar, .refresh-btn, .btn, .row, dialog, .skip,
-    .manual-toggle, .from-share, .wn-games { display: none !important; }
-    body { background: #fff; color: #000; }
+    .fetch-bar, .manual-toggle, .from-share, .wn-games, .no-print { display: none !important; }
     .page { max-width: none; padding: 0; }
+    /* One column on paper, in markup order — which is the phone layout, and it
+       already reads correctly top to bottom. */
     .cols { display: block; }
+    /* Everything open. A section someone had collapsed on screen is still part
+       of the answer, and paper has no disclosure triangle to press. */
     .details-body, .wn-body, .manual-inputs, .sched-body { display: block !important; }
     .sched-wrap { max-height: none; overflow: visible; }
     .details-chevron, .chevron { display: none; }
-    .mc, .cmp-card, .setup, .wn-body { border: 1px solid #999; background: #fff; }
-    a[href]::after { content: ""; }
-    table { page-break-inside: auto; }
-    tr { page-break-inside: avoid; }
   }
 </style>
 </head>
@@ -654,7 +664,7 @@
            the glyph aria-hidden so a screen reader reads the word and not
            "north east arrow". This page had no button at all before 2026-08-22. -->
       <button type="button" class="btn small" id="share-btn" onclick="openShare()"><span aria-hidden="true">&#8599;</span> Share</button>
-      <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme">
+      <select class="theme-btn theme-select no-print" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme">
         <option value="auto">◐ Auto</option>
         <option value="dark">☾ Dark</option>
         <option value="light">☀ Light</option>
@@ -902,7 +912,7 @@
          is inert inside some of the places these pages get opened, and the
          clipboard works everywhere the page does. Print is the browser's own,
          against the print rules in the stylesheet. -->
-    <div class="row" style="margin-top:1.1rem">
+    <div class="row no-print" style="margin-top:1.1rem">
       <button type="button" class="btn small" onclick="copyCSV()" id="csv-btn">Copy As CSV</button>
       <button type="button" class="btn small" onclick="window.print()">Print</button>
       <span class="hint" id="csv-note" role="status" style="font-size:11px;color:var(--text-hint)"></span>

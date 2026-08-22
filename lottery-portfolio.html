@@ -378,14 +378,18 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
   .verdict.bad  { border-color: var(--err); background: var(--err-bg); }
   .verdict strong { font-weight: 700; }
 
+  /* Only what this PAGE owes a sheet of paper — see the fuller note on the
+     calculator page. The palette, the header buttons, the sticky header and the
+     page-break rules are the theme pack's job since 2026-08-22; the three
+     hard-coded colours that used to be here are gone. */
   @media print {
-    header, .top-actions, .btn, .row, dialog, .skip, .from-share, .sliders input[type=range] { display: none !important; }
-    body { background: #fff; color: #000; }
+    .from-share, .no-print { display: none !important; }
     .wrap, .app { max-width: none; padding: 0; }
+    /* A slider is a control, not a figure — the number beside it is the figure,
+       and that stays. */
+    .sliders input[type=range] { display: none !important; }
     .sec-body { display: block !important; }
     .sec-chevron { display: none; }
-    .card, .chart-card, .met, .verdict { border: 1px solid #999; background: #fff; }
-    a[href]::after { content: ""; }
   }
 
 </style>
@@ -412,7 +416,7 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
       <!-- Same place, same glyph, same aria-hidden as the calculator's and every
            sibling app's. -->
       <button type="button" class="btn small" id="share-btn" onclick="openShare()"><span aria-hidden="true">&#8599;</span> Share</button>
-      <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme">
+      <select class="theme-btn theme-select no-print" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme">
         <option value="auto">◐ Auto</option>
         <option value="dark">☾ Dark</option>
         <option value="light">☀ Light</option>
@@ -568,7 +572,7 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
   <!-- Take it away with you. Copy rather than download, for the reason spelled
        out on the calculator page: a download can be blocked outright inside an
        installed app window, and a button that does nothing is worse than none. -->
-  <div class="row" style="margin:1.2rem 0">
+  <div class="row no-print" style="margin:1.2rem 0">
     <button type="button" class="btn small" onclick="copyCSV()">Copy As CSV</button>
     <button type="button" class="btn small" onclick="window.print()">Print</button>
     <span id="csv-note" role="status" style="font-size:11px;color:var(--text-hint)"></span>

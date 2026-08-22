@@ -651,6 +651,51 @@ t('zero growth still runs the full term rather than dividing by nothing', () => 
   for (const v of d.path) ok(isFinite(v), 'a non-finite year would break the chart');
 });
 
+group('printing — the pack owns the palette, the page owns its own furniture');
+t('neither print block names a colour', () => {
+  /* Both pages carried `#fff`, `#000` and `#999` in their print rules for one
+     day, before the theme pack grew a print block of its own on 2026-08-22.
+     Literal colours are drift anywhere in this repo; in a print block they are
+     also WRONG now, because they would override a print palette that was
+     chosen properly and gated for contrast. */
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    const block = (src.match(/@media print \{([\s\S]*?)\n\s*\}\n/) || [])[1] || '';
+    ok(block, name + ' has no print block');
+    ok(!/#[0-9a-f]{3,8}\b/i.test(block), name + ': the print block names a colour — the pack owns those');
+    ok(!/\bcolor:|\bbackground:/.test(block), name + ': the print block sets a colour — the pack owns those');
+  }
+});
+t('the furniture the pack cannot see is tagged with its handle', () => {
+  /* `.no-print` is the pack's documented handle for things an app owns. The
+     theme picker needs it because the pack knows the sibling apps' `#themeSel`
+     and `.theme-sel`, and these two pages call theirs `theme-select`. */
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    ok(/id="theme-select"[^>]*class="[^"]*no-print|class="[^"]*no-print[^"]*"[^>]*id="theme-select"/.test(src),
+       name + ': the theme picker will print without the no-print handle');
+    ok(/class="row no-print"/.test(src), name + ': the Copy/Print row must not print itself');
+  }
+});
+t('what a printed page is FOR is still on it', () => {
+  /* The failure mode of a print stylesheet is hiding too much. The brand (a
+     printed page with no name on it cannot be filed), the basis line (the
+     sentence every figure below is true under) and the figures themselves all
+     have to survive. */
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    const block = (src.match(/@media print \{([\s\S]*?)\n\s*\}\n/) || [])[1] || '';
+    for (const keep of ['.brand', '.basis', 'header'])
+      ok(!new RegExp('(^|[,\\s])' + keep.replace('.', '\\.') + '\\s*[,{]').test(block),
+        name + ': ' + keep + ' must not be hidden on paper');
+  }
+});
+t('a collapsed section still prints, because paper has no triangle to press', () => {
+  const calc = (CALC_SRC.match(/@media print \{([\s\S]*?)\n\s*\}\n/) || [])[1] || '';
+  ok(/\.details-body[\s\S]*display: block !important/.test(calc),
+     'the calculator must open its collapsed sections for print');
+  const port = (PORT_SRC.match(/@media print \{([\s\S]*?)\n\s*\}\n/) || [])[1] || '';
+  ok(/\.sec-body \{ display: block !important/.test(port),
+     'the portfolio must open its collapsed sections for print');
+});
+
 group('the share window — the family shape, on both pages');
 const DLG = (src) => (src.match(/<dialog id="share-dialog"[\s\S]*?<\/dialog>/) || [''])[0];
 t('both dialogs are built from the same pieces, in the same order', () => {
