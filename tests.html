@@ -68,6 +68,27 @@ function eq(actual, expected, note) {
   if (a !== e) throw new Error((note ? note + ': ' : '') + 'expected ' + e + ', got ' + a);
 }
 function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy'); }
+/* HTML comments explain things by naming them — including the very elements
+   these assertions look for, and one of those notes lives in a <style> block a
+   strip does not reach. So the comments come out before the page is matched
+   against, or the prose passes the test it is describing.
+
+   Looped until the string stops changing, rather than a single .replace(). One
+   pass over a multi-character delimiter can leave a NEW opener behind that the
+   pass already went past — `<` `!--` `<` `!--` `--` `>` collapses to a live
+   `<` `!--` on the way out — so a single pass is only as good as the input is
+   well-formed. CodeQL's js/incomplete-multi-character-sanitization flagged
+   exactly this. The stakes are low (this reads local repo files to assert on
+   them, it does not sanitize anything a browser will render) but a test that
+   can be fooled about what is commented out is a test that can miss a live
+   off-origin script, so it is worth doing properly. Same helper, same wording,
+   in every sibling repo’s suite. */
+const stripHtmlComments = (s) => {
+  let out = String(s), prev;
+  do { prev = out; out = out.replace(/<!--[\s\S]*?-->/g, ''); } while (out !== prev);
+  return out;
+};
+
 /* Money figures come out of float multiplication, so exact eq() would pin
    rounding noise instead of the model. Within a dollar is equality here. */
 function near(actual, expected, note) {
@@ -687,6 +708,40 @@ t('it links both tools, the privacy policy and How it works', () => {
   ok(/MIT licensed/.test(INDEX_SRC), 'and carries the authorship line every public page has');
 });
 
+t('and its own landmarks — a real main, then a real footer', () => {
+  /* The landing page is the one page here that was still a <div> of prose with
+     a styled <p> at the foot: the two app pages and the policy all had the pair
+     by 2026-08-21 and this did not. Comments stripped first and looped, for the
+     same reason the privacy group below gives. */
+  const bare = stripHtmlComments(INDEX_SRC);
+  ok(/<main>/.test(bare),
+    'no main landmark on the launcher, so contentinfo would be the only one');
+  ok(/<footer class="note">/.test(bare),
+    'the footer is a real <footer> — a styled <p> is not a contentinfo landmark');
+  ok(bare.indexOf('</main>') < bare.indexOf('<footer class="note"'),
+    'with main CLOSED before it: a <footer> inside main is not contentinfo at all');
+});
+
+t('its theme picker is written out at full size, with midnight pre-selected', () => {
+  /* Both app pages built these four options from script at the FOOT of the
+     page, into an empty <select> in a header that had already painted — so the
+     control laid out at about 40px and jumped to its full width a moment later.
+     Every other app in the family writes its header controls out at final size
+     for exactly this reason. */
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    const sel = (stripHtmlComments(src)
+      .match(/<select[^>]*id="theme-select"[\s\S]*?<\/select>/) || [])[0] || '';
+    ok(/<option value="dark">/.test(sel), name + ': the options must live in the markup');
+    ok(/<option value="midnight" selected>/.test(sel),
+      name + ': midnight must be pre-selected, or the picker reads "Dark" until JS runs');
+    for (const id of ['dark', 'light', 'midnight', 'sepia'])
+      ok(sel.includes('value="' + id + '"'), name + ': ' + id + ' is missing from the picker');
+    ok(!/getElementById\('theme-select'\)\.innerHTML/.test(src),
+      name + ': the script still writes the options in — that is the re-flow this '
+      + 'moved them into the markup to stop. THEMES is read back off them now.');
+  }
+});
+
 /* ── The privacy page ───────────────────────────────────────────────────────
    It carries the family footer already — this page grew it first and was the
    only one of the five that had it until 2026-08-21. What is new is that the
@@ -713,7 +768,7 @@ t('the footer and the policy are both real landmarks, in that order', () => {
      <style> block, which an HTML-comment strip does not reach — so a bare
      /<main>/ or a bare '<footer' would pass on a page that had lost the element
      and kept the comment explaining it, which is the one way this could rot. */
-  const bare = PRIVACY_SRC.replace(/<!--[\s\S]*?-->/g, '');
+  const bare = stripHtmlComments(PRIVACY_SRC);
   ok(/<footer class="foot">/.test(bare),
     'the footer is a real <footer> — a contentinfo landmark, not a styled paragraph');
   ok(/<main>/.test(bare),

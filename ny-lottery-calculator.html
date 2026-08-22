@@ -443,7 +443,21 @@
     <h1 class="brand"><img src="favicon.ico?v=4" width="22" height="22" alt=""
       >NY&nbsp;Lottery <span>&middot; Charlie&rsquo;s Epic After-Tax Calculator</span></h1>
     <div class="top-actions">
-      <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme"></select>
+      <!-- The four unified themes, written out here rather than built by the
+           script at the foot of the page. The header paints long before that
+           script runs, so an empty <select> laid out at about 40px and then
+           jumped to its full width the moment the options arrived — the same
+           re-flow every sibling app writes its header controls out at final
+           size to avoid. Midnight carries `selected` to match the theme the
+           boot script in <head> has already applied, so the picker never reads
+           one theme while the page shows another. THEMES is read back off
+           these options below, so this list is the only place they live. -->
+      <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme">
+        <option value="dark">☾ Dark</option>
+        <option value="light">☀ Light</option>
+        <option value="midnight" selected>✦ Midnight</option>
+        <option value="sepia">📜 Sepia</option>
+      </select>
     </div>
   </div>
 </header>
@@ -669,22 +683,19 @@ var _t=null;
 function dbc(fn){ clearTimeout(_t); _t=setTimeout(fn,80); }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
-var THEMES = [
-  { id:'dark',      label:'Dark',      icon:'\u263E' },
-  { id:'light',     label:'Light',     icon:'\u2600' },
-  { id:'midnight',  label:'Midnight',  icon:'\u2726' },
-  { id:'sepia',     label:'Sepia',     icon:'\uD83D\uDCDC' },
-];
-document.getElementById('theme-select').innerHTML = THEMES.map(function(t){
-  return '<option value="'+t.id+'">'+t.icon+' '+t.label+'</option>';
-}).join('');
+/* Read back off the <option>s in the header rather than listed again here.
+   They used to be listed here and written into an empty <select> — which is
+   what made the header re-flow on every load, so the list moved into the markup
+   and this became the one line that reads it. One place for the four ids. */
+var THEMES = [].map.call(document.getElementById('theme-select').options,
+  function (o) { return o.value; });
 /* Keeps the installed app window's title bar with the theme. Read back out of the
    pack's `--bg` rather than listed here, so a palette change in the theme pack
    carries across without a second place to remember it. Only an installed window
    and mobile browser chrome read it; in an ordinary tab it does nothing. */
 function setTheme(theme) {
   if (theme === 'slate') theme = 'dark'; // renamed family-wide: same palette (see theme.css)
-  if (!THEMES.some(function(t){ return t.id === theme; })) theme = 'midnight';
+  if (THEMES.indexOf(theme) === -1) theme = 'midnight';
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('lottery-theme', theme);
   document.getElementById('theme-select').value = theme;

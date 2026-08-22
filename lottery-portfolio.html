@@ -299,7 +299,21 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
     <h1 class="brand"><img src="favicon.ico?v=4" width="22" height="22" alt=""
       >Lottery&nbsp;Portfolio <span>&middot; Charlie&rsquo;s Epic Income Model</span></h1>
     <div class="top-actions">
-      <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme"></select>
+      <!-- The four unified themes, written out here rather than built by the
+           script at the foot of the page. The header paints long before that
+           script runs, so an empty <select> laid out at about 40px and then
+           jumped to its full width the moment the options arrived — the same
+           re-flow every sibling app writes its header controls out at final
+           size to avoid. Midnight carries `selected` to match the theme the
+           boot script in <head> has already applied, so the picker never reads
+           one theme while the page shows another. THEMES is read back off
+           these options below, so this list is the only place they live. -->
+      <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme">
+        <option value="dark">☾ Dark</option>
+        <option value="light">☀ Light</option>
+        <option value="midnight" selected>✦ Midnight</option>
+        <option value="sepia">📜 Sepia</option>
+      </select>
     </div>
   </div>
 </header>
@@ -564,23 +578,19 @@ function zeroSurplus() {
   render(); // render() also persists slider state
 }
 
-const THEMES = [
-  { id:'dark',      label:'Dark',      icon:'☾' },
-  { id:'light',     label:'Light',     icon:'☀' },
-  { id:'midnight',  label:'Midnight',  icon:'✦' },
-  { id:'sepia',     label:'Sepia',     icon:'📜' },
-];
+/* Read back off the <option>s in the header rather than listed again here.
+   They used to be listed here and written into an empty <select> — which is
+   what made the header re-flow on every load, so the list moved into the markup
+   and this became the one line that reads it. One place for the four ids. */
+const THEMES = [...document.getElementById('theme-select').options].map(o => o.value);
 function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
-document.getElementById('theme-select').innerHTML = THEMES.map(t =>
-  `<option value="${t.id}">${t.icon} ${t.label}</option>`
-).join('');
 /* Keeps the installed app window's title bar with the theme. Read back out of the
    pack's `--bg` rather than listed here, so a palette change in the theme pack
    carries across without a second place to remember it. Only an installed window
    and mobile browser chrome read it; in an ordinary tab it does nothing. */
 function setTheme(theme) {
   if (theme === 'slate') theme = 'dark'; // renamed family-wide: same palette (see theme.css)
-  if (!THEMES.some(t => t.id === theme)) theme = 'midnight';
+  if (!THEMES.includes(theme)) theme = 'midnight';
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('lottery-theme', theme);
   document.getElementById('theme-select').value = theme;

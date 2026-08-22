@@ -62,7 +62,12 @@
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="ny-lottery-calculator.html">← Back to the calculator</a>
+  <!-- The back link stays OUTSIDE <main> — it is navigation, not the document —
+       but "outside main" is not the same as "outside every landmark", which is
+       where it sat until 2026-08-21: axe-core's `region` rule found it on all
+       six privacy pages at once. A <nav> is what it always was; now it says so,
+       and a reader moving by landmark can find the way back. -->
+  <nav aria-label="Back to the calculator"><a class="back" href="ny-lottery-calculator.html">← Back to the calculator</a></nav>
 
   <!-- A real <main>, so the policy itself is a landmark a screen reader can jump
        straight to — and so the <footer> below is genuinely the OTHER end of the

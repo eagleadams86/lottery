@@ -97,13 +97,23 @@
   .card:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
   .card h2 { font-size: 17px; margin: 0 0 6px; color: var(--text-primary); }
   .card p { margin: 0; color: var(--text-secondary); font-size: 14px; }
-  .note { color: var(--text-muted); font-size: 12.5px; margin-top: 30px; }
+  /* `margin`, not `margin-top`: this is a real <footer> landmark now and was a
+     <p> before, so the rule is spelled out rather than left to depend on the
+     element's own default margins. */
+  .note { color: var(--text-muted); font-size: 12.5px; margin: 30px 0 0; }
   .note a { color: var(--accent); }
   .note a:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; border-radius: 3px; }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <!-- A real <main>, so the two launcher cards are a landmark a screen reader
+       can jump straight to — and so the <footer> below is genuinely the OTHER
+       end of the document rather than the only landmark on the page. A <footer>
+       nested in main/article/section is not contentinfo at all, which is why
+       this closes before it and why .wrap stays an ordinary <div>. The same
+       pair, in the same order, as the privacy page and both app pages. -->
+  <main>
   <div class="brand">
     <img src="favicon.ico?v=4" width="30" height="30" alt="">
     <h1>NY Lottery Calculator &amp; Portfolio</h1>
@@ -125,10 +135,16 @@
       current Treasury yield.</p>
   </a>
 
-  <p class="note"><a href="privacy.html">Privacy policy</a> &middot;
+  </main>
+
+  <!-- The footer every public page in this account carries. A real <footer>,
+       not a styled paragraph — it was a <p class="note"> until 2026-08-21, and
+       a paragraph is not a contentinfo landmark however it is styled. .note
+       keeps every rule that styles it. -->
+  <footer class="note"><a href="privacy.html">Privacy policy</a> &middot;
     <a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a><br>
     &copy; 2026 Charles Adams — an independent personal project,
-    <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licensed</a>.</p>
+    <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licensed</a>.</footer>
 </div>
 
 <!-- ── Offline ────────────────────────────────────────────────────────────────
