@@ -710,7 +710,7 @@ t('both dialogs are built from the same pieces, in the same order', () => {
        name + ': the link belongs in a formpanel headed "Your Link"');
     ok(/<input type="text" id="share-link" readonly/.test(d), name + ': the link box must be readonly');
     ok(/id="share-meta" role="status"/.test(d), name + ': the character count must be announced');
-    const order = ['Copy link', 'Preview it', 'Done'];
+    const order = ['Copy Link', 'Preview It', 'Done'];
     let at = -1;
     for (const label of order) {
       const i = d.indexOf('>' + label + '<');
@@ -719,10 +719,10 @@ t('both dialogs are built from the same pieces, in the same order', () => {
     }
   }
 });
-t('Copy link and Done are primary, Preview it is not', () => {
+t('Copy Link and Done are primary, Preview It is not', () => {
   for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
     const d = DLG(src);
-    for (const [label, cls] of [['Copy link', 'btn primary'], ['Preview it', 'btn'], ['Done', 'btn primary']]) {
+    for (const [label, cls] of [['Copy Link', 'btn primary'], ['Preview It', 'btn'], ['Done', 'btn primary']]) {
       const m = d.match(new RegExp('<button[^>]*class="([^"]*)"[^>]*>' + label + '<'));
       ok(m, name + ': no button labelled ' + label);
       eq(m[1], cls, name + ': ' + label + ' should be class="' + cls + '"');
@@ -789,7 +789,7 @@ t('clicking the backdrop closes it, which is the family rule for every dialog', 
     ok(/share-dialog'\)\.addEventListener\('click'[\s\S]{0,240}e\.target\s*===\s*this\)\s*this\.close\(\)/.test(src),
        name + ': the backdrop click handler is missing');
 });
-t('"Preview it" opens a new tab and hands it no window handle', () => {
+t('"Preview It" opens a new tab and hands it no window handle', () => {
   for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
     const fn = (src.match(/function previewShare\s*\(\)\s*\{[\s\S]*?\n\}/) || [''])[0];
     ok(fn, name + ' has no previewShare()');
