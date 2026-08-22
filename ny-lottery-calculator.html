@@ -191,7 +191,7 @@
   /* The family's brand line: mark, name, then the strapline muted behind a middle
      dot — one line, where this page had a title with a second line under it. The
      auto right margin is what pushes the controls to the far edge. */
-  .brand { font-size: var(--fs-lg); font-weight: 700; color: var(--text-primary);
+  .brand { font-size: var(--fs-md); font-weight: 700; color: var(--text-primary);
            letter-spacing: -0.01em; margin: 0 auto 0 0; }
   .brand span { color: var(--text-muted); font-weight: 500; }
   /* 22px, the siblings' number, and NOT a flex row: the mark sits in the
@@ -358,7 +358,7 @@
      which left the numbers on different baselines across a 2x2 row. Reserving two lines
      is the cheap version of the subgrid the sibling apps use for the same problem. */
   @media (max-width: 360px) { .ml { line-height: 1.5; min-height: 3em; } }
-  .mv { font-size: var(--fs-lg); font-weight: 600; color: var(--text-primary); }
+  .mv { font-size: var(--fs-xl); font-weight: 600; color: var(--text-primary); }
   .mv.red { color: var(--red); }
   .mv.grn { color: var(--green); }
 
@@ -507,7 +507,7 @@
   .cmp-card.win { border-color: var(--ok); }
   .cmp-ttl { font-size: var(--fs-xs); font-weight: 600; color: var(--text-hint); text-transform: uppercase;
              letter-spacing: 0.06em; margin-bottom: 6px; }
-  .cmp-big { font-size: var(--fs-lg); font-weight: 700; color: var(--text-primary);
+  .cmp-big { font-size: var(--fs-xl); font-weight: 700; color: var(--text-primary);
              font-variant-numeric: tabular-nums; }
   .cmp-sub { font-size: var(--fs-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.6; }
   /* Never the border alone: the winning card is named in the verdict sentence
@@ -581,7 +581,7 @@
               `contain`, not `none`: the dialog's own scrolling is untouched. */
            overscroll-behavior: contain; }
   dialog::backdrop { background: rgba(0, 0, 0, .55); }
-  dialog h3 { margin: 0 0 12px; font-size: var(--fs-lg); }
+  dialog h3 { margin: 0 0 12px; font-size: var(--fs-md); }
   fieldset.formpanel { border: 1px solid var(--border); border-radius: var(--radius-sm);
                        padding: 12px; margin: 14px 0 0; background: var(--bg-card-alt); min-width: 0; }
   legend { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .04em;
