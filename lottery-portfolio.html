@@ -112,6 +112,11 @@
    reasoning, in PAPTrack, Golf Handicap and Money Map. */
 :root                 { color-scheme: dark; }
 [data-theme="dark"]   { color-scheme: dark; }
+/* Auto has no palette of its own — theme.css resolves it to Light or, under
+   prefers-color-scheme: dark, to Midnight. `light dark` is the honest answer here:
+   it tells the browser the page works either way and to draw its own controls to
+   match the system, which is exactly what the palette above it is doing. */
+[data-theme="auto"]   { color-scheme: light dark; }
 [data-theme="light"]  { color-scheme: light; }
 [data-theme="sepia"]  { color-scheme: light; }
 
@@ -375,6 +380,7 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
            sibling app's. -->
       <button type="button" class="btn small" id="share-btn" onclick="openShare()"><span aria-hidden="true">&#8599;</span> Share</button>
       <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme">
+        <option value="auto">◐ Auto</option>
         <option value="dark">☾ Dark</option>
         <option value="light">☀ Light</option>
         <option value="midnight" selected>✦ Midnight</option>
@@ -916,6 +922,17 @@ function setTheme(theme) {
   if (bar && bg) bar.setAttribute('content', bg);
 }
 setTheme(localStorage.getItem('lottery-theme') || 'midnight');
+
+/* On Auto the palette can change with nobody touching the picker — the reader's phone
+   switches to dark at sunset and theme.css follows on its own, because the whole rule
+   lives in a media query rather than in script. Two things do NOT follow: the theme-color
+   meta tag, and the charts, which read the palette when they are drawn. Re-running
+   setTheme with the saved value does both, and saves the same value back, which is a
+   no-op — the theme has not changed, only what it resolves to. */
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+  if (document.documentElement.getAttribute('data-theme') === 'auto') setTheme('auto');
+});
+
 function tc() { return cssVar('--chart-tick'); }
 function gc() { return cssVar('--chart-grid'); }
 

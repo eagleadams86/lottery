@@ -50,7 +50,7 @@
   try {
     var t = localStorage.getItem('lottery-theme');
     if (t === 'slate') t = 'dark'; // renamed family-wide: same palette (see theme.css)
-    var ok = ['light','dark','midnight','sepia'];
+    var ok = ['auto','light','dark','midnight','sepia'];
     document.documentElement.setAttribute('data-theme',
       ok.indexOf(t) === -1 ? 'midnight' : t);
   } catch (e) {}
@@ -61,7 +61,12 @@
   try {
     var BG = { midnight: '#0a0e1a', dark: '#13151b', light: '#f5f5f3', sepia: '#f3ead7' };
     var bar = document.querySelector('meta[name="theme-color"]');
-    var bg = BG[document.documentElement.getAttribute('data-theme')];
+    var id = document.documentElement.getAttribute('data-theme');
+    /* 'auto' has no entry of its own and cannot have one — it resolves to Light or
+       Midnight from the system setting, the same rule theme.css applies to the palette.
+       matchMedia is answerable this early, unlike the stylesheet. */
+    if (id === 'auto') id = matchMedia('(prefers-color-scheme: dark)').matches ? 'midnight' : 'light';
+    var bg = BG[id];
     if (bar && bg) bar.setAttribute('content', bg);
   } catch (e) {}
 </script>
@@ -81,6 +86,11 @@
    reasoning, in PAPTrack, Golf Handicap and Money Map. */
 :root                 { color-scheme: dark; }
 [data-theme="dark"]   { color-scheme: dark; }
+/* Auto has no palette of its own — theme.css resolves it to Light or, under
+   prefers-color-scheme: dark, to Midnight. `light dark` is the honest answer here:
+   it tells the browser the page works either way and to draw its own controls to
+   match the system, which is exactly what the palette above it is doing. */
+[data-theme="auto"]   { color-scheme: light dark; }
 [data-theme="light"]  { color-scheme: light; }
 [data-theme="sepia"]  { color-scheme: light; }
 

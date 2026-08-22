@@ -13,7 +13,7 @@
   try {
     var t = localStorage.getItem('lottery-theme');
     if (t === 'slate') t = 'dark'; // renamed family-wide: same palette (see theme.css)
-    var ok = ['light','dark','midnight','sepia'];
+    var ok = ['auto','light','dark','midnight','sepia'];
     document.documentElement.setAttribute('data-theme',
       ok.indexOf(t) === -1 ? 'midnight' : t);
   } catch (e) {}
