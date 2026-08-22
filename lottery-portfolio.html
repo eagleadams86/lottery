@@ -66,20 +66,91 @@
 <script src="chart.min.js"></script>
 <style>
 /* Color tokens + theme live in the shared theme.css (linked above). */
+/* ── Layout tokens ────────────────────────────────────────────────────────────
+   The app family's two, added 2026-08-21 when both lottery pages took the
+   siblings' chrome.
+
+   `--page-w` is read by BOTH the content column and the row inside the sticky
+   header bar. They have to be the same number or the mark stops lining up with
+   the left edge of the first card, so both read it from here rather than
+   repeating it. 1500px is Sprint Predictability's and Flow Metrics' number, and
+   this page earns it the plain way they do: the portfolio breakdown is a real
+   six-column table and the charts sit two across, so the width is spent on
+   figures rather than on gaps. It was 960px.
+
+   `--chrome-h` is one height for everything in the header row. A native <select>
+   ignores line-height, so it sizes shorter than a link or button with identical
+   padding and font; pinning both is the only way to keep the row even. */
+:root { --page-w:1500px; --chrome-h:30px; }
 * { box-sizing:border-box; margin:0; padding:0; }
-.theme-btn { display:flex; align-items:center; gap:6px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; background:var(--surface); color:var(--text2); border:1px solid var(--border2); border-radius:8px; font-family:inherit; transition:background 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
+/* One height for everything in the header row — see `--chrome-h`. */
+.theme-btn { display:flex; align-items:center; gap:6px; min-height:var(--chrome-h); padding:4px 12px; font-size:12px; font-weight:600; cursor:pointer; background:var(--surface); color:var(--text2); border:1px solid var(--border2); border-radius:8px; font-family:inherit; transition:background 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
 .theme-btn:hover { color:var(--text); border-color:var(--border2); }
 .theme-select { -webkit-appearance:none; appearance:none; padding-right:26px; background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23888'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
-.hrow { display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; flex-wrap:wrap; gap:8px; }
 body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Helvetica,Arial,sans-serif; font-size:14px; line-height:1.5; min-height:100vh; transition:background 0.2s,color 0.2s; }
-.app { max-width:960px; margin:0 auto; padding:32px 24px 64px; }
-h1 { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
-/* The mark from the browser tab, worn beside the title. Width and height are on the
-   element as well as here, so the row is laid out at its final size before the icon
-   arrives rather than growing under the reader. It sits in the heading's own flow —
-   making h1 a flex row would stop the title wrapping properly on a phone. */
-h1 img { width:24px; height:24px; vertical-align:-5px; margin-right:9px; }
-.hdr-sub { font-size:12px; color:var(--text3); margin-top:3px; }
+/* Width lives with the other layout tokens at the top of the file. The header
+   supplies the space above, so there is no top padding here any more. */
+.app { max-width:var(--page-w); margin:0 auto; padding:0 24px 64px; }
+
+/* ── The skip link ────────────────────────────────────────────────────────────
+   Visually gone until it takes focus, then the first thing on the page. Without
+   it a keyboard or screen-reader user tabs through the whole header on every load
+   before reaching any content, and the header is always there now that it is
+   sticky. The family added these on 2026-08-20; both lottery pages were missed
+   and joined on 2026-08-21.
+
+   FIXED, not absolute, when focused: absolute positions against the document, so
+   a reader who shift-tabs back from halfway down the page would send the link to
+   the top of the document and the browser would scroll the whole page to follow
+   it. Fixed puts it at the top of the VIEWPORT, where it was aimed. */
+.skip { position:absolute; left:-9999px; top:0; z-index:100; }
+.skip:focus { position:fixed; left:8px; top:8px; padding:8px 14px;
+  background:var(--surface); color:var(--text); border:2px solid var(--focus-border);
+  border-radius:6px; text-decoration:none; font-weight:600; }
+/* Focus lands on <main id="maincontent" tabindex="-1">, which must not then draw a
+   focus ring around the entire page. */
+main:focus { outline:none; }
+/* A sticky bar covers whatever a jump link lands on. */
+main { scroll-margin-top:96px; }
+
+/* ── Header ───────────────────────────────────────────────────────────────────
+   The sibling apps' shape: a bar the full width of the window that STAYS at the
+   top of the screen, with the row inside it held to the same `--page-w` as the
+   content below. Until 2026-08-21 this was an ordinary block inside `.app` that
+   scrolled away, taking the theme picker and the cross-link with it.
+
+   Sticky rather than fixed: fixed takes the bar out of the flow and the page then
+   has to be padded by hand to make room for it, which goes wrong the moment the
+   row wraps on a phone. z-index 20 is the siblings' number, and it matters more
+   here than on the calculator — Chart.js draws canvases that would otherwise sit
+   over the bar as you scroll past them. */
+header { position:sticky; top:0; z-index:20; background:var(--surface);
+  border-bottom:1px solid var(--border); padding:10px 0; margin-bottom:20px; }
+.headbar { max-width:var(--page-w); margin:0 auto; padding:0 24px;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+/* The family's brand line: mark, name, then the strapline muted behind a middle
+   dot — one line, where this page had a title with a second line under it. The
+   auto right margin is what pushes the controls to the far edge. */
+.brand { font-size:17px; font-weight:700; color:var(--text); letter-spacing:-0.01em;
+  margin:0 auto 0 0; }
+.brand span { color:var(--text3); font-weight:500; }
+/* 22px, the siblings' number, and NOT a flex row: the mark sits in the heading's
+   own flow, so a strapline that wraps on a phone runs on below the name rather
+   than being laid out as a second narrow column beside it. Width and height are on
+   the element as well as here, so the row is laid out at its final size before the
+   icon arrives — the header paints long before anything else runs. */
+.brand img { width:22px; height:22px; vertical-align:-4px; margin-right:9px; }
+.top-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+/* The tax basis every figure on the page is worked out on. It sat in the header as
+   a second line under the title until 2026-08-21; it belongs with the numbers it
+   qualifies, and the header is one line now. */
+.basis { font-size:12px; color:var(--text3); margin-bottom:16px; }
+/* A real footer landmark, laid out as the sibling apps' is: the notes on the left,
+   the link to the other page pinned right and bottom-aligned with the last of
+   them. It wraps to its own line on a narrow window. */
+footer { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
+footer .footnotes { flex:1 1 320px; min-width:0; }
+footer .applink { margin:0 0 4px auto; text-decoration:none; }
 .rate-src { font-size:10px; font-weight:400; color:var(--text3); text-transform:none; letter-spacing:0; margin-left:6px; }
 /* Each section title is an <h2> wrapping a real <button>: the heading gives
    screen readers a navigable outline, the button makes it keyboard-operable.
@@ -169,20 +240,26 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="hrow">
-    <div>
-      <!-- ?v= is not decoration: a browser holds on to a favicon for a long time, and
-           without it this would keep showing whatever icon it cached the first time.
-           Bump it on every reference in both pages when make_favicon.py is re-run. -->
-      <h1><img src="favicon.ico?v=4" width="24" height="24" alt="">Lottery Portfolio</h1>
-      <p class="hdr-sub">Outside NYC &nbsp;·&nbsp; 37% federal + 10.9% NY state</p>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+<a class="skip" href="#maincontent">Skip to content</a>
+<header>
+  <div class="headbar">
+    <!-- ?v= is not decoration: a browser holds on to a favicon for a long time, and
+         without it this would keep showing whatever icon it cached the first time.
+         Bump it on every reference in both pages when make_favicon.py is re-run. -->
+    <h1 class="brand"><img src="favicon.ico?v=4" width="22" height="22" alt=""
+      >Lottery&nbsp;Portfolio <span>&middot; Income Model</span></h1>
+    <div class="top-actions">
       <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme"></select>
-      <a href="ny-lottery-calculator.html" class="theme-btn" style="text-decoration:none">← Calculator</a>
     </div>
   </div>
+</header>
+
+<div class="app">
+<main id="maincontent" tabindex="-1">
+  <!-- The tax basis every figure below is worked out on. It was a second line under
+       the title in the header; it says more sitting with the numbers it qualifies,
+       and the header is one line now. -->
+  <p class="basis">Outside NYC &nbsp;·&nbsp; 37% federal + 10.9% NY state</p>
 
   <div class="section">
     <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('assumptions')" aria-expanded="true" aria-controls="body-assumptions"><span class="sec-chevron open" id="chev-assumptions" aria-hidden="true">&#9654;</span>Assumptions</button></h2>
@@ -261,12 +338,30 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
     </div>
   </div>
 
+</main>
+
+  <!-- A real <footer>, so this is the contentinfo landmark a screen reader can jump
+       straight to, and the other end of the skip link at the top of the page. These
+       paragraphs already sat here loose. The link back to the calculator moved here
+       from the header on 2026-08-21 — one crossing per page, in the same place on
+       both, as in Sprint Predictability and Flow Metrics. -->
+  <footer>
+  <div class="footnotes">
   <p class="note" id="note"></p>
   <p class="footer">Planning purposes only — not financial advice. Consult a fee-only fiduciary CFP before investing.</p>
   <p class="footer foot-links"><a href="privacy.html">Privacy policy</a> &middot;
     <a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a></p>
   <p class="footer foot-copy">&copy; 2026 Charles Adams — an independent personal project,
     <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licensed</a>.</p>
+  </div>
+
+  <!-- A real <a>, not a button that navigates: cmd-click, middle-click and "open in
+       new tab" all keep working, and it needs no script. Last in the footer so it is
+       last in the tab order, and so it falls below the notes rather than above them
+       when the row wraps. -->
+  <a class="theme-btn applink" href="ny-lottery-calculator.html"
+     title="NY Lottery — After-Tax Calculator: what a jackpot is actually worth after federal and NY State tax">&larr;&nbsp;Calculator</a>
+  </footer>
 
 </div>
 

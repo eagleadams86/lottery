@@ -87,6 +87,12 @@ Native mobile ports have shipped and their build plans now live in their own (pr
 
 ## Features
 
+### Both pages
+
+- **The app family's layout** — the same page width and the same header as [Sprint Predictability](https://github.com/eagleadams86/sprint-velocity), [Flow Metrics](https://github.com/eagleadams86/team-dashboard) and [PAPTrack](https://github.com/eagleadams86/paptrack). The header is a bar across the top that **stays put as you scroll**, so the theme picker and the link to the other page are always a click away rather than somewhere above the first card
+- **Wider, and actually using it** — the portfolio's holdings table and charts have the room they always wanted, and the calculator splits in two on a laptop screen: what it's asking of you on the left (jackpots, amounts, how many winners, the latest draw) and what it tells you back on the right (your share, tax, take-home). On a phone both pages stack exactly as they always did
+- **Keyboard and screen-reader landmarks** — a skip link straight to the content, and real `main` and `footer` regions to jump between
+
 ### Lottery Portfolio
 
 Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to model what a lottery lump-sum would actually look like as a managed investment portfolio.

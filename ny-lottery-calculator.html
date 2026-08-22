@@ -55,6 +55,26 @@
 <link rel="stylesheet" href="theme.css">
 <style>
   /* Color tokens + theme live in the shared theme.css (linked above). */
+  /* ── Layout tokens ──────────────────────────────────────────────────────
+     The app family's two, added 2026-08-21 when both lottery pages took the
+     siblings' chrome.
+
+     `--page-w` is read by BOTH the content column and the row inside the sticky
+     header bar. They have to be the same number or the brand stops lining up
+     with the left edge of the first card, so both read it from here rather than
+     repeating it. 1500px is Sprint Predictability's and Flow Metrics' number,
+     and this page earns it the way PAPTrack does — not by stretching, but by
+     splitting: at 1000px and up the inputs and the results become two columns
+     (see `.cols`), so the width buys a second column rather than wider tiles.
+     It was 840px, on the reasoning that anything more stretched the wide boxes
+     into dead space — true of one column, and the reason the layout changed
+     rather than just the number.
+
+     `--chrome-h` is one height for everything in the header row. A native
+     <select> ignores line-height, so it sizes shorter than a button with
+     identical padding and font; pinning both is the only way to keep the row
+     even. 30px is the siblings' number. */
+  :root { --page-w: 1500px; --chrome-h: 30px; }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif;
@@ -62,19 +82,73 @@
     background: var(--bg); color: var(--text-primary); min-height: 100vh;
     transition: background 0.2s, color 0.2s;
   }
-  /* 840px keeps the wide boxes (status bar, net take-home) from stretching into
-     dead space; the portfolio page stays at 960 because its charts need the room. */
-  .page { max-width: 840px; margin: 0 auto; padding: 32px 24px 64px; }
+  /* Width lives with the other layout tokens at the top of the file. The header
+     supplies the space above, so there is no top padding here any more. */
+  .page { max-width: var(--page-w); margin: 0 auto; padding: 0 24px 64px; }
 
-  /* Header */
-  .hrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 8px; }
-  .hrow-left { display: flex; flex-direction: column; gap: 2px; }
-  .ptitle { font-size: 20px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.3px; }
-  /* The mark from the browser tab, worn beside the title. Width and height are on the
-     element as well as here, so the row is laid out at its final size before the icon
-     arrives rather than growing under the reader. It sits in the heading's own flow —
-     making .ptitle a flex row would stop the title wrapping properly on a phone. */
-  .ptitle img { width: 24px; height: 24px; vertical-align: -5px; margin-right: 9px; }
+  /* ── The skip link ────────────────────────────────────────────────────────
+     Visually gone until it takes focus, then the first thing on the page. Without
+     it a keyboard or screen-reader user tabs through the whole header on every
+     load before reaching any content, and the header is always there now that it
+     is sticky. The family added these on 2026-08-20; both lottery pages were
+     missed and joined on 2026-08-21.
+
+     FIXED, not absolute, when focused: absolute positions against the document,
+     so a reader who shift-tabs back from halfway down the page would send the
+     link to the top of the document and the browser would scroll the whole page
+     to follow it. Fixed puts it at the top of the VIEWPORT, where it was aimed. */
+  .skip { position: absolute; left: -9999px; top: 0; z-index: 100; }
+  .skip:focus {
+    position: fixed; left: 8px; top: 8px; padding: 8px 14px;
+    background: var(--bg-card); color: var(--text-primary);
+    border: 2px solid var(--focus-border); border-radius: 6px;
+    text-decoration: none; font-weight: 600;
+  }
+  /* Focus lands on <main id="maincontent" tabindex="-1">, which must not then draw
+     a focus ring around the entire page — the link itself already showed where
+     focus went. */
+  main:focus { outline: none; }
+  /* A sticky bar covers whatever a jump link lands on, so the first thing a
+     keyboard user is sent to would be hidden under the header they just skipped.
+     Generous enough for the two-line row a phone gets. */
+  main { scroll-margin-top: 96px; }
+
+  /* ── Header ───────────────────────────────────────────────────────────────
+     The sibling apps' shape: a bar the full width of the window that STAYS at
+     the top of the screen, with the row inside it held to the same `--page-w` as
+     the content below, so the mark lines up with the left edge of the first card.
+     Until 2026-08-21 this was an ordinary block inside `.page` that scrolled
+     away, taking the theme picker with it.
+
+     Sticky rather than fixed: fixed takes the bar out of the flow and the page
+     then has to be padded by hand to make room for it, which goes wrong the
+     moment the row wraps on a phone. Sticky leaves it in the flow and lets the
+     browser do the arithmetic. z-index 20 is the siblings' number. */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0; margin-bottom: 20px;
+  }
+  .headbar {
+    max-width: var(--page-w); margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  /* The family's brand line: mark, name, then the strapline muted behind a middle
+     dot — one line, where this page had a title with a second line under it. The
+     auto right margin is what pushes the controls to the far edge. */
+  .brand { font-size: 17px; font-weight: 700; color: var(--text-primary);
+           letter-spacing: -0.01em; margin: 0 auto 0 0; }
+  .brand span { color: var(--text-muted); font-weight: 500; }
+  /* 22px, the siblings' number, and NOT a flex row: the mark sits in the
+     heading's own flow, so a strapline that wraps on a phone runs on below the
+     name rather than being laid out as a second narrow column beside it. Width
+     and height are on the element as well as here, so the row is laid out at its
+     final size before the icon arrives — the header paints long before anything
+     else runs, and a growing header is the one thing it must never do. */
+  .brand img { width: 22px; height: 22px; vertical-align: -4px; margin-right: 9px; }
+  .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+                 justify-content: flex-end; }
   /* Section titles are real <h2>/<h3> for screen-reader navigation; these rules
      keep them looking like the small uppercase labels they've always been.
      .sec-hd wraps a disclosure <button> so the section is both navigable as a
@@ -84,12 +158,13 @@
   /* Visible keyboard focus on every control (mouse clicks unaffected) */
   button:focus-visible, select:focus-visible, input:focus-visible,
   a:focus-visible, summary:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; border-radius: 4px; }
-  .location-tag { font-size: 12px; color: var(--text-muted); }
 
   /* Theme toggle */
   .theme-btn {
     display: flex; align-items: center; gap: 6px;
-    padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    /* One height for everything in the header row — see `--chrome-h`. */
+    min-height: var(--chrome-h);
+    padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
     background: var(--bg-card); color: var(--text-secondary);
     border: 1px solid var(--border); border-radius: 8px;
     font-family: inherit; transition: background 0.15s, color 0.15s;
@@ -259,6 +334,39 @@
   .empty { font-size: 13px; color: var(--text-muted); padding: 0.5rem 0; grid-column: 1/-1; }
   .note  { font-size: 11px; color: var(--text-hint); line-height: 1.8; margin-top: 1.25rem; }
 
+  /* ── Two columns ──────────────────────────────────────────────────────────
+     What the page is asking of it and what it tells you back, side by side —
+     which is the shape this page always wanted and could not have at 840px.
+     Stacked below 1000px, in exactly the order the markup already had, so the
+     phone layout is unchanged and needs no second set of rules.
+
+     5fr / 7fr rather than equal halves: the left column holds two game buttons
+     and two number fields and stops there, while the right holds a four-tile row,
+     the take-home pair, the tax breakdown table and the winning numbers. Equal
+     columns left the inputs padded out and the results cramped.
+
+     `align-items: start`, so the shorter column does not stretch its cards to
+     match the taller one — this is two independent stacks that happen to sit
+     beside each other, not a row.
+
+     1000px, not the `--page-w` 1500: the split is worth having on any laptop, and
+     the column floor that matters is the results table's, not the page's. */
+  @media (min-width: 1000px) {
+    .cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+            gap: 0 28px; align-items: start; }
+  }
+  /* The tax basis these figures are worked out on. It sat in the header as a
+     second line under the title until 2026-08-21; it belongs with the numbers it
+     qualifies, and the header is one line now. */
+  .basis { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+
+  /* A real footer landmark, laid out as the sibling apps' is: the notes on the
+     left, the link to the other page pinned right and bottom-aligned with the
+     last of them. It wraps to its own line on a narrow window. */
+  footer { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+  footer .footnotes { flex: 1 1 320px; min-width: 0; }
+  footer .applink { margin: 0 0 4px auto; text-decoration: none; }
+
   /* Winning numbers */
   .wn-wrap { margin-top: 1.25rem; }
   .wn-body { display: none; padding: 1.1rem 1.2rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
@@ -283,22 +391,26 @@
 </style>
 </head>
 <body>
-<div class="page">
-
-  <div class="hrow">
-    <div class="hrow-left">
-      <!-- ?v= is not decoration: a browser holds on to a favicon for a long time, and
-           without it this would keep showing whatever icon it cached the first time.
-           Bump it on every reference in both pages when make_favicon.py is re-run. -->
-      <h1 class="ptitle"><img src="favicon.ico?v=4" width="24" height="24" alt=""
-        >NY Lottery &mdash; After-Tax Calculator</h1>
-      <span class="location-tag">Outside NYC &nbsp;&middot;&nbsp; 37% federal + 10.9% NY state</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+<a class="skip" href="#maincontent">Skip to content</a>
+<header>
+  <div class="headbar">
+    <!-- ?v= is not decoration: a browser holds on to a favicon for a long time, and
+         without it this would keep showing whatever icon it cached the first time.
+         Bump it on every reference in both pages when make_favicon.py is re-run. -->
+    <h1 class="brand"><img src="favicon.ico?v=4" width="22" height="22" alt=""
+      >NY&nbsp;Lottery <span>&middot; After-Tax Calculator</span></h1>
+    <div class="top-actions">
       <select class="theme-btn theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme"></select>
     </div>
   </div>
+</header>
 
+<div class="page">
+<main id="maincontent" tabindex="-1">
+<div class="cols">
+
+  <!-- Left: what the page is asking of you. -->
+  <div class="col-inputs">
   <div class="fetch-bar">
     <!-- role=status so the jackpot lookup result / failure is announced, not just shown -->
     <span class="fetch-status" id="fetch-status" role="status">
@@ -375,6 +487,26 @@
     <span class="ctrl-lbl">winner(s)</span>
   </div>
 
+  <div class="wn-wrap">
+    <h2 class="sec-hd"><button class="details-btn" onclick="toggleWinning()" aria-expanded="true" aria-controls="wn-body" id="wn-toggle">
+      <span class="details-chevron open" id="wn-chevron" aria-hidden="true">&#9654;</span>
+      Latest winning numbers
+    </button></h2>
+    <div class="wn-body open" id="wn-body">
+      <div class="wn-loading" id="wn-loading" role="status"><span class="spinner" aria-hidden="true"></span>Loading latest results&hellip;</div>
+      <div id="wn-content"></div>
+    </div>
+  </div>
+  </div>
+
+  <!-- Right: what it tells you back. Stacks under the left column below 1000px,
+       in this same order, so the reading order is the one a phone already had. -->
+  <div class="col-results">
+  <!-- The tax basis every figure below is worked out on. It was a second line
+       under the title in the header; it says more sitting with the numbers it
+       qualifies, and the header is one line now. -->
+  <p class="basis">Outside NYC &nbsp;&middot;&nbsp; 37% federal + 10.9% NY state</p>
+
   <div class="metrics-grid" id="mgrid">
     <div class="mc"><div class="ml">Your lump share</div><div class="mv">&mdash;</div></div>
     <div class="mc"><div class="ml">Withheld upfront</div><div class="mv">&mdash;</div></div>
@@ -410,23 +542,34 @@
     </div>
   </div>
 
-  <div class="wn-wrap">
-    <h2 class="sec-hd"><button class="details-btn" onclick="toggleWinning()" aria-expanded="true" aria-controls="wn-body" id="wn-toggle">
-      <span class="details-chevron open" id="wn-chevron" aria-hidden="true">&#9654;</span>
-      Latest winning numbers
-    </button></h2>
-    <div class="wn-body open" id="wn-body">
-      <div class="wn-loading" id="wn-loading" role="status"><span class="spinner" aria-hidden="true"></span>Loading latest results&hellip;</div>
-      <div id="wn-content"></div>
-    </div>
-  </div>
 
+  </div><!-- /.col-results -->
+</div><!-- /.cols -->
+</main>
+
+  <!-- A real <footer>, so this is the contentinfo landmark a screen reader can jump
+       straight to, and the other end of the skip link at the top of the page. These
+       paragraphs already sat here loose. The link to the portfolio page moved here
+       from that page's header on 2026-08-21, and this page gained the crossing it
+       never had — one per page, both in the same place, as in Sprint Predictability
+       and Flow Metrics. -->
+  <footer>
+  <div class="footnotes">
   <p class="note">Federal withholding: 24% mandatory on winnings &ge;$5,000. Federal top marginal rate: 37%. NY&nbsp;State withholding: 10.9% &mdash; by law the state's highest rate, so no further NY tax is due at filing. NY&nbsp;State top rate: 10.9%. No NYC or Yonkers surcharge &mdash; those only apply to residents of those cities. Lottery winnings are ordinary income; FICA does not apply. Estimates only &mdash; consult a CPA for exact liability. Jackpot data via usamega.com. Winning numbers via data.ny.gov.</p>
 
   <p class="note foot-links"><a href="privacy.html">Privacy policy</a> &middot;
     <a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a></p>
   <p class="note foot-copy">&copy; 2026 Charles Adams — an independent personal project,
     <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licensed</a>.</p>
+  </div>
+
+  <!-- A real <a>, not a button that navigates: cmd-click, middle-click and "open in
+       new tab" all keep working, and it needs no script. Last in the footer so it is
+       last in the tab order, and so it falls below the notes rather than above them
+       when the row wraps. -->
+  <a class="theme-btn applink" href="lottery-portfolio.html"
+     title="Lottery Portfolio — what the take-home earns: asset mix, income after tax, and the drag each holding carries">Portfolio&nbsp;&rarr;</a>
+  </footer>
 
 </div>
 
