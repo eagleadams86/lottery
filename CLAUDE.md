@@ -103,6 +103,25 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   exactly the mistake that would make later years tax-free, and there is a comment saying so at
   the line where it would be made. Three lines on the chart, your rate ±3 points: a stated
   spread, not a confidence interval, and the note under it says so.
+- **Printing is the PACK's job now, not these pages' (2026-08-22).** `theme.css` grew a
+  `@media print` block the same day these two pages grew theirs, and the two overlapped: the
+  pages were hard-coding `#fff`, `#000` and `#999`, which is drift anywhere in this repo and is
+  now also wrong, because those literals would override a print palette that was chosen
+  properly and put through the contrast gate. **Nothing in either page's print block names a
+  colour, and `tests.html` fails if one appears.** What the pack does: swaps the dark themes to
+  the Light palette, hides `.headbar button` / `.headbar .btn` and the sibling apps' theme
+  pickers, makes the sticky header static, sets `@page`, repeats table headings, stops rows
+  tearing, and keeps a `<canvas>` printing in colour. What the PAGES still do: open their
+  collapsed sections (paper has no disclosure triangle), drop to one column, un-cap the
+  schedule's scroll box, and hide their own furniture.
+  - **`.no-print` is the pack's handle for furniture it cannot see, and the theme picker needs
+    it here.** The pack hides `#themeSel` and `.theme-sel` — the sibling apps' names — and these
+    two pages call theirs `theme-select`. The Copy As CSV row carries it too: a button that
+    prints itself is the definition of furniture.
+  - **A stale `theme.css` will hide all of this from you.** Both pages link it unversioned (so
+    do all four siblings), so a browser holds on to it hard. Verifying print behaviour against a
+    cached copy is how this was nearly missed — the pack's rules were on disk and simply not in
+    the page. Same trap as the frames in `tests.html`, one file over.
 - **`tests.html` busts the cache for the frames AND the source fetches, and that is not tidiness
   (2026-08-22).** The suite reported all-green against a portfolio page three features out of
   date: the source-level tests were reading the file off the server while the hidden frames ran
