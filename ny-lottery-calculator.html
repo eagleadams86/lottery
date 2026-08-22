@@ -285,24 +285,11 @@
   .mv.red { color: var(--red); }
   .mv.grn { color: var(--green); }
 
-  /* Take-home */
-  /* Two equal halves with no divider drawn between them: pushed to the outer edges
-     the pair read as two unrelated readouts with a hole in the middle. Each half
-     centres its own label and number instead, so they sit as a matched pair. */
-  .takehome {
-    background: var(--bg-card); border-radius: 12px; padding: 1.1rem 1.4rem;
-    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-    /* baseline, not center: the halves are different heights (26px number vs 22px),
-       so centring each one left the two labels 3px out of line with each other. */
-    align-items: baseline; gap: 12px; margin-bottom: 0;
-    border: 1px solid var(--border);
-  }
-  .takehome > * { text-align: center; }
-  .th-lbl  { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
-  .th-val  { font-size: 26px; font-weight: 700; color: var(--green); letter-spacing: -0.02em; }
-  .th-rate { font-size: 22px; font-weight: 600; color: var(--text-primary); }
-  /* Stacked on a phone there are no halves left to centre within, so they go full width. */
-  @media (max-width: 520px) { .takehome { grid-template-columns: 1fr; } }
+  /* The effective rate, as one line rather than half of a banner. It reads as the
+     headline of the breakdown below it — which is what it is, the whole of those two
+     tables in a single number — so it is set as a sentence and not as a tile. */
+  .effrate { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+  .effrate strong { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-left: 6px; }
 
   /* Details toggle */
   .details-btn {
@@ -354,6 +341,12 @@
   @media (min-width: 1000px) {
     .cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
             gap: 0 28px; align-items: start; }
+    /* Two-up, not four. The existing four-across rule is keyed to the VIEWPORT, and
+       a viewport query cannot see that these tiles are now inside a column roughly
+       a third of it — so at four across in the left column the labels wrapped and
+       the numbers came out cramped. A container query would say this more directly;
+       this is the same answer without adding one for a single rule. */
+    .col-inputs .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   /* The tax basis these figures are worked out on. It sat in the header as a
      second line under the title until 2026-08-21; it belongs with the numbers it
@@ -487,6 +480,16 @@
     <span class="ctrl-lbl">winner(s)</span>
   </div>
 
+  <!-- role=status: announce the recalculated figures, which otherwise
+       change silently. It was on the take-home banner that used to carry
+       them; these tiles are where they live now. -->
+  <div class="metrics-grid" id="mgrid" role="status">
+    <div class="mc"><div class="ml">Your lump share</div><div class="mv">&mdash;</div></div>
+    <div class="mc"><div class="ml">Withheld upfront</div><div class="mv">&mdash;</div></div>
+    <div class="mc"><div class="ml">Owed at return</div><div class="mv">&mdash;</div></div>
+    <div class="mc"><div class="ml">Net take-home</div><div class="mv">&mdash;</div></div>
+  </div>
+
   <div class="wn-wrap">
     <h2 class="sec-hd"><button class="details-btn" onclick="toggleWinning()" aria-expanded="true" aria-controls="wn-body" id="wn-toggle">
       <span class="details-chevron open" id="wn-chevron" aria-hidden="true">&#9654;</span>
@@ -507,31 +510,19 @@
        qualifies, and the header is one line now. -->
   <p class="basis">Outside NYC &nbsp;&middot;&nbsp; 37% federal + 10.9% NY state</p>
 
-  <div class="metrics-grid" id="mgrid">
-    <div class="mc"><div class="ml">Your lump share</div><div class="mv">&mdash;</div></div>
-    <div class="mc"><div class="ml">Withheld upfront</div><div class="mv">&mdash;</div></div>
-    <div class="mc"><div class="ml">Owed at return</div><div class="mv">&mdash;</div></div>
-    <div class="mc"><div class="ml">Net take-home</div><div class="mv">&mdash;</div></div>
-  </div>
 
   <div id="results-section">
-    <!-- role=status: announce the recalculated result, which otherwise changes silently -->
-    <div class="takehome" role="status">
-      <div>
-        <div class="th-lbl" id="th-lbl">Net take-home after all taxes</div>
-        <div class="th-val" id="th-val">&#8212;</div>
-      </div>
-      <div>
-        <div class="th-lbl">Effective total tax rate</div>
-        <div class="th-rate" id="eff-rate">&#8212;</div>
-      </div>
-    </div>
+    <!-- The green take-home banner that used to sit here is gone. Its big number was
+         the same figure as the "Net take-home" tile a few pixels above it, and the
+         rate beside it is the one thing it said that nothing else did — so that
+         moved down here, where it is the headline for the breakdown it summarises. -->
+    <p class="effrate">Effective total tax rate <strong id="eff-rate">&#8212;</strong></p>
 
-    <h2 class="sec-hd"><button class="details-btn" onclick="toggleDetails()" aria-expanded="false" aria-controls="details-body" id="details-toggle">
-      <span class="details-chevron" id="details-chevron" aria-hidden="true">&#9654;</span>
+    <h2 class="sec-hd"><button class="details-btn" onclick="toggleDetails()" aria-expanded="true" aria-controls="details-body" id="details-toggle">
+      <span class="details-chevron open" id="details-chevron" aria-hidden="true">&#9654;</span>
       Tax breakdown details
     </button></h2>
-    <div class="details-body" id="details-body">
+    <div class="details-body open" id="details-body">
       <h3 class="sec-title">Withheld at Payment</h3>
       <table><thead><tr><th scope="col">Item</th><th scope="col">Rate</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
       <tbody id="wtbody"></tbody></table>
@@ -655,10 +646,13 @@ setTheme(localStorage.getItem('lottery-theme') || 'midnight');
   // Only the two real ids — anything else saved here (older builds, another
   // page on the origin) would leave no game selectable until a manual click.
   var g=localStorage.getItem('lottery-game'); if(g==='pb'||g==='mm') activeGame=g;
-  if(localStorage.getItem('lottery-details')==='1'){
-    document.getElementById('details-body').classList.add('open');
-    document.getElementById('details-chevron').classList.add('open');
-    setExpanded('details-toggle', true);
+  // Open by default; only collapse if this visitor closed it before. It was the
+  // other way round — shut unless you had opened it — which made the page's whole
+  // answer to "where does the money go" something you had to know to ask for.
+  if(localStorage.getItem('lottery-details')==='0'){
+    document.getElementById('details-body').classList.remove('open');
+    document.getElementById('details-chevron').classList.remove('open');
+    setExpanded('details-toggle', false);
   }
   // Open by default; only collapse if this visitor closed it before.
   if(localStorage.getItem('lottery-winning')==='0'){
@@ -1054,9 +1048,9 @@ function calc(){
     trbold('Additional NY State due',pct(NY_TOP-NY_WH)+' gap','\u2212'+fmt(nyX),'neg')+
     trtot('Total additional owed','','\u2212'+fmt(fedX+nyX),'neg');
 
-  document.getElementById('th-lbl').textContent=np>1?'Each winner\'s net take-home (1 of '+np+')':'Net take-home after all taxes';
-  document.getElementById('th-val').textContent=fmt(net);
-  // Shared with lottery-portfolio.html, which seeds its portfolio size from it
+  // Shared with lottery-portfolio.html, which seeds its portfolio size from it.
+  // Written here rather than beside the deleted banner it used to sit under — it is
+  // a side effect of the calculation, not of anything being displayed.
   localStorage.setItem('lottery-net-takehome', Math.round(net));
   document.getElementById('eff-rate').textContent=pct(eff);
   document.getElementById('results-section').style.display='block';
