@@ -383,30 +383,58 @@
   /* The effective rate, as one line rather than half of a banner. It reads as the
      headline of the breakdown below it — which is what it is, the whole of those two
      tables in a single number — so it is set as a sentence and not as a tile. */
-  /* ── The family's help dot ──────────────────────────────────────────────
-     Golf Handicap, Sprint Predictability and PAPTrack all carry this: a small
-     round "?" beside the thing it explains, opening one shared dialog off a
-     `data-help` key. This page had neither, and it is the page in the family
-     that asks the most of a reader who has not met the vocabulary — a discount
-     rate decides which payout it recommends, and nothing on screen said what
-     one was.
+  /* ── The info dot ─────────────────────────────────────────────────────────
+     A circled "i" beside the thing it explains, opening one window off a
+     `data-help` key. This page had no help at all until it was added, and it is
+     the page in the family that asks the most of a reader who has not met the
+     vocabulary — a discount rate decides which payout it recommends, and
+     nothing on screen said what one was.
 
-     The 7px gap is a standing preference across every app: an icon never sits
-     flush against the word it follows. Copied from Golf Handicap's rule rather
-     than re-picked, so the control is the same object in both. */
-  .help-btn {
-    margin-left: 7px; width: 18px; height: 18px; min-height: 18px; padding: 0;
-    border-radius: var(--radius-pill); font-size: var(--fs-xs); line-height: 1;
-    font-family: inherit; cursor: pointer;
-    background: var(--surface-alt); border: 1px solid var(--border-control);
-    color: var(--text-secondary); flex: 0 0 auto; vertical-align: middle;
-  }
-  .help-btn:hover { color: var(--text-primary); }
+     THE SAME BLOCK IS IN EVERY APP THAT HAS ONE, PROPERTY BY PROPERTY
+     (2026-08-23). It was copied from Golf Handicap when it arrived here — a "?"
+     in a filled 18px pill — and Golf Handicap turned out to be the odd one out:
+     Money Map, Sprint Predictability and Flow Metrics all drew a 16px outlined
+     "i", so one control had two glyphs and two sizes across the family. "i" is
+     the one that survives: "?" is the glyph a browser already puts on its own
+     help cursor and in a form's validation bubble, and it asks a question where
+     this thing answers one. Every property is declared here rather than left to
+     whatever this page styles a .btn with — that inheritance is how the two
+     versions happened. ::after inflates the tap target to WCAG 2.2's 24px
+     without changing the line's height, and the 7px margin keeps the circle off
+     the word it follows (standing preference in every app). A change to any of
+     it belongs in all of them. */
+  .tile-help { display: inline-flex; align-items: center; justify-content: center;
+    position: relative; box-sizing: border-box; flex: none;
+    width: 16px; height: 16px; min-height: 0; padding: 0; margin-left: 7px;
+    border: 1px solid var(--border-control); border-radius: 50%;
+    background: transparent; color: var(--text-secondary);
+    font-family: inherit; font-size: var(--fs-xs); font-weight: 700;
+    line-height: 1; text-transform: none; cursor: pointer; vertical-align: 1px; }
+  .tile-help:hover { border-color: var(--focus-border); color: var(--text-primary); }
+  .tile-help::after { content: ''; position: absolute; inset: -4px; }
+
+  /* ── The help window ──────────────────────────────────────────────────────
+     THE SAME TWO RULES ARE IN EVERY APP THAT HAS ONE (2026-08-23), and they are
+     about the TEXT sizing the window rather than the window holding the text.
+     This is the one dialog that is nothing but prose, so `#helpBody` is capped
+     at a 66-character reading measure and `fit-content` makes the window take
+     that cap as its width. Both or neither: the cap alone leaves the paragraph
+     hugging the left of a window sized for tables with the rest of it empty
+     (which is how Money Map's looked until this date), and `fit-content` alone
+     lets the lines run to the full width at about 150 characters, roughly twice
+     what anybody reads comfortably. `max-width` is restated because the base
+     `dialog` rule's `width` is what is being overridden — on a phone the window
+     is still the screen less its 32px margin.
+     The ids are the family's camelCase rather than this page's kebab, because
+     the block is shared verbatim and the ids are part of it. */
+  #helpDialog { width: fit-content; max-width: calc(100% - 32px); }
+  #helpBody { max-width: 66ch; font-size: var(--fs-sm); line-height: 1.55; }
+  #helpBody p, #helpBody li { font-size: inherit; line-height: inherit; }
   /* The label sits above its field, so the dot rides on the label's baseline. */
-  .fld > label .help-btn { vertical-align: baseline; }
-  #help-body p { margin: 0 0 10px; }
-  #help-body p:last-child { margin-bottom: 0; }
-  #help-body strong { color: var(--text-primary); }
+  .fld > label .tile-help { vertical-align: baseline; }
+  #helpBody p { margin: 0 0 10px; }
+  #helpBody p:last-child { margin-bottom: 0; }
+  #helpBody strong { color: var(--text-primary); }
 
   .effrate { font-size: var(--fs-sm); color: var(--text-secondary); margin-bottom: 10px; }
   .effrate strong { font-size: var(--fs-lg); font-weight: 600; color: var(--text-primary); margin-left: 6px; }
@@ -870,9 +898,9 @@
            "Annuity in today's money at N%" row, which names its own rate and so
            stays honest without the field on screen.) -->
       <div class="fld" id="fld-discount" style="display:none">
-        <label for="discount">Your discount rate<button class="help-btn" type="button"
+        <label for="discount">Your discount rate<button class="tile-help" type="button"
           data-help="discount" aria-label="What the discount rate is and how to pick one"
-          >?</button></label>
+          >i</button></label>
         <input type="number" id="discount" min="0" max="20" step="0.25" value="4"
           inputmode="decimal" oninput="onDiscount()" aria-describedby="discount-hint" />
         <div class="hint" id="discount-hint">What future money is worth to you today.
@@ -947,9 +975,9 @@
          LUMP SUM; unqualified it read as the page's overall answer. Each card in
          Compare already carries its own payout's effective rate. -->
     <p class="effrate">Effective total tax rate<span id="eff-scope"></span><button
-      class="help-btn" type="button"
+      class="tile-help" type="button"
       data-help="effrate" aria-label="What the effective total tax rate means"
-      >?</button> <strong id="eff-rate">&#8212;</strong></p>
+      >i</button> <strong id="eff-rate">&#8212;</strong></p>
 
     <!-- Lump sum against annuity. Only on screen in Compare, and it is the first
          thing there because it is the answer to the question that mode asks —
@@ -977,14 +1005,14 @@
            prize is over-withheld and the line is a REFUND — a heading that
            insisted otherwise would contradict the number under it. -->
       <h3 class="sec-title"><span id="wt-title">Withheld at Payment</span><button
-        class="help-btn" type="button" data-help="withheld"
-        aria-label="Why tax is taken in two stages">?</button></h3>
+        class="tile-help" type="button" data-help="withheld"
+        aria-label="Why tax is taken in two stages">i</button></h3>
       <table><thead><tr><th scope="col">Item</th><th scope="col">Rate</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
       <tbody id="wtbody"></tbody></table>
       <hr>
       <h3 class="sec-title"><span id="rt-title">Settled at Your Next Tax Return</span><button
-        class="help-btn" type="button" data-help="settled"
-        aria-label="What is still owed, or refunded, at your tax return">?</button></h3>
+        class="tile-help" type="button" data-help="settled"
+        aria-label="What is still owed, or refunded, at your tax return">i</button></h3>
       <table><thead><tr><th scope="col">Item</th><th scope="col">Details</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
       <tbody id="rtbody"></tbody></table>
     </div>
@@ -1087,16 +1115,18 @@
 .privacy-links a { color: var(--text-muted); }
 </style>
 
-<!-- ── The help dialog ──────────────────────────────────────────────────────
-     One window, filled from HELP by whichever `.help-btn` was pressed — the
-     shape Golf Handicap, Sprint Predictability and PAPTrack already use, so a
-     "?" behaves the same in all four. Narrow: this is prose, and the 560px
-     default is the family's reading width. -->
-<dialog id="help-dialog" aria-labelledby="help-title">
-  <h3 id="help-title">About</h3>
-  <div id="help-body"></div>
+<!-- ── The help window ─────────────────────────────────────────────────────
+     One window, filled from HELP by whichever `.tile-help` dot was pressed —
+     the shape every app in the family uses, so a dot behaves the same in all of
+     them. It is not sized here: the two rules in the stylesheet let its own
+     text set its width. "Got It" rather than "Close", as everywhere else: you
+     have read the paragraph, not abandoned a job half done. The heading is
+     replaced on open, and "About" is what a reader with no script would see. -->
+<dialog id="helpDialog" aria-labelledby="helpTitle">
+  <h3 id="helpTitle">About</h3>
+  <div id="helpBody"></div>
   <div class="row" style="margin-top:14px;justify-content:flex-end">
-    <button type="button" class="btn primary" onclick="closeHelp()">Close</button>
+    <button type="button" class="btn primary" onclick="closeHelp()">Got It</button>
   </div>
 </dialog>
 
@@ -1639,16 +1669,16 @@ var HELP = {
     'about before spending the first figure.</p>'],
 };
 
-/* One delegated listener, so a "?" added later needs no wiring — the same shape
-   the sibling apps use. */
+/* One delegated listener, so a dot added later needs no wiring — the same
+   shape the sibling apps use. */
 document.addEventListener('click', function(e){
-  var btn = e.target.closest ? e.target.closest('.help-btn') : null;
+  var btn = e.target.closest ? e.target.closest('.tile-help') : null;
   if(!btn) return;
   var h = HELP[btn.getAttribute('data-help')];
   if(!h) return;
-  document.getElementById('help-title').textContent = h[0];
-  document.getElementById('help-body').innerHTML = h[1];
-  var d = document.getElementById('help-dialog');
+  document.getElementById('helpTitle').textContent = h[0];
+  document.getElementById('helpBody').innerHTML = h[1];
+  var d = document.getElementById('helpDialog');
   d.showModal();
   /* Back to the top, and this is not belt-and-braces. These panels are longer
      than the dialog's max-height on a laptop, and showModal() focuses the first
@@ -1659,8 +1689,8 @@ document.addEventListener('click', function(e){
      what puts it at the beginning of what it is scrolling. */
   d.scrollTop = 0;
 });
-function closeHelp(){ document.getElementById('help-dialog').close(); }
-document.getElementById('help-dialog').addEventListener('click', function(e){
+function closeHelp(){ document.getElementById('helpDialog').close(); }
+document.getElementById('helpDialog').addEventListener('click', function(e){
   if(e.target===this) this.close();
 });
 

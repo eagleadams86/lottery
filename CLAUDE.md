@@ -184,17 +184,31 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   against a real cheque".
   **If a fifth view is ever added, all of this has to be answered again for it.**
 
-- **The calculator carries the family's help dot** (2026-08-22): `.help-btn` with a
-  `data-help` key, one `#help-dialog`, one delegated listener, and a `HELP` map of
-  `[title, html]`. Copied from Golf Handicap rather than re-invented, down to the 7px
-  `margin-left` — an icon never sits flush against the word it follows, family-wide.
+- **The calculator carries the family's info dot** (2026-08-22; brought onto the
+  family blocks 2026-08-23): `.tile-help` with a `data-help` key, one `#helpDialog`, one
+  delegated listener, and a `HELP` map of `[title, html]`. It arrived here as a copy of
+  Golf Handicap's `.help-btn` — a "?" in a filled 18px pill — and Golf Handicap turned out
+  to be the odd one out: three other apps drew a 16px outlined **"i"**, which is the glyph
+  that survives. "?" is what a browser already puts on its own help cursor and in a form's
+  validation bubble, and it asks a question where this thing answers one. Both blocks —
+  the dot and the window — are now declared property by property and are the same in every
+  app; a change to either belongs in all of them. **The help ids on this page are the
+  family's camelCase** (`helpDialog`, `helpTitle`, `helpBody`) rather than the kebab this
+  page uses everywhere else, because the shared block names them and the block is verbatim.
+  The window is sized by its own text — `#helpBody` capped at 66 characters, `#helpDialog`
+  at `width: fit-content` — which comes out at 666px, the same figure as Money Map. It is
+  dismissed with **Got It**, as everywhere else.
   Three things to keep right when adding one: the html in `HELP` is a **literal in this
   file** and nothing a reader typed may ever reach that `innerHTML`; every dot needs an
-  `aria-label`, because "?" alone reads as nothing; and a heading whose text the script
+  `aria-label`, because a bare glyph reads as nothing; and a heading whose text the script
   rewrites with `textContent` needs its id moved onto an inner `<span>` first, or the
   assignment deletes the button (`wt-title` and `rt-title` are both like this).
   `tests.html` pins that the dots and the `HELP` keys are the same set in both
-  directions — a dot with no entry opens nothing, an entry with no dot is unreachable.
+  directions — a dot with no entry opens nothing, an entry with no dot is unreachable —
+  and, since 2026-08-23, the glyph, the circle and both window rules. **Match the button
+  tag with `<button[^>]*class="tile-help"`, never `<button class=`:** three of the four
+  dots here put the class on the tag's second line, and the anchored version silently
+  matched one button while the loop over it went on passing.
 - **All three disclosures open EXPANDED, and each remembers being closed.** The payment
   schedule was the exception until 2026-08-22 — it opened shut, so the thirty figures an
   annuity consists of were something you had to know to ask for. Opening it open is what

@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 138;
+const EXPECTED = 140;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -1486,11 +1486,12 @@ t('the breakdown and its effective rate always describe the same payout', () => 
     'the effective rate is not reading it — the headline and its working can disagree');
 });
 
-/* ── The help dots ──────────────────────────────────────────────────────────
-   Adopted from Golf Handicap, Sprint Predictability and PAPTrack on 2026-08-22:
-   a "?" beside the thing it explains, one shared dialog, keyed by `data-help`.
-   The discount rate is why — the page recommends a payout on the strength of a
-   number it never explained. */
+/* ── The info dots and the help window ──────────────────────────────────────
+   Adopted on 2026-08-22: a dot beside the thing it explains, one shared window,
+   keyed by `data-help`. The discount rate is why — the page recommends a payout
+   on the strength of a number it never explained. Both the dot and the window
+   became family-wide blocks on 2026-08-23, so what is pinned below is not this
+   page's taste but the shape every app carries. */
 t('every help dot has an entry, and every entry has a dot', () => {
   const bare = stripHtmlComments(CALC_SRC);
   const dots = [...bare.matchAll(/data-help="([a-z]+)"/g)].map((m) => m[1]).sort();
@@ -1503,10 +1504,49 @@ t('every help dot has an entry, and every entry has a dot', () => {
 });
 t('each dot is labelled and spaced off the word it follows', () => {
   const bare = stripHtmlComments(CALC_SRC);
-  for (const btn of bare.match(/<button class="help-btn"[\s\S]*?>/g) || [])
-    ok(/aria-label="/.test(btn), 'a bare "?" is unlabelled for a screen reader: ' + btn);
-  ok(/\.help-btn \{[^}]*margin-left: 7px/.test(CALC_SRC),
+  const dots = [...bare.matchAll(/data-help="([a-z]+)"/g)].map((m) => m[1]);
+  /* `<button[^>]*class=` and not `<button class=`: three of the four dots on
+     this page put the class on the SECOND line of the tag, so anchoring on the
+     attribute being first matched exactly one button and the loop below was
+     three-quarters empty while passing. */
+  const btns = bare.match(/<button[^>]*class="tile-help"[\s\S]*?>/g) || [];
+  eq(btns.length, dots.length, 'every dot is one of these buttons — ' + btns.length
+     + ' tags for ' + dots.length + ' keys');
+  for (const btn of btns)
+    ok(/aria-label="/.test(btn), 'a bare glyph is unlabelled for a screen reader: ' + btn);
+  ok(/\.tile-help \{[^}]*margin-left: 7px/.test(CALC_SRC),
      'the family gap is missing — an icon must never sit flush against its word');
+});
+t('every dot is a circled "i", never a "?"', () => {
+  /* The glyph was a "?" here and in Golf Handicap while three other apps drew
+     an "i", so one control had two faces. "?" is what a browser already puts on
+     its own help cursor and in a form's validation bubble, and it asks a
+     question where this thing answers one. */
+  const bare = stripHtmlComments(CALC_SRC);
+  const dots = bare.match(/<button[^>]*class="tile-help"[\s\S]*?<\/button>/g) || [];
+  ok(dots.length >= 4, 'the dots are still there — found ' + dots.length);
+  eq(dots.filter((d) => !/>i<\/button>/.test(d)).join(' | '), '', 'a dot drawing something else');
+  eq((CALC_SRC.match(/help-btn/g) || []).length, 0,
+     'and the old class name is gone, so the family block is the only thing styling these');
+  ok(/\.tile-help \{[^}]*width: 16px; height: 16px; min-height: 0;/.test(CALC_SRC)
+     && /\.tile-help \{[^}]*border-radius: 50%;/.test(CALC_SRC)
+     && /\.tile-help \{[^}]*background: transparent;/.test(CALC_SRC),
+     'a 16px outlined circle — the filled 18px pill this page copied from Golf '
+     + 'Handicap was the odd one out, not the standard');
+  ok(/\.tile-help::after \{ content: ''; position: absolute; inset: -4px; \}/.test(CALC_SRC),
+     "the 24px tap target, which is WCAG 2.2's and is not the circle's own size");
+});
+t('the help window is as wide as its text, not as wide as a table', () => {
+  /* Two rules, and only together: the measure caps the LINE, `fit-content`
+     makes the WINDOW take that measure. Either alone puts the problem back. */
+  ok(/#helpDialog \{ width: fit-content; max-width: calc\(100% - 32px\); \}/.test(CALC_SRC),
+     'the window is sized by what is in it, and still fits a phone screen');
+  ok(/#helpBody \{ max-width: 66ch; font-size: var\(--fs-sm\); line-height: 1\.55; \}/.test(CALC_SRC),
+     'the reading measure and the family reading size are what it is sized to');
+  ok(/#helpBody p, #helpBody li \{ font-size: inherit; line-height: inherit; \}/.test(CALC_SRC),
+     'and the paragraphs inside the box follow it rather than the page default');
+  ok(/onclick="closeHelp\(\)">Got It</.test(CALC_SRC),
+     '"Got It", as in every other app');
 });
 
 /* ── The index page ─────────────────────────────────────────────────────────
