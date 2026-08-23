@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 140;
+const EXPECTED = 144;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -1551,6 +1551,68 @@ t('the help window is as wide as its text, not as wide as a table', () => {
      'and the paragraphs inside the box follow it rather than the page default');
   ok(/onclick="closeHelp\(\)">Got It</.test(CALC_SRC),
      '"Got It", as in every other app');
+});
+
+/* ── The portfolio's info dots ──────────────────────────────────────────────
+   Added 2026-08-23, when the family sweep found this page with no help at all —
+   and it is the page in the family with the most arithmetic behind the fewest
+   visible numbers. Three dots, on the three sections whose figures cannot show
+   their working: the assumptions, the four summary tiles, and the breakdown's
+   ladder and tax columns. Deliberately not on the two projections at the foot,
+   which each carry a paragraph of prose already, nor on the waterfall, which is
+   the breakdown's arithmetic totalled up. */
+t('the portfolio has an info dot on the three sections that need one', () => {
+  const bare = stripHtmlComments(PORT_SRC);
+  const dots = [...bare.matchAll(/data-help="([a-z]+)"/g)].map((m) => m[1]).sort();
+  eq(dots, ['assumptions', 'breakdown', 'summary'],
+     'a dot moved, went missing, or arrived without this test being told');
+  const keys = [...(PORT_SRC.match(/var HELP = \{[\s\S]*?\n\};/) || [''])[0]
+    .matchAll(/^  ([a-z]+): \[/gm)].map((m) => m[1]).sort();
+  eq(keys, dots, 'a dot with no entry opens nothing and says nothing; an entry with no dot '
+     + 'is prose nobody can reach');
+});
+t('each portfolio dot is a labelled circled "i" beside its heading', () => {
+  const bare = stripHtmlComments(PORT_SRC);
+  const btns = bare.match(/<button[^>]*class="tile-help"[\s\S]*?<\/button>/g) || [];
+  eq(btns.length, 3, 'three buttons for three dots');
+  for (const b of btns) {
+    ok(/>i<\/button>/.test(b), 'a dot drawing something other than "i": ' + b);
+    ok(/aria-label="/.test(b), 'a bare glyph is unlabelled for a screen reader: ' + b);
+  }
+  /* A section heading is itself a <button> that collapses the section, and a
+     button may not contain another one — so the dot is its SIBLING and the <h2>
+     is the row. Nesting them would be invalid HTML that browsers silently
+     unpick, moving the dot out of the heading entirely. */
+  ok(!/<button[^>]*class="sec-lbl"[^>]*>(?:(?!<\/button>)[\s\S])*class="tile-help"/.test(bare),
+     'the dot must not be nested inside the collapsing heading button');
+  ok(/\.sec-hd \{ display: flex; align-items: center; \}/.test(PORT_SRC),
+     'and the heading is the flex row that puts the two side by side');
+  ok(/\.sec-hd \.tile-help \{ margin-bottom: 10px; \}/.test(PORT_SRC),
+     "carrying the label's own bottom margin, or the dot rides high above it");
+});
+t('the portfolio help window is as wide as its text', () => {
+  ok(/#helpDialog \{ width: fit-content; max-width: calc\(100% - 32px\); \}/.test(PORT_SRC),
+     'the window is sized by what is in it, and still fits a phone screen');
+  ok(/#helpBody \{ max-width: 66ch; font-size: var\(--fs-sm\); line-height: 1\.55; \}/.test(PORT_SRC),
+     'the reading measure and the family reading size are what it is sized to');
+  ok(/#helpBody p, #helpBody li \{ font-size: inherit; line-height: inherit; \}/.test(PORT_SRC),
+     'and the paragraphs inside the box follow it rather than the page default');
+  ok(/\.tile-help \{[^}]*width: 16px; height: 16px; min-height: 0;/.test(PORT_SRC)
+     && /\.tile-help::after \{ content: ''; position: absolute; inset: -4px; \}/.test(PORT_SRC),
+     'and the dot is the family block, not a second version of it');
+  ok(/onclick="closeHelp\(\)">Got It</.test(PORT_SRC), '"Got It", as in every other app');
+  /* margin: auto is what centres a dialog, and this page's reset knocks it out —
+     with `width: fit-content` on top, losing it puts the window top-left. */
+  ok(/margin: auto;/.test(PORT_SRC), 'the centring line this page needs and its siblings do not');
+});
+t('nothing a reader typed can reach the portfolio help window', () => {
+  /* The bodies are innerHTML, safe only because every one is a literal. Nothing
+     on this page is free text today — every input is a number or a choice from
+     a list — but that is a property of today's page, not a rule. */
+  const table = (PORT_SRC.match(/var HELP = \{[\s\S]*?\n\};/) || [''])[0];
+  ok(table.length > 1000, 'the table was found — ' + table.length + ' characters');
+  ok(!/\$\{|\+ *[a-z]\w*\.|document\.|localStorage/.test(table.replace(/' \+\n/g, '')),
+     'every body is a literal: no interpolation, no reading from the page');
 });
 
 /* ── The index page ─────────────────────────────────────────────────────────

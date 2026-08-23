@@ -209,6 +209,23 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   tag with `<button[^>]*class="tile-help"`, never `<button class=`:** three of the four
   dots here put the class on the tag's second line, and the anchored version silently
   matched one button while the loop over it went on passing.
+- **The portfolio carries the same two blocks, and got them the same day** (2026-08-23). It
+  had no help at all until the family sweep, and it is the page with the most arithmetic
+  behind the fewest visible numbers. **Three dots and no more** — `assumptions`, `summary`,
+  `breakdown` — and the restraint is the point: the 10-year projection and "Does it last?"
+  each carry a paragraph of prose underneath them already, and the waterfall is the
+  breakdown's own arithmetic totalled up. What the three cover is what the page cannot say
+  in a number: that take-home has already been through lottery tax, that SPAXX is fixed at
+  4.3% with no slider while the T-bill yield is the Treasury's published one, that the
+  ladder is sized off SPENDING and not off the pot, and that the per-row percentages are
+  averages over a category rather than brackets.
+  **Two mechanical traps here that the calculator does not have.** A section heading is
+  itself a `<button>` that collapses the section, and a button may not contain another one —
+  so the dot is the heading's SIBLING, `.sec-hd` becomes the flex row, and the dot carries
+  the label's own `margin-bottom: 10px` or it rides high. And this page's `* { margin: 0 }`
+  reset knocks out the `margin: auto` a modal `<dialog>` is centred by, so the dialog rule
+  restates it; with `width: fit-content` on top, losing that line parks the help window in
+  the top-left corner. Both are pinned.
 - **All three disclosures open EXPANDED, and each remembers being closed.** The payment
   schedule was the exception until 2026-08-22 — it opened shut, so the thirty figures an
   annuity consists of were something you had to know to ask for. Opening it open is what

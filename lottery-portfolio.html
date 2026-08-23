@@ -374,6 +374,55 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
      panel rather than a form. The height cap and `overscroll-behavior` are the
      iOS fixes every sibling dialog carries; these pages had no dialog when
      those landed, so they never got them. */
+  /* ── The info dot ─────────────────────────────────────────────────────────
+     A circled "i" beside a section heading, opening the help window rather than
+     a hover tooltip so it works the same on a phone. THE SAME BLOCK IS IN EVERY
+     APP THAT HAS ONE, PROPERTY BY PROPERTY (2026-08-23). This page had no help
+     at all until a sweep across the family found it — and it is the page in the
+     family with the most arithmetic behind the fewest visible numbers: a
+     take-home figure that has already been through lottery tax, a ladder sized
+     off spending rather than off the pot, and three tax regimes at once.
+     "i" and not "?": "?" is the glyph a browser already puts on its own help
+     cursor and in a form's validation bubble, and it asks a question where this
+     thing answers one. ::after inflates the tap target to WCAG 2.2's 24px, and
+     the 7px margin keeps the circle off the word it follows (standing
+     preference in every app). A change to any of it belongs in all of them. */
+  .tile-help { display: inline-flex; align-items: center; justify-content: center;
+    position: relative; box-sizing: border-box; flex: none;
+    width: 16px; height: 16px; min-height: 0; padding: 0; margin-left: 7px;
+    border: 1px solid var(--border-control); border-radius: 50%;
+    background: transparent; color: var(--text-secondary);
+    font-family: inherit; font-size: var(--fs-xs); font-weight: 700;
+    line-height: 1; text-transform: none; cursor: pointer; vertical-align: 1px; }
+  .tile-help:hover { background: var(--surface-alt); border-color: var(--text-secondary);
+    color: var(--text-primary); }
+  .tile-help::after { content: ''; position: absolute; inset: -4px; }
+  /* A section heading is a <button> that collapses the section, and a button may
+     not contain another one — so the dot is the heading's SIBLING and the <h2>
+     becomes the row. The label's own 10px bottom margin is what spaces the
+     heading from its section, so the dot carries it too or it rides high.
+     App-specific, outside the shared block. */
+  .sec-hd { display: flex; align-items: center; }
+  .sec-hd .tile-help { margin-bottom: 10px; }
+
+  /* ── The help window ──────────────────────────────────────────────────────
+     THE SAME TWO RULES ARE IN EVERY APP THAT HAS ONE (2026-08-23), and they are
+     about the TEXT sizing the window rather than the window holding the text.
+     This is the one dialog that is nothing but prose, so `#helpBody` is capped
+     at a 66-character reading measure and `fit-content` makes the window take
+     that cap as its width. Both or neither: the cap alone leaves the paragraph
+     hugging the left of the 560px box with the rest of it empty, and
+     `fit-content` alone lets the lines run the full width. `max-width` is
+     restated because the base `dialog` rule's `width` is what is being
+     overridden; `margin: auto` above still centres it, which is the line this
+     page needs and its siblings do not. */
+  #helpDialog { width: fit-content; max-width: calc(100% - 32px); }
+  #helpBody { max-width: 66ch; font-size: var(--fs-sm); line-height: 1.55; }
+  #helpBody p, #helpBody li { font-size: inherit; line-height: inherit; }
+  #helpBody p { margin: 0 0 10px; color: var(--text-secondary); }
+  #helpBody p:last-child { margin-bottom: 0; }
+  #helpBody strong { color: var(--text-primary); }
+
   /* THE SAME WIDTH AS MONEY MAP'S, which is the family's share window: 1100px,
      its --dialog-w-wide. Asked for on 2026-08-22 — these were 880, 820, 820 and
      560 across five pages, so the same action opened a different-sized window in
@@ -486,7 +535,7 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
   <p class="basis" id="basis">&mdash;</p>
 
   <div class="section">
-    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('assumptions')" aria-expanded="true" aria-controls="body-assumptions"><span class="sec-chevron open" id="chev-assumptions" aria-hidden="true">&#9654;</span>Assumptions</button></h2>
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('assumptions')" aria-expanded="true" aria-controls="body-assumptions"><span class="sec-chevron open" id="chev-assumptions" aria-hidden="true">&#9654;</span>Assumptions</button><button type="button" class="tile-help" data-help="assumptions" aria-label="What these figures are and where they come from">i</button></h2>
     <div class="sec-body" id="body-assumptions">
     <!-- Who is paying the tax. Until 2026-08-22 this page assumed a single filer
          outside New York City and applied four flat top-marginal rates to any
@@ -529,14 +578,14 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
   </div>
 
   <div class="section">
-    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('summary')" aria-expanded="true" aria-controls="body-summary"><span class="sec-chevron open" id="chev-summary" aria-hidden="true">&#9654;</span>Summary</button></h2>
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('summary')" aria-expanded="true" aria-controls="body-summary"><span class="sec-chevron open" id="chev-summary" aria-hidden="true">&#9654;</span>Summary</button><button type="button" class="tile-help" data-help="summary" aria-label="How the four figures here are worked out">i</button></h2>
     <div class="sec-body" id="body-summary">
     <div class="metrics" id="metrics"></div>
     </div>
   </div>
 
   <div class="section">
-    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('breakdown')" aria-expanded="true" aria-controls="body-breakdown"><span class="sec-chevron open" id="chev-breakdown" aria-hidden="true">&#9654;</span>Portfolio Breakdown</button></h2>
+    <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('breakdown')" aria-expanded="true" aria-controls="body-breakdown"><span class="sec-chevron open" id="chev-breakdown" aria-hidden="true">&#9654;</span>Portfolio Breakdown</button><button type="button" class="tile-help" data-help="breakdown" aria-label="How the allocation is sized and how each holding is taxed">i</button></h2>
     <div class="sec-body" id="body-breakdown">
     <!-- A grid of divs, not a <table>: the phone layout re-flows each row into
          two lines, which real table display types can't do. The ARIA roles put
@@ -662,6 +711,19 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 .privacy-links { margin-top: 6px; }
 .privacy-links a { color: var(--text-muted); }
 </style>
+
+<!-- ── The help window ─────────────────────────────────────────────────────
+     One window, filled from HELP by whichever info dot was pressed — the shape
+     every app in the family uses. It is not sized here: the two rules in the
+     stylesheet let its own text set its width. "Got It" is the family's word
+     for dismissing it, and the heading is replaced on open. -->
+<dialog id="helpDialog" aria-labelledby="helpTitle">
+  <h3 id="helpTitle">About</h3>
+  <div id="helpBody"></div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end">
+    <button type="button" class="btn primary" onclick="closeHelp()">Got It</button>
+  </div>
+</dialog>
 
 <!-- ── Share a link to these settings ───────────────────────────────────────
      Eleven numbers and two words picked from lists. Nothing here is text
@@ -1620,6 +1682,48 @@ function openShare() {
   document.getElementById('share-link').select();
 }
 function closeShare() { document.getElementById('share-dialog').close(); }
+
+/* ── The info dots ──────────────────────────────────────────────────────────
+   Three of them, on the three sections whose figures are the result of
+   arithmetic the page cannot show: what a take-home figure already has taken
+   out of it, how the ladder is sized, and how five holdings are taxed three
+   different ways at once. The two projections below have their own paragraph
+   of prose underneath them and need no dot; the waterfall is the breakdown's
+   arithmetic totalled up, and the breakdown's entry covers it.
+   The html here is a LITERAL in this file. Nothing on this page is free text —
+   every input is a number or a choice from a list — but that is a property of
+   today's page, not a rule, so keep it that way rather than relying on it.
+   Keyed by `data-help`, opened by one delegated listener, the shape every
+   sibling app uses. */
+var HELP = {
+  assumptions: ['The Assumptions', '<p>Every figure on this page comes out of these nine, and they are all yours to move. Nothing is saved anywhere: the sliders live in the page, and the Share button puts their values <em>inside</em> a link rather than uploading them.</p>' +
+    '<p><strong>Take-home (lump sum)</strong> is what actually reaches you — after the lottery withholding and the tax return that follows it, which is what the calculator on the other page works out. It is not the advertised jackpot and not the cash value; if you have used that calculator, this box starts from the figure it gave you.</p>' +
+    '<p><strong>The T-bill yield says "live"</strong> when the page has reached the Treasury\'s own daily yield-curve file and read the latest published rate off it, with the date it was published beside it. It is still a slider: type over it and the page uses your number. Nothing else here is fetched. <strong>SPAXX is fixed at 4.3% and has no slider</strong> — it is a one-year cash buffer, small enough that the rate on it changes nothing you would notice.</p>' +
+    '<p><strong>Inflation changes nothing about this year.</strong> It is what makes next year\'s spending bigger, so it only shows up in "Does it last?" at the foot of the page — which is why it sits beside spending rather than among the yields.</p>'],
+  summary: ['The Four Figures', '<p><strong>Total portfolio</strong> is the take-home above, unchanged. "After lottery taxes" is a reminder of what that figure already has taken out of it, not a second deduction applied here.</p>' +
+    '<p><strong>Gross income</strong> is one year of yield from the five holdings at the rates set above, with nothing sold and nothing spent. <strong>After-tax income</strong> is the same year with federal tax, NIIT and New York taken off — the breakdown below shows which of the three each holding meets.</p>' +
+    '<p><strong>Surplus</strong> is after-tax income less your annual spending. A positive number is what the portfolio throws off without touching the principal; a negative one is what has to be sold each year to cover the gap, which is the question "Does it last?" answers properly.</p>' +
+    '<p>All four are ONE YEAR held still, at today\'s rates and today\'s spending. Nothing here compounds.</p>'],
+  breakdown: ['The Allocation, and Three Tax Regimes at Once', '<p><strong>The ladder is sized off your spending, not off the pot.</strong> One year of spending in SPAXX, three in T-bills and four in munis — eight years of cash and bonds before anything is sold — and everything left over goes into VTI and VXUS at the split you set. That is why a very large portfolio still shows a fraction of a percent in cash: eight years of a $125K life is $1M whether the pot is $5M or $500M. If the pot is too small to fund the whole ladder it is shrunk to fit rather than borrowed against, and the page says so.</p>' +
+    '<p><strong>Three regimes, and the rates depend on each other.</strong> SPAXX and T-bill interest is ordinary income and walks up the federal brackets from the bottom after the standard deduction; T-bill interest is exempt from New York and SPAXX interest is not. Muni interest is exempt from both, which is why munis are the only row whose after-tax income equals its gross. VTI and VXUS dividends are qualified, so they are taxed in the long-term capital-gain bands <em>stacked on top of</em> the ordinary income — which is why a portfolio with a lot of interest pays a higher rate on its dividends than one without. NIIT is 3.8% above a threshold that is not indexed for inflation, and it lands on interest as well as dividends, so it is spread across everything taxable rather than charged to the dividends alone.</p>' +
+    '<p><strong>The percentage in each row is an average, not a bracket.</strong> It is that category\'s total tax over that category\'s income, which is what makes the rows add up to exactly the total; a set of marginal rates would not. "Eff. rate" on the total line is the same arithmetic over the whole portfolio.</p>' +
+    '<p>This is a model of the ordinary cases, not tax advice, and it knows nothing about anything you do not type into it.</p>'],
+};
+function closeHelp() { document.getElementById('helpDialog').close(); }
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest ? e.target.closest('.tile-help') : null;
+  if (!btn) return;
+  var h = HELP[btn.getAttribute('data-help')];
+  if (!h) return;
+  document.getElementById('helpTitle').textContent = h[0];
+  document.getElementById('helpBody').innerHTML = h[1];
+  var d = document.getElementById('helpDialog');
+  d.showModal();
+  /* Back to the top: showModal() focuses the first focusable thing in the box,
+     which here is Got It at the very bottom, so a long entry would open already
+     scrolled past its own heading. The sibling calculator page does the same. */
+  d.scrollTop = 0;
+});
 /* "Preview it" — the family's second button, and the only way to answer "what
    does the person I send this to actually see?" without mailing it to yourself.
    A new tab rather than this one, so the settings the link was made from are
