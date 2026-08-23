@@ -612,10 +612,16 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
   <div class="footnotes">
   <p class="note" id="note"></p>
   <p class="footer">Planning purposes only — not financial advice. Consult a fee-only fiduciary CFP before investing.</p>
-  <p class="footer foot-links"><a href="privacy.html">Privacy policy</a> &middot;
+  <p class="privacy" id="privacyNote">🔒 Private — everything is worked out in your browser.
+    Nothing you type is uploaded and there is no account; the only requests are to the
+    public jackpot, winning-number and Treasury feeds.</p>
+  <p class="privacy privacy-links"><a href="privacy.html">Privacy policy</a> &middot;
     <a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a></p>
-  <p class="footer foot-copy">&copy; 2026 Charles Adams — an independent personal project,
-    <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licensed</a>.</p>
+  <p class="privacy privacy-links">&copy; 2026 Charles Adams — an
+    <a href="https://github.com/eagleadams86/lottery/blob/main/NOTICE"
+       target="_blank" rel="noopener noreferrer">independent personal project</a>,
+    <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE"
+       target="_blank" rel="noopener noreferrer">MIT licensed</a>.</p>
   </div>
 
   <!-- A real <a>, not a button that navigates: cmd-click, middle-click and "open in
@@ -629,6 +635,14 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 </div>
 
 <style>
+
+/* The footer's three lines — Sprint Predictability's treatment. Muted links,
+   because this is provenance at the foot of a document rather than something to
+   click on the way in. `footer` is already a flex row here for the cross-link;
+   .footnotes keeps these stacked inside it. */
+.privacy { font-size: var(--fs-xs); color: var(--text-muted); margin: 28px 0 0; padding-left: 19px; }
+.privacy-links { margin-top: 6px; }
+.privacy-links a { color: var(--text-muted); }
 </style>
 
 <!-- ── Share a link to these settings ───────────────────────────────────────

@@ -1587,9 +1587,15 @@ t('and its own landmarks — a real main, then a real footer', () => {
   const bare = stripHtmlComments(INDEX_SRC);
   ok(/<main>/.test(bare),
     'no main landmark on the launcher, so contentinfo would be the only one');
-  ok(/<footer class="note">/.test(bare),
+  /* Matched by the WRAPPER's class rather than by a bare '<footer', for the
+     reason the note above gives: a bare match passes on the prose in a comment.
+     The element carried class="note" until 2026-08-23, when this page took the
+     family's three-line footer — .footnotes is what identifies it now, and it is
+     load-bearing rather than decorative, because `footer` is a flex ROW and
+     without the wrapper the three lines lay out side by side. */
+  ok(/<div class="footnotes">/.test(bare),
     'the footer is a real <footer> — a styled <p> is not a contentinfo landmark');
-  ok(bare.indexOf('</main>') < bare.indexOf('<footer class="note"'),
+  ok(bare.indexOf('</main>') < bare.indexOf('<div class="footnotes">'),
     'with main CLOSED before it: a <footer> inside main is not contentinfo at all');
 });
 
@@ -1668,11 +1674,18 @@ t('the footer and the policy are both real landmarks, in that order', () => {
      /<main>/ or a bare '<footer' would pass on a page that had lost the element
      and kept the comment explaining it, which is the one way this could rot. */
   const bare = stripHtmlComments(PRIVACY_SRC);
-  ok(/<footer class="foot">/.test(bare),
+  /* Matched by the WRAPPER's class, never by a bare '<footer'. A bare match
+     passes on the prose in the <style> block's own comment, which an
+     HTML-comment strip does not reach. `class="foot"` served that purpose on the
+     element itself until 2026-08-23, when every page in the family moved to
+     Sprint Predictability's footer treatment; `.footnotes` serves it now — and
+     it is load-bearing rather than decorative, because `footer` is a flex ROW
+     and without the wrapper the lines lay out side by side. */
+  ok(/<div class="footnotes">/.test(bare),
     'the footer is a real <footer> — a contentinfo landmark, not a styled paragraph');
   ok(/<main>/.test(bare),
     'and the policy sits in <main>, or contentinfo is the page\u2019s only landmark');
-  ok(bare.indexOf('</main>') < bare.indexOf('<footer class="foot"'),
+  ok(bare.indexOf('</main>') < bare.indexOf('<div class="footnotes">'),
     'with main CLOSED before it: a <footer> inside main is not contentinfo at all');
 });
 

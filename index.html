@@ -117,6 +117,23 @@
   .note { color: var(--text-muted); font-size: var(--fs-xs); margin: 30px 0 0; }
   .note a { color: var(--accent); }
   .note a:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; border-radius: 3px; }
+
+/* ── The footer every public page in this account carries ────────────────────
+   Sprint Predictability's, transcribed — it is the design lead for this chrome
+   and a change here belongs there too. Three lines: what the page does with your
+   data, the privacy policy beside the repo under "How it works", and the
+   authorship line, whose TWO links point at NOTICE (who owns it) and LICENSE
+   (the terms) in that order.
+   `footer` is a flex ROW so a cross-link to a sibling can sit at the right-hand
+   end; `.footnotes` keeps the paragraphs stacked inside it, and without that
+   wrapper they become flex items and lay out side by side.
+   The links are MUTED, not accent: provenance at the foot of a document rather
+   than something to click on the way in. */
+footer { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.footnotes { flex: 1 1 320px; min-width: 0; }
+.privacy { font-size: var(--fs-xs); color: var(--text-muted); margin: 28px 0 0; padding-left: 19px; }
+.privacy-links { margin-top: 6px; }
+.privacy-links a { color: var(--text-muted); }
 </style>
 </head>
 <body>
@@ -155,10 +172,19 @@
        not a styled paragraph — it was a <p class="note"> until 2026-08-21, and
        a paragraph is not a contentinfo landmark however it is styled. .note
        keeps every rule that styles it. -->
-  <footer class="note"><a href="privacy.html">Privacy policy</a> &middot;
-    <a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a><br>
-    &copy; 2026 Charles Adams — an independent personal project,
-    <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licensed</a>.</footer>
+  <footer>
+    <div class="footnotes">
+      <p class="privacy" id="privacyNote">🔒 Private — both pages run entirely in your browser.
+        Nothing you type is uploaded, and there is no account.</p>
+      <p class="privacy privacy-links"><a href="privacy.html">Privacy policy</a> &middot;
+        <a href="https://github.com/eagleadams86/lottery" target="_blank" rel="noopener noreferrer">How it works</a></p>
+      <p class="privacy privacy-links">&copy; 2026 Charles Adams — an
+        <a href="https://github.com/eagleadams86/lottery/blob/main/NOTICE"
+           target="_blank" rel="noopener noreferrer">independent personal project</a>,
+        <a href="https://github.com/eagleadams86/lottery/blob/main/LICENSE"
+           target="_blank" rel="noopener noreferrer">MIT licensed</a>.</p>
+    </div>
+  </footer>
 </div>
 
 <!-- ── Offline ────────────────────────────────────────────────────────────────
