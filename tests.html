@@ -1535,6 +1535,10 @@ t('every dot is a circled "i", never a "?"', () => {
      + 'Handicap was the odd one out, not the standard');
   ok(/\.tile-help::after \{ content: ''; position: absolute; inset: -4px; \}/.test(CALC_SRC),
      "the 24px tap target, which is WCAG 2.2's and is not the circle's own size");
+  ok(/\.tile-help:hover \{ background: var\(--surface-alt\); border-color: var\(--text-secondary\);/
+     .test(CALC_SRC),
+     'and the hover fills rather than borrowing --focus-border, which would say '
+     + '"focused" to anybody reading the two states side by side');
 });
 t('the help window is as wide as its text, not as wide as a table', () => {
   /* Two rules, and only together: the measure caps the LINE, `fit-content`
