@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 145;
+const EXPECTED = 146;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -976,13 +976,39 @@ t('the dialog spells out the auto margin the reset takes away', () => {
        name + ': the dialog will open in the top-left corner without an explicit auto margin');
   }
 });
-t('clicking the backdrop closes it, which is the family rule for every dialog', () => {
-  /* Whitespace-tolerant on purpose: the two pages are written in different
-     styles (one ES5-ish, one not) and this test is about the behaviour, not
-     about where the spaces go. */
-  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]])
-    ok(/share-dialog'\)\.addEventListener\('click'[\s\S]{0,240}e\.target\s*===\s*this\)\s*this\.close\(\)/.test(src),
-       name + ': the backdrop click handler is missing');
+t('EVERY dialog closes on a backdrop click, which is the family rule', () => {
+  /* Enumerated from the markup rather than listed here, which is the point: a
+     dialog added later is covered by this test the day it is added, and the
+     portfolio's help window — added 2026-08-23 and NOT wired — is exactly the
+     kind of gap a hand-written list would have missed.
+     There is ONE documented exception family-wide, the sync "which copy of your
+     data?" dialog, and neither page here syncs, so the list is every dialog. */
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    const ids = [...stripHtmlComments(src).matchAll(/<dialog id="([\w-]+)"/g)].map((m) => m[1]);
+    ok(ids.length >= 2, name + ': found ' + ids.length + ' dialogs');
+    for (const id of ids)
+      ok(new RegExp("closeOnBackdropClick\\(document\\.getElementById\\('" + id + "'\\)\\)").test(src),
+         name + ': ' + id + ' is not registered for backdrop dismissal');
+  }
+});
+t('and it is the guarded helper, not e.target === this', () => {
+  /* The naive test is wrong twice over, and both pages shipped it. A click on
+     the backdrop does report the dialog as the target — but so does one on the
+     dialog's own PADDING, so a press 20px inside the frame closed the window
+     the reader was using. And a press that starts inside and releases outside,
+     which is how you drag a selection out of the link box, was a dismissal too. */
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    const fn = (src.match(/function closeOnBackdropClick\(d\) \{[\s\S]*?\n\}/) || [''])[0];
+    ok(fn, name + ': the family helper is missing');
+    ok(/if \(e\.target !== d\) return false;/.test(fn),
+       name + ": a click on the dialog's own padding reports the dialog as the target");
+    ok(/getBoundingClientRect\(\)/.test(fn) && /e\.clientX < r\.left/.test(fn),
+       name + ': the pointer must be tested against the box, not just the target');
+    ok(/'pointerdown'/.test(fn) && /pressBeganOutside && outside\(e\)/.test(fn),
+       name + ': both the press and the release have to land outside');
+    ok(!/addEventListener\('click', function ?\(e\) ?\{\s*if ?\(e\.target ?===? ?this\)/.test(src),
+       name + ': a naive e.target === this handler is still wired up somewhere');
+  }
 });
 t('"Preview It" opens a new tab and hands it no window handle', () => {
   for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {

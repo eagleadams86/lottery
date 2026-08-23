@@ -221,7 +221,19 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   term per item and is right to. "Withheld at Payment" had no bold at all until this date.
   **Split the table on the entry boundary, never `matchAll` with a `$` alternative:** under
   the `m` flag `$` is end-of-LINE, so a lazy body stops at the first newline and every entry
-  reads as a single paragraph. **Match the button
+  reads as a single paragraph.
+- **EVERY dialog on both pages closes on a backdrop click, through the family's
+  `closeOnBackdropClick`** (2026-08-23). The portfolio's help window had nothing at all —
+  the only window in the family you could not click off — and both share windows tested
+  `e.target === this` on its own, which is wrong twice over: a click on the backdrop reports
+  the dialog as the target, but **so does one on the dialog's own 20px of padding**, and a
+  press that starts inside and releases outside (dragging a selection out of the link box)
+  counted as a dismissal. The helper tests the pointer against the dialog's BOX and requires
+  both the press and the release to land outside. The one documented exception family-wide
+  is the sync "which copy of your data?" dialog, and neither page here syncs.
+  `tests.html` **enumerates the dialogs from the markup** rather than listing them, so a
+  window added later is covered the day it is added — which is exactly the gap that let the
+  portfolio's help window ship unwired. **Match the button
   tag with `<button[^>]*class="tile-help"`, never `<button class=`:** three of the four
   dots here put the class on the tag's second line, and the anchored version silently
   matched one button while the loop over it went on passing.

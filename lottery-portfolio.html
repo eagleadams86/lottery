@@ -1717,7 +1717,34 @@ var HELP = {
     '<p><strong>The percentage in each row is an average, not a bracket.</strong> It is that category\'s total tax over that category\'s income, which is what makes the rows add up to exactly the total; a set of marginal rates would not. "Eff. rate" on the total line is the same arithmetic over the whole portfolio.</p>' +
     '<p>This is a model of the ordinary cases, not tax advice, and it knows nothing about anything you do not type into it.</p>'],
 };
+/* ── Clicking off a window closes it ────────────────────────────────────────
+   The family's helper, and the same behaviour in every app: a click on the
+   backdrop dismisses the window, exactly as Escape and Cancel do. Both pages
+   used to test `e.target === this` on its own, which is wrong twice over. A
+   click on the backdrop DOES report the dialog itself as the target — but so
+   does one on the dialog's own PADDING or its scrollbar, so a press 10px inside
+   the frame closed the window the reader was using. And a press that starts
+   inside and releases outside — dragging a selection out of the link box — was
+   a dismissal too, throwing the selection away with it.
+   So: test the pointer against the dialog's BOX rather than trusting the
+   target, and require BOTH the press and the release to land outside.
+   ONE DOCUMENTED EXCEPTION EXISTS FAMILY-WIDE and it is not on these pages: the
+   sync "which copy of your data?" dialog, where either answer replaces a copy
+   and there is no safe default to dismiss into. Neither page here syncs. */
+function closeOnBackdropClick(d) {
+  if (!d) return;
+  function outside(e) {
+    if (e.target !== d) return false;
+    var r = d.getBoundingClientRect();
+    return e.clientX < r.left || e.clientX > r.right
+        || e.clientY < r.top || e.clientY > r.bottom;
+  }
+  var pressBeganOutside = false;
+  d.addEventListener('pointerdown', function (e) { pressBeganOutside = outside(e); });
+  d.addEventListener('click', function (e) { if (pressBeganOutside && outside(e)) d.close(); });
+}
 function closeHelp() { document.getElementById('helpDialog').close(); }
+closeOnBackdropClick(document.getElementById('helpDialog'));
 document.addEventListener('click', function (e) {
   var btn = e.target.closest ? e.target.closest('.tile-help') : null;
   if (!btn) return;
@@ -1748,10 +1775,10 @@ function copyShare() {
                                                   () => { meta.textContent = 'Press Cmd-C or Ctrl-C to copy.'; });
   } else { meta.textContent = 'Press Cmd-C or Ctrl-C to copy.'; }
 }
-/* Backdrop click cancels — the family rule for every dialog in every app. */
-document.getElementById('share-dialog').addEventListener('click', function (e) {
-  if (e.target === this) this.close();
-});
+/* Backdrop click cancels — the family rule for every dialog in every app. See
+   closeOnBackdropClick below: testing `e.target === this` alone also fires on
+   the dialog's own padding, and on a press that started inside. */
+closeOnBackdropClick(document.getElementById('share-dialog'));
 /* Pasting a link into a tab already on this page changes only the fragment,
    which is not a navigation — without this the link appears to do nothing. */
 window.addEventListener('hashchange', () => {

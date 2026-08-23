@@ -1612,12 +1612,12 @@ function copyShare(){
                                                   function(){ meta.textContent='Press Cmd-C or Ctrl-C to copy.'; });
   } else { meta.textContent='Press Cmd-C or Ctrl-C to copy.'; }
 }
-/* Backdrop click cancels, the family rule for every dialog in every app. A
-   click ON the <dialog> lands on the element itself only when it fell outside
-   the box, because everything inside it is a child. */
-document.getElementById('share-dialog').addEventListener('click', function(e){
-  if(e.target===this) this.close();
-});
+/* Backdrop click cancels, the family rule for every dialog in every app — see
+   closeOnBackdropClick below for what it took to get that right. (The claim
+   that used to sit here, that a click lands on the <dialog> itself "only when
+   it fell outside the box, because everything inside it is a child", is not
+   true: the dialog's own 20px of PADDING is not a child of anything.) */
+closeOnBackdropClick(document.getElementById('share-dialog'));
 
 /* ── Help ───────────────────────────────────────────────────────────────────
    The family's `data-help` map: a key per "?" button, [title, html]. Written as
@@ -1698,10 +1698,34 @@ document.addEventListener('click', function(e){
      what puts it at the beginning of what it is scrolling. */
   d.scrollTop = 0;
 });
+/* ── Clicking off a window closes it ────────────────────────────────────────
+   The family's helper, and the same behaviour in every app: a click on the
+   backdrop dismisses the window, exactly as Escape and Cancel do. Both pages
+   used to test `e.target === this` on its own, which is wrong twice over. A
+   click on the backdrop DOES report the dialog itself as the target — but so
+   does one on the dialog's own PADDING or its scrollbar, so a press 10px inside
+   the frame closed the window the reader was using. And a press that starts
+   inside and releases outside — dragging a selection out of the link box — was
+   a dismissal too, throwing the selection away with it.
+   So: test the pointer against the dialog's BOX rather than trusting the
+   target, and require BOTH the press and the release to land outside.
+   ONE DOCUMENTED EXCEPTION EXISTS FAMILY-WIDE and it is not on these pages: the
+   sync "which copy of your data?" dialog, where either answer replaces a copy
+   and there is no safe default to dismiss into. Neither page here syncs. */
+function closeOnBackdropClick(d) {
+  if (!d) return;
+  function outside(e) {
+    if (e.target !== d) return false;
+    var r = d.getBoundingClientRect();
+    return e.clientX < r.left || e.clientX > r.right
+        || e.clientY < r.top || e.clientY > r.bottom;
+  }
+  var pressBeganOutside = false;
+  d.addEventListener('pointerdown', function (e) { pressBeganOutside = outside(e); });
+  d.addEventListener('click', function (e) { if (pressBeganOutside && outside(e)) d.close(); });
+}
 function closeHelp(){ document.getElementById('helpDialog').close(); }
-document.getElementById('helpDialog').addEventListener('click', function(e){
-  if(e.target===this) this.close();
-});
+closeOnBackdropClick(document.getElementById('helpDialog'));
 
 // ── Manual / details toggles ──────────────────────────────────────────────────
 // Every disclosure keeps its button's aria-expanded in step with the panel, so
