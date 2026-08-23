@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="midnight">
+<html lang="en" data-theme="auto">
 <head>
 <meta charset="UTF-8">
 <!-- Content Security Policy. GitHub Pages can't set response headers, so this
@@ -440,10 +440,10 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
            sibling app's. -->
       <button type="button" class="btn small" id="share-btn" onclick="openShare()"><span aria-hidden="true">&#8599;</span> Share</button>
       <select class="theme-btn theme-select no-print" id="theme-select" onchange="setTheme(this.value)" aria-label="Theme">
-        <option value="auto">◐ Auto</option>
+        <option value="auto" selected>◐ Auto</option>
         <option value="dark">☾ Dark</option>
         <option value="light">☀ Light</option>
-        <option value="midnight" selected>✦ Midnight</option>
+        <option value="midnight">✦ Midnight</option>
         <option value="sepia">📜 Sepia</option>
       </select>
     </div>
@@ -987,7 +987,7 @@ function cssVar(n){ return getComputedStyle(document.documentElement).getPropert
    and mobile browser chrome read it; in an ordinary tab it does nothing. */
 function setTheme(theme) {
   if (theme === 'slate') theme = 'dark'; // renamed family-wide: same palette (see theme.css)
-  if (!THEMES.includes(theme)) theme = 'midnight';
+  if (!THEMES.includes(theme)) theme = 'auto';
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('lottery-theme', theme);
   document.getElementById('theme-select').value = theme;
@@ -997,7 +997,11 @@ function setTheme(theme) {
     .getPropertyValue('--bg').trim();
   if (bar && bg) bar.setAttribute('content', bg);
 }
-setTheme(localStorage.getItem('lottery-theme') || 'midnight');
+/* AUTO is the default (2026-08-22), so a first visit follows the reader's own system
+   — Light on a light one, Midnight on a dark one — and a retired id lands there too.
+   <html data-theme="auto"> in the markup is the same answer for a browser that never
+   gets this far. */
+setTheme(localStorage.getItem('lottery-theme') || 'auto');
 
 /* On Auto the palette can change with nobody touching the picker — the reader's phone
    switches to dark at sunset and theme.css follows on its own, because the whole rule

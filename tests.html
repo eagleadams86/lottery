@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 121;
+const EXPECTED = 122;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -1290,7 +1290,7 @@ t('and its own landmarks — a real main, then a real footer', () => {
     'with main CLOSED before it: a <footer> inside main is not contentinfo at all');
 });
 
-t('its theme picker is written out at full size, with midnight pre-selected', () => {
+t('its theme picker is written out at full size, with auto pre-selected', () => {
   /* Both app pages built these four options from script at the FOOT of the
      page, into an empty <select> in a header that had already painted — so the
      control laid out at about 40px and jumped to its full width a moment later.
@@ -1300,13 +1300,41 @@ t('its theme picker is written out at full size, with midnight pre-selected', ()
     const sel = (stripHtmlComments(src)
       .match(/<select[^>]*id="theme-select"[\s\S]*?<\/select>/) || [])[0] || '';
     ok(/<option value="dark">/.test(sel), name + ': the options must live in the markup');
-    ok(/<option value="midnight" selected>/.test(sel),
-      name + ': midnight must be pre-selected, or the picker reads "Dark" until JS runs');
-    for (const id of ['dark', 'light', 'midnight', 'sepia'])
+    ok(/<option value="auto" selected>/.test(sel),
+      name + ': auto is the default (2026-08-22) and must be pre-selected, or the picker '
+      + 'names a theme the page is not showing until JS runs');
+    eq((sel.match(/ selected>/g) || []).length, 1,
+      name + ': exactly one option may carry `selected`');
+    for (const id of ['auto', 'dark', 'light', 'midnight', 'sepia'])
       ok(sel.includes('value="' + id + '"'), name + ': ' + id + ' is missing from the picker');
     ok(!/getElementById\('theme-select'\)\.innerHTML/.test(src),
       name + ': the script still writes the options in — that is the re-flow this '
       + 'moved them into the markup to stop. THEMES is read back off them now.');
+  }
+});
+/* ── The default theme ───────────────────────────────────────────────────────
+   It moved from midnight to auto on 2026-08-22, so a reader who has never touched the
+   picker follows their own system. On these two pages the default lives in THREE
+   places which have to agree, and none of them can see the other two: the <html>
+   attribute (what a browser with script disabled paints, and what the header shows
+   until setTheme runs at the foot of the file), setTheme's own fallback, and the
+   picker's `selected`, pinned just above. A place left on midnight is a silent
+   disagreement — on a dark-mode machine every combination looks identical. */
+t('and the markup and setTheme agree that the default is auto', () => {
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC],
+                             ['the launcher', INDEX_SRC]]) {
+    ok(src, name + ': did not load, so nothing below proves anything');
+    ok(/<html[^>]*\sdata-theme="auto"/.test(src),
+      name + ': <html> must carry data-theme="auto", or a script-less load falls back '
+      + "to :root's midnight");
+  }
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
+    const fn = (src.match(/function setTheme\(theme\)[\s\S]*?\n}/) || [''])[0];
+    ok(fn, name + ': setTheme() has moved or been renamed');
+    ok(/theme = 'auto';/.test(fn),
+      name + ": setTheme still normalises an unrecognised id to something other than the default");
+    ok(/getItem\('lottery-theme'\) \|\| 'auto'/.test(src),
+      name + ': a first visit must start on auto, not on midnight');
   }
 });
 

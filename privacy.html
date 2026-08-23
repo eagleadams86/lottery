@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="midnight">
+<html lang="en" data-theme="auto">
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
@@ -9,13 +9,17 @@
 <script>
   /* The same pre-paint boot as the two app pages: honour the saved theme, so this
      page doesn't open midnight on someone who chose Light. Keep the list in step
-     with theirs. */
+     with theirs.
+
+     THE DEFAULT IS 'auto' (2026-08-22): with nothing saved — and on this page that is
+     the common case, since it can be linked to directly — the reader follows their own
+     system. <html data-theme="auto"> above covers the same case with script disabled. */
   try {
     var t = localStorage.getItem('lottery-theme');
     if (t === 'slate') t = 'dark'; // renamed family-wide: same palette (see theme.css)
     var ok = ['auto','light','dark','midnight','sepia'];
     document.documentElement.setAttribute('data-theme',
-      ok.indexOf(t) === -1 ? 'midnight' : t);
+      ok.indexOf(t) === -1 ? 'auto' : t);
   } catch (e) {}
 </script>
 <link rel="stylesheet" href="theme.css">
