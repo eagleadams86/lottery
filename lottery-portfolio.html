@@ -146,7 +146,15 @@
    by side stop looking like one product. Same three values as `.btn` above it. */
 .theme-btn { display:flex; align-items:center; gap:6px; min-height:var(--chrome-h); padding: 4px 9px; font-size:var(--fs-xs); font-weight: var(--fw-normal); cursor:pointer; background:var(--surface); color:var(--text2); border:1px solid var(--border2); border-radius: var(--radius-sm); font-family:inherit; transition:background 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
 .theme-btn:hover { color:var(--text); border-color:var(--border2); }
-.theme-select { -webkit-appearance:none; appearance:none; padding-right:26px; background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23888'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
+/* NO `appearance: none` HERE, and no arrow of our own. theme.css says it in as
+   many words — "select keeps its appearance because the arrow IS the affordance"
+   — and every sibling app's theme picker shows the platform's own chevron. This
+   page drew a filled triangle instead, from an inline SVG whose fill was a
+   hardcoded #888: a colour invented in an app, which is exactly what the theme
+   pack exists to prevent, and one that followed none of the four themes. Two
+   pages open side by side on this origin showed two different dropdowns.
+   Reported 2026-08-23; the rule below keeps the box, which was never the
+   problem. */
 
 /* The HEADER's palette, not the input palette. `.theme-btn` above paints on
    --surface with muted text, which is what a field you fill in wears — and

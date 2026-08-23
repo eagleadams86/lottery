@@ -230,12 +230,14 @@
     white-space: nowrap; flex-shrink: 0;
   }
   .theme-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
-  .theme-select {
-    -webkit-appearance: none; appearance: none;
-    padding-right: 26px;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23888'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 10px center;
-  }
+  /* NO `appearance: none` HERE, and no arrow of our own. theme.css says it in as
+     many words — "select keeps its appearance because the arrow IS the
+     affordance" — and every sibling app's theme picker shows the platform's own
+     chevron. This page drew a filled triangle instead, from an inline SVG whose
+     fill was a hardcoded #888: a colour invented in an app, which is exactly
+     what the theme pack exists to prevent, and one that followed none of the
+     four themes. Reported 2026-08-23, and fixed on both lottery pages at once.
+     The rule below keeps the box, which was never the problem. */
 
 /* The HEADER's palette, not the input palette. `.theme-btn` above paints on
    --surface with muted text, which is what a field you fill in wears — and
