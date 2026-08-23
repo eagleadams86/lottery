@@ -158,10 +158,22 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   per-year gross/tax/net. It is now `payout === 'compare'` only. **The one place it still
   reaches from another tab is the CSV**, which carries an "Annuity in today's money at
   N%" row — that row names its own rate, so it stays honest with the field off screen.
-  Separately, `#eff-rate` is the LUMP figure everywhere except annuity mode, and the
-  breakdown beneath it is the lump sum's too; on Compare, where two payouts are on
-  screen and each card shows its own rate, `#eff-scope` now appends "on the lump sum".
-  **If a fifth view is ever added, both of these have to be answered again for it.**
+  Separately, the effective rate and the breakdown beneath it **follow the winner on
+  Compare** (2026-08-22). `annuityAhead` is decided ONCE, near the top of the render,
+  and everything that has to agree reads it: the tiles, the cards' "Ahead here" badge,
+  `breakdownIsAnnuity`, `#eff-rate`, `#eff-scope` and `#details-scope`. It was worked
+  out twice before — `better` in the tiles and `lumpWins` in the cards, complements of
+  each other — which was survivable while nothing else consulted it. **Ties go to the
+  annuity** (`>=`), as they always did in the tiles; flipping that comparison moves
+  which payout the whole page describes at exactly the break-even rate.
+  **One breakdown, not two side by side, and that is deliberate:** the lump sum's
+  describes the whole prize and the annuity's describes the FIRST of thirty payments,
+  so in adjacent columns they invite comparing $300M against $7.5M. The comparable
+  pair — after tax, and in today's money — is already on the cards. Showing both would
+  mean inventing a run-totals breakdown for the annuity, which duplicates the
+  schedule's Total row and gives up "the first payment is the one you can check
+  against a real cheque".
+  **If a fifth view is ever added, all of this has to be answered again for it.**
 
 - **The calculator carries the family's help dot** (2026-08-22): `.help-btn` with a
   `data-help` key, one `#help-dialog`, one delegated listener, and a `HELP` map of

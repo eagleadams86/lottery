@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 128;
+const EXPECTED = 130;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -1270,16 +1270,51 @@ t('the discount rate is only on screen for Compare, where it decides the answer'
 t('and the effective rate says which payout it belongs to when there are two', () => {
   const bare = stripHtmlComments(CALC_SRC);
   ok(/<span id="eff-scope">/.test(bare),
-    'the scope span is gone — on Compare the line is the lump sum\u2019s and has to say so');
+    'the scope span is gone — on Compare this line names a payout and has to');
+  ok(/<span id="details-scope">/.test(bare),
+    'the breakdown section names its payout on Compare too: the effective-rate line sits '
+    + 'above the CARDS, with the verdict between it and the section it heads');
   const code = CALC_SRC.replace(/\/\*[\s\S]*?\*\//g, '');
-  const set = (code.match(/eff-scope'\)\.textContent *=[\s\S]{0,90}?;/) || [''])[0];
-  ok(/payout *=== *'compare'/.test(set) && /lump sum/.test(set),
-    'it must be filled in for Compare and empty elsewhere: ' + set);
-  /* The figure itself is unchanged and still the lump sum's outside annuity mode —
-     the same one the breakdown below it describes. Pinned so the label and the
-     number cannot drift apart. */
-  ok(/payout==='annuity'&&a \? a\.eff : \(b\?b\.eff:0\)/.test(code),
-    'the figure moved — the label now names a payout, so which one it is matters');
+  for (const [id, label] of [['eff-scope', 'the effective rate'],
+                             ['details-scope', 'the breakdown heading']]) {
+    const set = (code.match(new RegExp(`${id}'\\)\\.textContent *=[\\s\\S]{0,140}?;`)) || [''])[0];
+    ok(/payout *=== *'compare'/.test(set), `${label}: must be filled in for Compare only`);
+    ok(/annuityAhead/.test(set) && /[Ll]ump [Ss]um/.test(set) && /[Aa]nnuity/.test(set),
+      `${label}: must name whichever payout is ahead, not one of them always: ` + set);
+  }
+});
+/* ── The working under the answer is the working FOR the answer ──────────────
+   Reported 2026-08-22. The effective rate and the whole tax breakdown were the
+   LUMP SUM's on every tab but Annuity — so on Compare, the tab whose entire job
+   is to pick a winner, the arithmetic underneath could be the arithmetic for the
+   payout that lost. Both now follow the "Ahead here" card, and change over with
+   it when the discount rate crosses the break-even. */
+t('one decision picks the winner, and everything that must agree reads it', () => {
+  const code = CALC_SRC.replace(/\/\*[\s\S]*?\*\//g, '');
+  ok(/var annuityAhead *=/.test(code),
+    'annuityAhead is gone — the winner is being decided in more than one place again');
+  ok(/var breakdownIsAnnuity *=[\s\S]{0,120}?annuityAhead/.test(code),
+    'the breakdown no longer follows the winner');
+  /* It was worked out twice before, as `better` here and `lumpWins` there —
+     complements of each other, survivable while nothing else consulted it. */
+  ok(!/var better *= *a\.pvNet/.test(code),
+    'the tiles are deciding the winner for themselves again, beside annuityAhead');
+  ok(/var lumpWins *= *!annuityAhead/.test(code),
+    'the cards are deciding it for themselves again');
+  /* Ties go to the annuity, as they always did in the tiles. Pinned because a
+     flip from >= to > moves which payout the whole page describes at break-even. */
+  ok(/annuityAhead *= *\(a && b\) \? \(a\.pvNet >= b\.net\)/.test(code),
+    'the tie-break moved — at exactly the break-even rate the annuity is ahead');
+});
+t('the breakdown and its effective rate always describe the same payout', () => {
+  const code = CALC_SRC.replace(/\/\*[\s\S]*?\*\//g, '');
+  ok(/var t = breakdownIsAnnuity && a \? a\.first :/.test(code),
+    'the breakdown table is not reading breakdownIsAnnuity');
+  ok(/var isAnn = breakdownIsAnnuity;/.test(code),
+    'the row labels and headings are not reading it, so they can name one payout '
+    + 'while the figures are the other\u2019s');
+  ok(/pct\(breakdownIsAnnuity&&a \? a\.eff :/.test(code),
+    'the effective rate is not reading it — the headline and its working can disagree');
 });
 
 /* ── The help dots ──────────────────────────────────────────────────────────

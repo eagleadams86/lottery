@@ -950,7 +950,13 @@
 
     <h2 class="sec-hd"><button class="details-btn" onclick="toggleDetails()" aria-expanded="true" aria-controls="details-body" id="details-toggle">
       <span class="details-chevron open" id="details-chevron" aria-hidden="true">&#9654;</span>
-      Tax Breakdown Details
+      <!-- The scope is named on Compare, where this section swaps between the two
+           payouts as the winner changes. On the other two tabs there is only one
+           payout on the page and the heading can only mean it. It matters more here
+           than on the effective-rate line: that line sits directly above the CARDS,
+           with the verdict between it and this section, so it is not adjacent to
+           what it heads. -->
+      Tax Breakdown Details<span id="details-scope"></span>
     </button></h2>
     <div class="details-body open" id="details-body">
       <!-- Both headings are written by the script. The second one used to say
@@ -2096,6 +2102,18 @@ function calc(){
   var plan = annuityPlan();
   var a = advertised!==null ? annuityBreakdown(advertised,np,plan) : null;
   var wantsAnnuity = payout==='annuity'||payout==='compare';
+  /* WHICH PAYOUT IS AHEAD, decided once and read by everything that has to agree
+     with the answer: the tiles, the "Ahead here" badge on the cards, the effective
+     rate, and the breakdown tables. It was worked out twice before — `better` here
+     and `lumpWins` in the compare block, complements of each other — which was
+     survivable while nothing else consulted it and is not now that the breakdown
+     follows it too. Annuity wins ties, as it did in the tiles. */
+  var annuityAhead = (a && b) ? (a.pvNet >= b.net) : false;
+  /* Which payout the breakdown and the effective rate describe. In annuity mode
+     there is only one candidate. On Compare it FOLLOWS the winner, so the working
+     under the answer is the working for the answer — and it changes over as the
+     discount rate crosses the break-even rate the verdict names. */
+  var breakdownIsAnnuity = payout==='annuity' || (payout==='compare' && annuityAhead);
 
   /* The tiles say something different in each mode, because the headline figure
      of an annuity is not a single share of anything. */
@@ -2112,11 +2130,10 @@ function calc(){
       mc('Tax over the run',fmtM1(a.tax),'red')+
       mc('Net over the run',fmtM1(a.net),'grn');
   } else {
-    var better = a.pvNet >= b.net;
     mgrid.innerHTML=
-      mc('Lump sum, after tax',fmtM1(b.net),better?'':'grn')+
+      mc('Lump sum, after tax',fmtM1(b.net),annuityAhead?'':'grn')+
       mc('Annuity, after tax',fmtM1(a.net),'')+
-      mc('Annuity in today’s money',fmtM1(a.pvNet),better?'grn':'')+
+      mc('Annuity in today’s money',fmtM1(a.pvNet),annuityAhead?'grn':'')+
       mc('Ahead by',fmtM1(Math.abs(a.pvNet-b.net)),'');
   }
 
@@ -2126,7 +2143,7 @@ function calc(){
      discount rate the reader chose a moment ago. */
   var cmpSec=document.getElementById('cmp-section');
   if(payout==='compare'&&b&&a){
-    var lumpWins = b.net > a.pvNet;
+    var lumpWins = !annuityAhead;
     document.getElementById('cmp-cards').innerHTML =
       cmpCard('Lump sum', fmtM1(b.net), 'Paid once, taxed once. '+
         pct(b.eff)+' of it goes in tax.', lumpWins) +
@@ -2145,11 +2162,18 @@ function calc(){
   }
 
   /* ── The breakdown tables ────────────────────────────────────────────────
-     In annuity mode they describe the FIRST payment, which is the one you can
-     check against a real cheque; the schedule below carries the rest. */
-  var t = payout==='annuity' ? a.first : (b ? payoutYear(b.share,filing,lives) : null);
+     For the annuity they describe the FIRST payment, which is the one you can
+     check against a real cheque; the schedule below carries the rest.
+
+     ON COMPARE THEY FOLLOW WHICHEVER CARD IS "AHEAD HERE" (2026-08-22). They were
+     always the lump sum's, which meant that on the tab whose whole job is to pick
+     a winner, the working underneath could be the working for the payout that
+     lost. Now the answer and its arithmetic are about the same thing, and both
+     change over together the moment the discount rate crosses the break-even rate
+     the verdict names. */
+  var t = breakdownIsAnnuity && a ? a.first : (b ? payoutYear(b.share,filing,lives) : null);
   if(t){
-    var isAnn = payout==='annuity';
+    var isAnn = breakdownIsAnnuity;
     document.getElementById('wt-title').textContent = isAnn ? 'Withheld From Your First Payment' : 'Withheld at Payment';
     document.getElementById('rt-title').textContent =
       (t.settle>=0 ? 'Settled at Your Next Tax Return' : 'Refunded at Your Next Tax Return');
@@ -2201,13 +2225,19 @@ function calc(){
   // a sum invested on day one, which is what a lump sum is and what an annuity
   // deliberately isn't.
   if(b) remember('lottery-net-takehome', Math.round(b.net));
+  /* The headline for the breakdown under it, so it names the same payout — on
+     Compare that is whichever one is ahead. */
   document.getElementById('eff-rate').textContent=
-    pct(payout==='annuity'&&a ? a.eff : (b?b.eff:0));
-  /* In Compare this figure, and the breakdown under it, are the lump sum's — say
-     so, because on that tab an unqualified "effective total tax rate" reads as the
-     answer for the comparison rather than for one side of it. */
+    pct(breakdownIsAnnuity&&a ? a.eff : (b?b.eff:0));
+  /* And on Compare it says WHICH, because there are two payouts on screen and each
+     card carries its own rate. Empty on the other two tabs, where the heading can
+     only mean the one payout being shown. */
   document.getElementById('eff-scope').textContent =
-    payout==='compare' ? ' on the lump sum' : '';
+    payout==='compare' ? (annuityAhead ? ' on the annuity' : ' on the lump sum') : '';
+  /* And on the section itself, so a reader who watched the whole table change can
+     see WHAT it changed to without inferring it from the row labels. */
+  document.getElementById('details-scope').textContent =
+    payout==='compare' ? (annuityAhead ? ' — Annuity' : ' — Lump Sum') : '';
   document.getElementById('results-section').style.display='block';
 }
 
