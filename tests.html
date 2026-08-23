@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 144;
+const EXPECTED = 145;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -1539,6 +1539,42 @@ t('every dot is a circled "i", never a "?"', () => {
      .test(CALC_SRC),
      'and the hover fills rather than borrowing --focus-border, which would say '
      + '"focused" to anybody reading the two states side by side');
+});
+t('every note is paragraphs, and every note bolds something', () => {
+  /* Both pages here wrote their help as <p> blocks from the start, which is
+     what the family sweep found the two textContent apps lacking on
+     2026-08-23 — but "Withheld at Payment" still had no bold in it at all, so
+     a reader had nothing to skim by. The rule the family settled on: a note
+     over about 380 characters is paragraphs, every note bolds the thing it is
+     defining or the claim it turns on, and no note has more bold runs than
+     paragraphs, because a note half in bold has no emphasis left. */
+  for (const [page, src, decl] of [['the calculator', CALC_SRC, 'var HELP = {'],
+                                   ['the portfolio', PORT_SRC, 'var HELP = {']]) {
+    const at = src.indexOf(decl);
+    const table = src.slice(at, src.indexOf('\n};', at));
+    /* SPLIT on the entry boundary, not matchAll with a `$` alternative: under
+       the m flag `$` is end-of-LINE, so the lazy body stopped at the first
+       newline and every entry looked like a single paragraph. */
+    const bodies = table.split(/\n  (?=\w+: \[)/).slice(1)
+      .map((chunk) => [null, chunk.split(':')[0].trim(), chunk]);
+    ok(bodies.length >= 3, page + ' — found ' + bodies.length + ' entries');
+    for (const [, key, chunk] of bodies) {
+      const paras = (chunk.match(/<p>/g) || []).length;
+      const bolds = (chunk.match(/<strong>/g) || []).length;
+      ok(paras >= 2, page + ': ' + key + ' is a single paragraph');
+      ok(bolds >= 1, page + ': ' + key + ' bolds nothing — the reader has no way in');
+      /* A SHARE OF THE CHARACTERS, not a count per paragraph: a note that
+         defines a list bolds one term per item and is right to. What goes
+         wrong is bold stopping being the minority. */
+      const text = chunk.replace(/<[^>]+>/g, '').replace(/['`+\n]/g, ' ')
+        .replace(/\s+/g, ' ').length;
+      const boldText = (chunk.match(/<strong>([\s\S]*?)<\/strong>/g) || [])
+        .join('').replace(/<[^>]+>/g, '').replace(/['`+\n]/g, ' ')
+        .replace(/\s+/g, ' ').length;
+      ok(bolds >= 1 && boldText / text < 0.4,
+         page + ': ' + key + ' — bold must be a minority of the note');
+    }
+  }
 });
 t('the help window is as wide as its text, not as wide as a table', () => {
   /* Two rules, and only together: the measure caps the LINE, `fit-content`

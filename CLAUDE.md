@@ -213,7 +213,15 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   assignment deletes the button (`wt-title` and `rt-title` are both like this).
   `tests.html` pins that the dots and the `HELP` keys are the same set in both
   directions — a dot with no entry opens nothing, an entry with no dot is unreachable —
-  and, since 2026-08-23, the glyph, the circle and both window rules. **Match the button
+  and, since 2026-08-23, the glyph, the circle and both window rules.
+  **Every note on both pages is paragraphs and bolds something**, also pinned: over about
+  380 characters a note is `<p>` blocks, every note bolds the thing it defines or the claim
+  it turns on, and **bold stays under about 40% of the characters**. That last one is a
+  SHARE and deliberately not "one bold per paragraph" — a note that defines a list bolds one
+  term per item and is right to. "Withheld at Payment" had no bold at all until this date.
+  **Split the table on the entry boundary, never `matchAll` with a `$` alternative:** under
+  the `m` flag `$` is end-of-LINE, so a lazy body stops at the first newline and every entry
+  reads as a single paragraph. **Match the button
   tag with `<button[^>]*class="tile-help"`, never `<button class=`:** three of the four
   dots here put the class on the tag's second line, and the anchored version silently
   matched one button while the loop over it went on passing.
