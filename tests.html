@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 130;
+const EXPECTED = 138;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -728,6 +728,167 @@ t('a collapsed section still prints, because paper has no triangle to press', ()
   const port = (PORT_SRC.match(/@media print \{([\s\S]*?)\n\s*\}\n/) || [])[1] || '';
   ok(/\.sec-body \{ display: block !important/.test(port),
      'the portfolio must open its collapsed sections for print');
+});
+
+/* ── The four canvases have to be redrawn, not just re-styled (2026-08-23) ─────
+   The theme pack's rule 13 turns the page light on paper, and it is CSS — which
+   is why it was never enough here. Chart.js paints a canvas ONCE, reading the
+   tokens through getComputedStyle at draw time, and print-media values are
+   invisible to that. So the @media print block above produced a light page with
+   four dark-theme charts on it, one click from the Print button under the table.
+   Rule 13 already named this page as following Sprint Predictability's pattern;
+   it did not, and these tests are what make the claim true. */
+group('the portfolio charts on paper');
+t('beforeprint swaps to the pack\u2019s own Light palette and REDRAWS the charts', () => {
+  const el = wp.document.documentElement;
+  const saved = el.getAttribute('data-theme');
+  try {
+    wp.setTheme('midnight');
+    const onScreen = wp.colors().spaxx;
+    wp.dispatchEvent(new wp.Event('beforeprint'));
+    eq(el.getAttribute('data-theme'), 'light',
+       'no colour is invented for paper — it reuses the pack\u2019s Light tokens');
+    const onPaper = wp.colors().spaxx;
+    ok(onScreen !== onPaper, 'the series colours really moved, so a redraw happened');
+    eq(onPaper, wp.cssVar('--series-1'), 'and they match the stylesheet in the print theme');
+    wp.dispatchEvent(new wp.Event('afterprint'));
+    eq(el.getAttribute('data-theme'), 'midnight', 'and the theme comes back afterwards');
+  } finally {
+    wp.setTheme(saved || 'auto');
+  }
+});
+t('a print cannot change which theme you use', () => {
+  const el = wp.document.documentElement;
+  const saved = el.getAttribute('data-theme');
+  try {
+    wp.setTheme('midnight');
+    const before = wp.localStorage.getItem('lottery-theme');
+    wp.dispatchEvent(new wp.Event('beforeprint'));
+    /* The whole reason this goes through the attribute rather than setTheme():
+       setTheme SAVES, so routing a print through it would leave 'light' in
+       localStorage and outlive the print by however long it took to notice. */
+    eq(wp.localStorage.getItem('lottery-theme'), before,
+       'nothing is saved on the way in');
+    wp.dispatchEvent(new wp.Event('afterprint'));
+    eq(wp.localStorage.getItem('lottery-theme'), before,
+       'and nothing on the way out');
+  } finally {
+    wp.setTheme(saved || 'auto');
+  }
+});
+t('Light and Sepia are left exactly as they are', () => {
+  const el = wp.document.documentElement;
+  const saved = el.getAttribute('data-theme');
+  try {
+    for (const th of ['light', 'sepia']) {
+      wp.setTheme(th);
+      wp.dispatchEvent(new wp.Event('beforeprint'));
+      eq(el.getAttribute('data-theme'), th,
+         th + ' already prints as ink on paper; swapping it would be this page '
+            + 'telling a reader their own answer was wrong');
+      wp.dispatchEvent(new wp.Event('afterprint'));
+    }
+  } finally {
+    wp.setTheme(saved || 'auto');
+  }
+});
+t('the swap is idempotent, because both listeners can fire', () => {
+  /* beforeprint is the reliable one in Chrome and Firefox; the print media query
+     is what some WebKit paths give you instead. Both firing must cost nothing,
+     and a doubled entry must not lose the theme actually chosen. */
+  const el = wp.document.documentElement;
+  const saved = el.getAttribute('data-theme');
+  try {
+    wp.setTheme('midnight');
+    wp.printForPaper(true);
+    wp.printForPaper(true);
+    eq(el.getAttribute('data-theme'), 'light');
+    wp.printForPaper(false);
+    wp.printForPaper(false);
+    eq(el.getAttribute('data-theme'), 'midnight',
+       'the theme the reader chose survives a doubled entry and a doubled exit');
+  } finally {
+    wp.setTheme(saved || 'auto');
+  }
+});
+
+/* ── The two ball colours are the ONE palette divergence this repo has ─────────
+   Powerball red and Mega Millions gold are the games' own brand colours, and
+   they are product identity rather than palette: a Powerball is red the way a
+   road sign is red. The theme pack records them in its Known divergences list
+   (2026-08-23) on the condition that the numbers below are gated HERE, because
+   a divergence recorded only in prose is a divergence nobody re-checks.
+
+   The maths is the pack's own check_contrast.py, ported: sRGB luminance for the
+   contrast ratios, Vienot-Brettel for the two dichromacies, CIE Lab for deltaE. */
+group('the lottery balls — a divergence, measured');
+const _srgb = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+const _ch = (h, i) => _srgb(parseInt(h.replace('#', '').substr(i, 2), 16));
+const _rgb = (h) => [_ch(h, 0), _ch(h, 2), _ch(h, 4)];
+const _lum = (h) => { const [r, g, b] = _rgb(h); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+const cRatio = (a, b) => { const l = [_lum(a), _lum(b)].sort((x, y) => y - x);
+                           return (l[0] + 0.05) / (l[1] + 0.05); };
+const _enc = (c) => { c = Math.min(1, Math.max(0, c));
+  c = c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+  return Math.round(c * 255); };
+const _hex = (r, g, b) => '#' + [r, g, b].map(v => _enc(v).toString(16).padStart(2, '0')).join('');
+function simulate(h, kind) {
+  const [r, g, b] = _rgb(h);
+  let L = 17.8824 * r + 43.5161 * g + 4.11935 * b;
+  let M = 3.45565 * r + 27.1554 * g + 3.86714 * b;
+  const S = 0.0299566 * r + 0.184309 * g + 1.46709 * b;
+  if (kind === 'deuter') M = 0.494207 * L + 1.24827 * S;
+  else L = 2.02344 * M - 2.52581 * S;
+  return _hex(0.0809444479 * L - 0.130504409 * M + 0.116721066 * S,
+              -0.0102485335 * L + 0.0540193266 * M - 0.113614708 * S,
+              -0.000365296938 * L - 0.00412161469 * M + 0.693511405 * S);
+}
+function lab(h) {
+  const [r, g, b] = _rgb(h);
+  const X = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
+  const Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const Z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+  const f = (t) => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+  const [fx, fy, fz] = [f(X), f(Y), f(Z)];
+  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+}
+const deltaE = (a, b) => Math.hypot(...lab(a).map((v, i) => v - lab(b)[i]));
+const PB = '#b91c1c', MB = '#d4a017';
+t('the two balls are still the two brand colours the divergence names', () => {
+  const body = stripComments(CALC_SRC);
+  ok(new RegExp('\\.ball\\.pb\\s*\\{[^}]*' + PB, 'i').test(body),
+     'Powerball is ' + PB);
+  ok(new RegExp('\\.ball\\.mb\\s*\\{[^}]*' + MB, 'i').test(body),
+     'Mega Millions is ' + MB);
+});
+t('the NUMBER on each ball clears AA — that is what carries the information', () => {
+  ok(cRatio('#ffffff', PB) >= 4.5,
+     'white on Powerball red is ' + cRatio('#ffffff', PB).toFixed(2) + ':1');
+  ok(cRatio('#111111', MB) >= 4.5,
+     'near-black on Mega gold is ' + cRatio('#111111', MB).toFixed(2) + ':1');
+});
+t('the two balls stay apart under BOTH dichromacies, at the pack\u2019s own bar', () => {
+  /* The pack gates --series-1..5 pairwise at deltaE 18. These are not pack
+     tokens, so nothing upstream checks them — this is the check. Red-vs-gold
+     lands on the blue-yellow axis, so under deuteranopia it reads as dark olive
+     against bright yellow: a lightness split, which is the structure that
+     survives. Charles cannot use the red-green axis, so this is the assertion
+     that actually matters on this page. */
+  for (const kind of ['deuter', 'protan']) {
+    const d = deltaE(simulate(PB, kind), simulate(MB, kind));
+    ok(d >= 18, kind + ': the two balls are deltaE ' + d.toFixed(1) + ' apart (need 18)');
+  }
+});
+t('no OTHER colour of this page\u2019s own has crept in beside them', () => {
+  /* The divergence is two colours, named. The way a recorded exception rots is
+     by quietly growing a third, so this counts them. */
+  const body = stripComments(CALC_SRC);
+  const inCss = body.split(/<script/)[0];
+  const found = (inCss.match(/#[0-9a-f]{6}\b/gi) || [])
+    .map(h => h.toLowerCase())
+    .filter(h => h !== '#ffffff' && h !== '#111111' && h !== '#0a0e1a');
+  const extra = found.filter(h => h !== PB && h !== MB);
+  eq(extra.join(', '), '', 'unexpected literal colour(s) in the calculator stylesheet');
 });
 
 group('the share window — the family shape, on both pages');

@@ -1013,6 +1013,58 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (
   if (document.documentElement.getAttribute('data-theme') === 'auto') setTheme('auto');
 });
 
+/* ── Paper ───────────────────────────────────────────────────────────────────
+   The theme pack's rule 13 gives every page in the family a light palette on
+   paper for free, and it is CSS — which is exactly why it is not enough here.
+   The four charts on this page are CANVASES: Chart.js paints them once, reading
+   the tokens through getComputedStyle at draw time, and print-media values are
+   invisible to that. So the @media print block above turned the page light and
+   left four dark-theme charts sitting on it, and the Print button below the
+   table did it in one click.
+
+   Added 2026-08-23. The pack's rule 13 already NAMED this page as following the
+   pattern; it never did — Sprint Predictability's printForPaper() and Flow
+   Metrics' beforePrint() are the two that actually had it, and this is theirs,
+   deliberately line-for-line rather than a variant with its own ideas.
+
+   It sets the attribute directly and never goes through setTheme(), because
+   setTheme() SAVES: routing a print through it would leave 'light' in
+   localStorage and outlive the print by however long it took the reader to
+   notice. Nothing here is saved, so the swap cannot survive even if afterprint
+   never fires.
+
+   Two listeners for one event, because neither is enough alone: `beforeprint`
+   is the reliable one in Chrome and Firefox, and the `print` media query is what
+   some WebKit paths give you instead. The swap is idempotent and `_was` is only
+   captured on the way in, so both firing costs nothing. */
+function printForPaper(on) {
+  const el = document.documentElement;
+  if (on) {
+    if (printForPaper._was === null) printForPaper._was = el.getAttribute('data-theme');
+    /* Light and Sepia are both left alone, and Sepia is the one worth stating:
+       it is a deliberate choice of a paper-coloured screen, so swapping it on
+       the way to a printer would be this page telling a reader their own answer
+       was wrong. The pack's print block skips the same two, in those words. */
+    const now = el.getAttribute('data-theme');
+    if (now === 'light' || now === 'sepia') return;  // nothing to swap, nothing to redraw
+    el.setAttribute('data-theme', 'light');
+  } else {
+    if (printForPaper._was === null) return;
+    const back = printForPaper._was;
+    printForPaper._was = null;
+    if (el.getAttribute('data-theme') === back) return;
+    el.setAttribute('data-theme', back);
+  }
+  if (c1) render();   // the charts are the entire reason this function exists
+}
+printForPaper._was = null;
+
+addEventListener('beforeprint', () => printForPaper(true));
+addEventListener('afterprint', () => printForPaper(false));
+const printMedia = window.matchMedia && window.matchMedia('print');
+if (printMedia && printMedia.addEventListener)
+  printMedia.addEventListener('change', (e) => printForPaper(e.matches));
+
 function tc() { return cssVar('--chart-tick'); }
 function gc() { return cssVar('--chart-grid'); }
 /* SIZES are read back the same way, and for a stronger reason than the colours.
