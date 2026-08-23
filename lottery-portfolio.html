@@ -144,8 +144,8 @@
    header picker — and it was the only one in the family wearing semibold text in
    a wider, rounder box, which is exactly what makes two of these pages open side
    by side stop looking like one product. Same three values as `.btn` above it. */
-.theme-btn { display:flex; align-items:center; gap:6px; min-height:var(--chrome-h); padding: 4px 9px; font-size:var(--fs-xs); font-weight: var(--fw-normal); cursor:pointer; background:var(--surface); color:var(--text2); border:1px solid var(--border2); border-radius: var(--radius-sm); font-family:inherit; transition:background 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
-.theme-btn:hover { color:var(--text); border-color:var(--border2); }
+.theme-btn { display:flex; align-items:center; gap:6px; min-height:var(--chrome-h); padding: 4px 9px; font-size:var(--fs-xs); font-weight: var(--fw-normal); cursor:pointer; background:var(--surface); color:var(--text2); border:1px solid var(--border-control); border-radius: var(--radius-sm); font-family:inherit; transition:background 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
+.theme-btn:hover { color:var(--text); border-color:var(--text-muted); }
 /* NO `appearance: none` HERE, and no arrow of our own. theme.css says it in as
    many words — "select keeps its appearance because the arrow IS the affordance"
    — and every sibling app's theme picker shows the platform's own chevron. This
@@ -166,7 +166,7 @@
    colour. Only the dropdown moves: the footer's `.applink` is quieter on
    purpose. */
 .theme-select { background-color: var(--surface-alt); color: var(--text-primary);
-  border-color: var(--border-strong); }
+  border-color: var(--border-control); }
 .theme-select:hover { border-color: var(--text-muted); }
 body { background:var(--bg); color:var(--text); font: var(--fw-normal) var(--fs-base)/var(--lh-base) var(--font-sans); min-height:100vh; transition:background 0.2s,color 0.2s; }
 /* Width lives with the other layout tokens at the top of the file. The header
@@ -226,7 +226,12 @@ header { position:sticky; top:0; z-index:20; background:var(--surface);
    the element as well as here, so the row is laid out at its final size before the
    icon arrives — the header paints long before anything else runs. */
 .brand img { width:22px; height:22px; vertical-align:-4px; margin-right:9px; }
-.top-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+/* 12px, which is what every sibling app's header row uses. This row had 8px —
+   its buttons sat visibly tighter together than the same buttons in the app
+   beside it. The five apps put their controls straight in `.headbar` at
+   `gap: 12px`; the pages with a nested row have to say it themselves.
+   Reported 2026-08-23. */
+.top-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
 /* The tax basis every figure on the page is worked out on. It sat in the header as
    a second line under the title until 2026-08-21; it belongs with the numbers it
    qualifies, and the header is one line now. */
@@ -344,8 +349,13 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
      for token. See the note there for what was wrong with the first version:
      `.btn` defaulted to the PRIMARY background, and `.btn.primary` used the
      link colour rather than the button one. */
+  /* --border-control, NOT --border-strong. The family's button edge is the
+     control token (#5a6ba2 on midnight); --border-strong (#374163) is the
+     edge of a PANEL, several steps darker, and these pages wore it on every
+     button — so the controls in this header read as sunken next to the same
+     controls in the app beside it. Reported 2026-08-23. */
   .btn { background: var(--bg-card-alt); color: var(--text-primary);
-         border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+         border: 1px solid var(--border-control); border-radius: var(--radius-sm);
          padding: 7px 12px; cursor: pointer; white-space: nowrap; font: inherit; }
   .btn:hover { border-color: var(--text-muted); }
   .btn.primary { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }

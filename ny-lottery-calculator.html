@@ -201,7 +201,12 @@
      final size before the icon arrives — the header paints long before anything
      else runs, and a growing header is the one thing it must never do. */
   .brand img { width: 22px; height: 22px; vertical-align: -4px; margin-right: 9px; }
-  .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  /* 12px, which is what every sibling app's header row uses. This row had 8px —
+     its buttons sat visibly tighter together than the same buttons in the app
+     beside it. The five apps put their controls straight in `.headbar` at
+     `gap: 12px`; the pages with a nested row have to say it themselves.
+     Reported 2026-08-23. */
+  .top-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
                  justify-content: flex-end; }
   /* Section titles are real <h2>/<h3> for screen-reader navigation; these rules
      keep them looking like the small uppercase labels they've always been.
@@ -229,7 +234,7 @@
     font-family: inherit; transition: background 0.15s, color 0.15s;
     white-space: nowrap; flex-shrink: 0;
   }
-  .theme-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
+  .theme-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
   /* NO `appearance: none` HERE, and no arrow of our own. theme.css says it in as
      many words — "select keeps its appearance because the arrow IS the
      affordance" — and every sibling app's theme picker shows the platform's own
@@ -249,7 +254,7 @@
    colour. Only the dropdown moves: the footer's `.applink` is quieter on
    purpose. */
 .theme-select { background-color: var(--surface-alt); color: var(--text-primary);
-  border-color: var(--border-strong); }
+  border-color: var(--border-control); }
 .theme-select:hover { border-color: var(--text-muted); }
 
   /* Status bar */
@@ -575,8 +580,13 @@
      header's Share button rendered as the filled accent button where every
      sibling draws a plain one; and `.btn.primary` used `--accent`, which is the
      link colour, not the button one. */
+  /* --border-control, NOT --border-strong. The family's button edge is the
+     control token (#5a6ba2 on midnight); --border-strong (#374163) is the
+     edge of a PANEL, several steps darker, and these pages wore it on every
+     button — so the controls in this header read as sunken next to the same
+     controls in the app beside it. Reported 2026-08-23. */
   .btn { background: var(--bg-card-alt); color: var(--text-primary);
-         border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+         border: 1px solid var(--border-control); border-radius: var(--radius-sm);
          padding: 7px 12px; cursor: pointer; white-space: nowrap; font: inherit; }
   .btn:hover { border-color: var(--text-muted); }
   .btn.primary { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
