@@ -66,11 +66,16 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
     only way to answer "what does the person I send this to actually see?" without mailing it
     to yourself — and the figures the link was made from have to still be there to compare
     against, which is why it is not a navigation.
-  - **One thing deliberately NOT copied: Sprint Predictability's `box-shadow: var(--shadow)`.**
-    `--shadow` is not a theme-pack token — that app defines it locally, four times, once per
-    theme — so bringing it here would mean four new local colour values in a repo whose whole
-    palette comes from the pack. Golf Handicap's dialog has no shadow either. If the shadow is
-    ever wanted family-wide it belongs in the pack, not in this file.
+  - **One thing deliberately NOT copied: Sprint Predictability's `box-shadow: var(--shadow)`
+    — and on 2026-08-23 that app dropped it too.** The reasoning here was that `--shadow` is
+    not a theme-pack token: four apps each defined it locally, four values deep, which is
+    twenty-odd colour values the pack never gated, in a family whose whole premise is that
+    colour lives in the pack. That reasoning won family-wide. Charles was shown the same
+    window with the shadow, without it, and with a deliberately heavier one, in all four
+    themes, and could not tell them apart — on a dark theme a black shadow falls on a
+    surface that is already almost black, and a modal's backdrop hides the rest. There are
+    no elevation shadows anywhere in the family now; it is hard rule 14 in the pack, and
+    `check_consumers.py` fails a page that adds one. These pages were right early.
   - **`remember()` is the guard, and it is sticky for the whole visit.** A page opened from
     someone else's link saves none of the figures even if you change every one of them; "Back
     to mine" drops the fragment and reloads. Cleared on the first edit was the alternative and
