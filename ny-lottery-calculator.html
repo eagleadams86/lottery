@@ -2101,7 +2101,6 @@ function calc(){
   var b = lump!==null ? taxBreakdown(lump,np) : null;
   var plan = annuityPlan();
   var a = advertised!==null ? annuityBreakdown(advertised,np,plan) : null;
-  var wantsAnnuity = payout==='annuity'||payout==='compare';
   /* WHICH PAYOUT IS AHEAD, decided once and read by everything that has to agree
      with the answer: the tiles, the "Ahead here" badge on the cards, the effective
      rate, and the breakdown tables. It was worked out twice before — `better` here
@@ -2109,11 +2108,17 @@ function calc(){
      survivable while nothing else consulted it and is not now that the breakdown
      follows it too. Annuity wins ties, as it did in the tiles. */
   var annuityAhead = (a && b) ? (a.pvNet >= b.net) : false;
-  /* Which payout the breakdown and the effective rate describe. In annuity mode
-     there is only one candidate. On Compare it FOLLOWS the winner, so the working
-     under the answer is the working for the answer — and it changes over as the
-     discount rate crosses the break-even rate the verdict names. */
-  var breakdownIsAnnuity = payout==='annuity' || (payout==='compare' && annuityAhead);
+  /* WHETHER THE ANNUITY IS WHAT THIS PAGE IS CURRENTLY DESCRIBING, and so the one
+     answer behind the effective rate, the tax breakdown AND the payment schedule.
+     In annuity mode there is only one candidate. On Compare it FOLLOWS the winner,
+     so the working under the answer is the working for the answer — all of it
+     changing over together as the discount rate crosses the break-even rate the
+     verdict names.
+
+     The schedule used to key off a `wantsAnnuity` of its own (annuity OR compare),
+     which left thirty rows of annuity payments sitting under a verdict recommending
+     the lump sum. Its answer is this one; there is no second question. */
+  var showingAnnuity = payout==='annuity' || (payout==='compare' && annuityAhead);
 
   /* The tiles say something different in each mode, because the headline figure
      of an annuity is not a single share of anything. */
@@ -2171,9 +2176,9 @@ function calc(){
      lost. Now the answer and its arithmetic are about the same thing, and both
      change over together the moment the discount rate crosses the break-even rate
      the verdict names. */
-  var t = breakdownIsAnnuity && a ? a.first : (b ? payoutYear(b.share,filing,lives) : null);
+  var t = showingAnnuity && a ? a.first : (b ? payoutYear(b.share,filing,lives) : null);
   if(t){
-    var isAnn = breakdownIsAnnuity;
+    var isAnn = showingAnnuity;
     document.getElementById('wt-title').textContent = isAnn ? 'Withheld From Your First Payment' : 'Withheld at Payment';
     document.getElementById('rt-title').textContent =
       (t.settle>=0 ? 'Settled at Your Next Tax Return' : 'Refunded at Your Next Tax Return');
@@ -2206,7 +2211,7 @@ function calc(){
 
   /* ── The schedule ────────────────────────────────────────────────────────── */
   var schedSec=document.getElementById('sched-section');
-  if(wantsAnnuity&&a){
+  if(showingAnnuity&&a){
     var html='';
     for(var i=0;i<a.rows.length;i++){
       var r=a.rows[i];
@@ -2228,7 +2233,7 @@ function calc(){
   /* The headline for the breakdown under it, so it names the same payout — on
      Compare that is whichever one is ahead. */
   document.getElementById('eff-rate').textContent=
-    pct(breakdownIsAnnuity&&a ? a.eff : (b?b.eff:0));
+    pct(showingAnnuity&&a ? a.eff : (b?b.eff:0));
   /* And on Compare it says WHICH, because there are two payouts on screen and each
      card carries its own rate. Empty on the other two tabs, where the heading can
      only mean the one payout being shown. */

@@ -161,7 +161,11 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   Separately, the effective rate and the breakdown beneath it **follow the winner on
   Compare** (2026-08-22). `annuityAhead` is decided ONCE, near the top of the render,
   and everything that has to agree reads it: the tiles, the cards' "Ahead here" badge,
-  `breakdownIsAnnuity`, `#eff-rate`, `#eff-scope` and `#details-scope`. It was worked
+  `showingAnnuity`, `#eff-rate`, `#eff-scope`, `#details-scope` and the payment
+  schedule. `showingAnnuity` — "is the annuity what this page is currently describing?"
+  — is the single answer behind all three panels; **the schedule used to hold a
+  `wantsAnnuity` of its own** (annuity OR compare) and so stayed on screen with thirty
+  rows of annuity payments beneath a verdict recommending the lump sum. It was worked
   out twice before — `better` in the tiles and `lumpWins` in the cards, complements of
   each other — which was survivable while nothing else consulted it. **Ties go to the
   annuity** (`>=`), as they always did in the tiles; flipping that comparison moves

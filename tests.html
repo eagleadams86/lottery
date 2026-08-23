@@ -1293,8 +1293,16 @@ t('one decision picks the winner, and everything that must agree reads it', () =
   const code = CALC_SRC.replace(/\/\*[\s\S]*?\*\//g, '');
   ok(/var annuityAhead *=/.test(code),
     'annuityAhead is gone — the winner is being decided in more than one place again');
-  ok(/var breakdownIsAnnuity *=[\s\S]{0,120}?annuityAhead/.test(code),
+  ok(/var showingAnnuity *=[\s\S]{0,120}?annuityAhead/.test(code),
     'the breakdown no longer follows the winner');
+  /* The schedule had a second opinion of its own — `wantsAnnuity`, annuity OR
+     compare — which left thirty rows of annuity payments under a verdict
+     recommending the lump sum. There is one question here, not two. */
+  ok(!/wantsAnnuity/.test(code),
+    'wantsAnnuity is back: the schedule is deciding for itself whether the annuity is '
+    + 'what the page is describing, and on Compare its answer is wrong half the time');
+  ok(/if\(showingAnnuity&&a\)\{/.test(code),
+    'the payment schedule is not reading showingAnnuity');
   /* It was worked out twice before, as `better` here and `lumpWins` there —
      complements of each other, survivable while nothing else consulted it. */
   ok(!/var better *= *a\.pvNet/.test(code),
@@ -1308,12 +1316,12 @@ t('one decision picks the winner, and everything that must agree reads it', () =
 });
 t('the breakdown and its effective rate always describe the same payout', () => {
   const code = CALC_SRC.replace(/\/\*[\s\S]*?\*\//g, '');
-  ok(/var t = breakdownIsAnnuity && a \? a\.first :/.test(code),
-    'the breakdown table is not reading breakdownIsAnnuity');
-  ok(/var isAnn = breakdownIsAnnuity;/.test(code),
+  ok(/var t = showingAnnuity && a \? a\.first :/.test(code),
+    'the breakdown table is not reading showingAnnuity');
+  ok(/var isAnn = showingAnnuity;/.test(code),
     'the row labels and headings are not reading it, so they can name one payout '
     + 'while the figures are the other\u2019s');
-  ok(/pct\(breakdownIsAnnuity&&a \? a\.eff :/.test(code),
+  ok(/pct\(showingAnnuity&&a \? a\.eff :/.test(code),
     'the effective rate is not reading it — the headline and its working can disagree');
 });
 
