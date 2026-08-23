@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 126;
+const EXPECTED = 128;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -1241,6 +1241,45 @@ t('and closing one is remembered, or it has to be closed again every visit', () 
   eq((code.match(/getItem\('lottery-(?:details|winning|sched)'\)==='0'/g) || []).length, 3,
      'all three must restore with the "only if you closed it" test — a plain truthiness '
      + 'check would collapse the panel for anyone who had ever opened it');
+});
+
+/* ── A control is only on screen where it changes something ─────────────────
+   Both reported 2026-08-22, and they are the same fault seen twice: a figure or a
+   control presented without the scope it belongs to.
+
+   The discount rate showed for the annuity as well as for Compare, on the
+   reasoning that it "decides nothing about a lump sum" — which quietly assumed the
+   annuity view discounted something. It does not: those tiles are the first
+   payment, the share, the tax over the run and the net over the run, all
+   undiscounted, and the schedule under them is per-year gross/tax/net. Typing in
+   the box changed nothing a reader could see.
+
+   The effective-rate line is the lump sum's, always — and on Compare, where two
+   payouts are on screen and each card carries its own rate, an unqualified
+   "Effective total tax rate" read as the answer for the comparison rather than for
+   one side of it. */
+t('the discount rate is only on screen for Compare, where it decides the answer', () => {
+  const code = CALC_SRC.replace(/\/\*[\s\S]*?\*\//g, '');
+  const line = (code.match(/fld-discount'\)\.style\.display *= *[^;]+;/) || [''])[0];
+  ok(line, 'the show/hide line for the discount field has gone');
+  ok(/payout *=== *'compare'/.test(line),
+    "it must key off Compare. Keyed off `payout === 'lump'` it also shows on the annuity "
+    + 'tab, where nothing on screen is discounted: ' + line);
+  ok(!/payout *=== *'lump'/.test(line), 'still keyed off the lump sum: ' + line);
+});
+t('and the effective rate says which payout it belongs to when there are two', () => {
+  const bare = stripHtmlComments(CALC_SRC);
+  ok(/<span id="eff-scope">/.test(bare),
+    'the scope span is gone — on Compare the line is the lump sum\u2019s and has to say so');
+  const code = CALC_SRC.replace(/\/\*[\s\S]*?\*\//g, '');
+  const set = (code.match(/eff-scope'\)\.textContent *=[\s\S]{0,90}?;/) || [''])[0];
+  ok(/payout *=== *'compare'/.test(set) && /lump sum/.test(set),
+    'it must be filled in for Compare and empty elsewhere: ' + set);
+  /* The figure itself is unchanged and still the lump sum's outside annuity mode —
+     the same one the breakdown below it describes. Pinned so the label and the
+     number cannot drift apart. */
+  ok(/payout==='annuity'&&a \? a\.eff : \(b\?b\.eff:0\)/.test(code),
+    'the figure moved — the label now names a payout, so which one it is matters');
 });
 
 /* ── The help dots ──────────────────────────────────────────────────────────

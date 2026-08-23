@@ -846,9 +846,17 @@
           <option value="yonkers">Yonkers</option>
         </select>
       </div>
-      <!-- Only on screen for the annuity and the comparison, because it decides
-           nothing about a lump sum. Hidden rather than disabled: a control that
-           cannot affect the answer is noise, not a locked door. -->
+      <!-- ONLY on screen for Compare. Hidden rather than disabled: a control that
+           cannot affect the answer is noise, not a locked door — and that test is
+           what moved it here on 2026-08-22. It used to show for the annuity too,
+           on the reasoning that it decides nothing about a LUMP sum, which quietly
+           assumed the annuity view discounted something. It does not: those four
+           tiles are the first payment, the share, the tax over the run and the net
+           over the run, all undiscounted, and the schedule below them is gross,
+           tax and net per year. Typing in this box changed nothing a reader could
+           see. (One place it still reaches from that tab: the CSV export carries an
+           "Annuity in today's money at N%" row, which names its own rate and so
+           stays honest without the field on screen.) -->
       <div class="fld" id="fld-discount" style="display:none">
         <label for="discount">Your discount rate<button class="help-btn" type="button"
           data-help="discount" aria-label="What the discount rate is and how to pick one"
@@ -921,7 +929,13 @@
          the same figure as the "Net take-home" tile a few pixels above it, and the
          rate beside it is the one thing it said that nothing else did — so that
          moved down here, where it is the headline for the breakdown it summarises. -->
-    <p class="effrate">Effective total tax rate<button class="help-btn" type="button"
+    <!-- The scope span is empty on Lump and Annuity, where there is only one
+         payout on screen and the heading can only mean that one. On COMPARE there
+         are two, and this line — like the whole breakdown it heads — describes the
+         LUMP SUM; unqualified it read as the page's overall answer. Each card in
+         Compare already carries its own payout's effective rate. -->
+    <p class="effrate">Effective total tax rate<span id="eff-scope"></span><button
+      class="help-btn" type="button"
       data-help="effrate" aria-label="What the effective total tax rate means"
       >?</button> <strong id="eff-rate">&#8212;</strong></p>
 
@@ -1279,7 +1293,9 @@ function syncSetup(){
   document.getElementById('filing').value=filing;
   document.getElementById('residence').value=lives;
   document.getElementById('discount').value=+(discount*100).toFixed(2);
-  document.getElementById('fld-discount').style.display = payout==='lump' ? 'none' : '';
+  /* Compare only — see the note on the field. On the other two tabs nothing on
+     screen is discounted, so the box would be a control with no effect. */
+  document.getElementById('fld-discount').style.display = payout==='compare' ? '' : 'none';
   for(var g in WN_GAMES){
     if(!Object.prototype.hasOwnProperty.call(WN_GAMES,g)) continue;
     document.getElementById('wg-'+g).setAttribute('aria-pressed', String(wnGame===g));
@@ -1569,7 +1585,10 @@ var HELP = {
     'brackets are marginal, so only the part of the prize above each threshold is taxed ' +
     'at that rate. The first dollars are still taxed at the lowest rates.</p>' +
     '<p>On the annuity it is lower again, because each year is its own tax return that ' +
-    'starts at the bottom of the brackets.</p>'],
+    'starts at the bottom of the brackets.</p>' +
+    '<p><strong>On Compare this line is the lump sum\u2019s</strong>, along with the ' +
+    'breakdown under it. The two cards above carry each payout\u2019s own rate, which is ' +
+    'where to look for the annuity\u2019s.</p>'],
   withheld: ['Withheld at Payment',
     '<p>What is taken out before the money reaches you — a flat federal rate on gambling ' +
     'winnings plus the state and city rates where you live. It is a deposit against the ' +
@@ -2184,6 +2203,11 @@ function calc(){
   if(b) remember('lottery-net-takehome', Math.round(b.net));
   document.getElementById('eff-rate').textContent=
     pct(payout==='annuity'&&a ? a.eff : (b?b.eff:0));
+  /* In Compare this figure, and the breakdown under it, are the lump sum's — say
+     so, because on that tab an unqualified "effective total tax rate" reads as the
+     answer for the comparison rather than for one side of it. */
+  document.getElementById('eff-scope').textContent =
+    payout==='compare' ? ' on the lump sum' : '';
   document.getElementById('results-section').style.display='block';
 }
 

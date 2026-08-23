@@ -149,6 +149,20 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   - **All four files are on `sw.js`'s SHELL allowlist, and `tests.html` pins that list by exact equality.** Adding an entry means editing the test too; that is the security review, by design. Their justification is written ABOVE the array rather than between the entries, unlike the `chart.min.js` note: the suite pins the list twice, and the second pass reads the RAW source and pulls every quoted string out of it, so a comment inside the array with an apostrophe in the prose hands that pass a fake entry.
   - `<meta name="theme-color">` follows the theme on all three pages, so an installed window's title bar does not stay dark behind a light page. The two app pages read it back from the pack's `--bg` inside `setTheme()`; the landing page has no picker and sets it once in its pre-paint boot, where the stylesheet has not loaded yet — so that one **lists the four values** and has to be kept in step with `theme.css`.
   - Offline predates all of this and is unchanged: it is `sw.js`, network-first. The manifest adds the window and the icon, not the caching.
+- **A control is only on screen where it changes something, and a figure says whose it
+  is** (both 2026-08-22, both reported by Charles, both the same fault). The discount
+  rate showed for the annuity as well as Compare, on the reasoning that it "decides
+  nothing about a lump sum" — which quietly assumed the annuity view discounted
+  something. It does not: its four tiles are the first payment, the share, the tax over
+  the run and the net over the run, all undiscounted, and the schedule under them is
+  per-year gross/tax/net. It is now `payout === 'compare'` only. **The one place it still
+  reaches from another tab is the CSV**, which carries an "Annuity in today's money at
+  N%" row — that row names its own rate, so it stays honest with the field off screen.
+  Separately, `#eff-rate` is the LUMP figure everywhere except annuity mode, and the
+  breakdown beneath it is the lump sum's too; on Compare, where two payouts are on
+  screen and each card shows its own rate, `#eff-scope` now appends "on the lump sum".
+  **If a fifth view is ever added, both of these have to be answered again for it.**
+
 - **The calculator carries the family's help dot** (2026-08-22): `.help-btn` with a
   `data-help` key, one `#help-dialog`, one delegated listener, and a `HELP` map of
   `[title, html]`. Copied from Golf Handicap rather than re-invented, down to the 7px
