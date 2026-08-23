@@ -1543,11 +1543,25 @@ t('every dot is a circled "i", never a "?"', () => {
 t('the help window is as wide as its text, not as wide as a table', () => {
   /* Two rules, and only together: the measure caps the LINE, `fit-content`
      makes the WINDOW take that measure. Either alone puts the problem back. */
-  ok(/#helpDialog \{ width: fit-content; max-width: calc\(100% - 32px\); \}/.test(CALC_SRC),
+  ok(/#helpDialog \{ width: fit-content; max-width: calc\(100% - 32px\); padding: 20px; \}/.test(CALC_SRC),
      'the window is sized by what is in it, and still fits a phone screen');
-  ok(/#helpBody \{ max-width: 66ch; font-size: var\(--fs-sm\); line-height: 1\.55; \}/.test(CALC_SRC),
+  ok(/#helpBody \{ max-width: 66ch; font-size: var\(--fs-sm\); line-height: 1\.55;\s*color: var\(--text-secondary\); \}/.test(CALC_SRC),
      'the reading measure and the family reading size are what it is sized to');
-  ok(/#helpBody p, #helpBody li \{ font-size: inherit; line-height: inherit; \}/.test(CALC_SRC),
+  /* The type and the colour are pinned in the block too, and every one of
+     these was a real difference before 2026-08-23. The heading came out at
+     700 on the two lottery pages, where nothing set a weight and an <h?>
+     defaults to bold; the prose came out at --text-primary on the
+     calculator, where no `dialog p` rule reaches it; bold inside a body was
+     the same colour as the body in two apps, so it was carried by weight
+     alone; and paragraph spacing was the browser's 1em (15px) in Golf
+     Handicap against 10px elsewhere. */
+  ok(/#helpTitle \{ margin: 0 0 12px; font-size: var\(--fs-md\); font-weight: 600;\s*color: var\(--text-primary\); \}/.test(CALC_SRC),
+    'the heading is pinned — 17px at 600, not whatever weight an h2 or h3 defaults to');
+  ok(/#helpBody p:last-child, #helpBody li:last-child \{ margin-bottom: 0; \}/.test(CALC_SRC),
+    'and the last paragraph adds no space under itself, above the button');
+  ok(/#helpBody strong \{ color: var\(--text-primary\); \}/.test(CALC_SRC),
+    'bold inside the prose is lifted to --text-primary, or it is carried by weight alone against a --text-secondary paragraph');
+  ok(/#helpBody p, #helpBody li \{ font-size: inherit; line-height: inherit;\s*color: inherit; margin: 0 0 10px; \}/.test(CALC_SRC),
      'and the paragraphs inside the box follow it rather than the page default');
   ok(/onclick="closeHelp\(\)">Got It</.test(CALC_SRC),
      '"Got It", as in every other app');
@@ -1591,11 +1605,25 @@ t('each portfolio dot is a labelled circled "i" beside its heading', () => {
      "carrying the label's own bottom margin, or the dot rides high above it");
 });
 t('the portfolio help window is as wide as its text', () => {
-  ok(/#helpDialog \{ width: fit-content; max-width: calc\(100% - 32px\); \}/.test(PORT_SRC),
+  ok(/#helpDialog \{ width: fit-content; max-width: calc\(100% - 32px\); padding: 20px; \}/.test(PORT_SRC),
      'the window is sized by what is in it, and still fits a phone screen');
-  ok(/#helpBody \{ max-width: 66ch; font-size: var\(--fs-sm\); line-height: 1\.55; \}/.test(PORT_SRC),
+  ok(/#helpBody \{ max-width: 66ch; font-size: var\(--fs-sm\); line-height: 1\.55;\s*color: var\(--text-secondary\); \}/.test(PORT_SRC),
      'the reading measure and the family reading size are what it is sized to');
-  ok(/#helpBody p, #helpBody li \{ font-size: inherit; line-height: inherit; \}/.test(PORT_SRC),
+  /* The type and the colour are pinned in the block too, and every one of
+     these was a real difference before 2026-08-23. The heading came out at
+     700 on the two lottery pages, where nothing set a weight and an <h?>
+     defaults to bold; the prose came out at --text-primary on the
+     calculator, where no `dialog p` rule reaches it; bold inside a body was
+     the same colour as the body in two apps, so it was carried by weight
+     alone; and paragraph spacing was the browser's 1em (15px) in Golf
+     Handicap against 10px elsewhere. */
+  ok(/#helpTitle \{ margin: 0 0 12px; font-size: var\(--fs-md\); font-weight: 600;\s*color: var\(--text-primary\); \}/.test(PORT_SRC),
+    'the heading is pinned — 17px at 600, not whatever weight an h2 or h3 defaults to');
+  ok(/#helpBody p:last-child, #helpBody li:last-child \{ margin-bottom: 0; \}/.test(PORT_SRC),
+    'and the last paragraph adds no space under itself, above the button');
+  ok(/#helpBody strong \{ color: var\(--text-primary\); \}/.test(PORT_SRC),
+    'bold inside the prose is lifted to --text-primary, or it is carried by weight alone against a --text-secondary paragraph');
+  ok(/#helpBody p, #helpBody li \{ font-size: inherit; line-height: inherit;\s*color: inherit; margin: 0 0 10px; \}/.test(PORT_SRC),
      'and the paragraphs inside the box follow it rather than the page default');
   ok(/\.tile-help \{[^}]*width: 16px; height: 16px; min-height: 0;/.test(PORT_SRC)
      && /\.tile-help::after \{ content: ''; position: absolute; inset: -4px; \}/.test(PORT_SRC),

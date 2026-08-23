@@ -428,14 +428,22 @@
      is still the screen less its 32px margin.
      The ids are the family's camelCase rather than this page's kebab, because
      the block is shared verbatim and the ids are part of it. */
-  #helpDialog { width: fit-content; max-width: calc(100% - 32px); }
-  #helpBody { max-width: 66ch; font-size: var(--fs-sm); line-height: 1.55; }
-  #helpBody p, #helpBody li { font-size: inherit; line-height: inherit; }
+  #helpDialog { width: fit-content; max-width: calc(100% - 32px); padding: 20px; }
+  /* THE PADDING IS PINNED HERE and not left to each app's own dialog rule
+     (2026-08-23). It was 24px in Golf Handicap and 18px in PAPTrack, so the
+     same 624px of text opened in a 674px, a 666px and a 662px window across
+     the family. One window means one width, and this is the only property
+     that decides it once the measure is fixed. */
+  #helpTitle { margin: 0 0 12px; font-size: var(--fs-md); font-weight: 600;
+    color: var(--text-primary); }
+  #helpBody { max-width: 66ch; font-size: var(--fs-sm); line-height: 1.55;
+    color: var(--text-secondary); }
+  #helpBody p, #helpBody li { font-size: inherit; line-height: inherit;
+    color: inherit; margin: 0 0 10px; }
+  #helpBody p:last-child, #helpBody li:last-child { margin-bottom: 0; }
+  #helpBody strong { color: var(--text-primary); }
   /* The label sits above its field, so the dot rides on the label's baseline. */
   .fld > label .tile-help { vertical-align: baseline; }
-  #helpBody p { margin: 0 0 10px; }
-  #helpBody p:last-child { margin-bottom: 0; }
-  #helpBody strong { color: var(--text-primary); }
 
   .effrate { font-size: var(--fs-sm); color: var(--text-secondary); margin-bottom: 10px; }
   .effrate strong { font-size: var(--fs-lg); font-weight: 600; color: var(--text-primary); margin-left: 6px; }
@@ -1127,7 +1135,7 @@
   <h3 id="helpTitle">About</h3>
   <div id="helpBody"></div>
   <div class="row" style="margin-top:14px;justify-content:flex-end">
-    <button type="button" class="btn primary" onclick="closeHelp()">Got It</button>
+    <button type="button" id="helpCloseBtn" class="btn primary" onclick="closeHelp()">Got It</button>
   </div>
 </dialog>
 

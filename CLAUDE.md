@@ -196,8 +196,16 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   family's camelCase** (`helpDialog`, `helpTitle`, `helpBody`) rather than the kebab this
   page uses everywhere else, because the shared block names them and the block is verbatim.
   The window is sized by its own text — `#helpBody` capped at 66 characters, `#helpDialog`
-  at `width: fit-content` — which comes out at 666px, the same figure as Money Map. It is
-  dismissed with **Got It**, as everywhere else.
+  at `width: fit-content`, `padding: 20px` — which comes out at 666px, the same figure as
+  Money Map. It is dismissed with **Got It**, as everywhere else, on `id="helpCloseBtn"`.
+  **The type and the colour are in the block too** (2026-08-23, a second pass after Charles
+  spotted differences between the windows). Both lottery pages were drifting by
+  inheritance: `dialog h3` here sets a size but no WEIGHT, so the heading defaulted to bold
+  (700) where every sibling showed 600; and this page has no `dialog p` rule at all, so the
+  prose inherited the dialog's `--text-primary` and read brighter than everywhere else —
+  which also left `#helpBody strong` the same colour as the paragraph around it, so bold
+  had nothing to lift it. `#helpTitle`, `#helpBody`'s colour, the paragraph margins and
+  `#helpBody strong` are all declared now.
   Three things to keep right when adding one: the html in `HELP` is a **literal in this
   file** and nothing a reader typed may ever reach that `innerHTML`; every dot needs an
   `aria-label`, because a bare glyph reads as nothing; and a heading whose text the script
