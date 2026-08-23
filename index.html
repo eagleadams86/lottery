@@ -99,22 +99,22 @@
 [data-theme="sepia"]  { color-scheme: light; }
 
   body { margin: 0; background: var(--bg); color: var(--text-primary);
-         font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+         font: var(--fw-normal) var(--fs-base)/var(--lh-base) var(--font-sans); }
   .wrap { max-width: 720px; margin: 0 auto; padding: 44px 20px 80px; }
   .brand { display: flex; align-items: center; gap: 12px; margin: 0 0 4px; }
   .brand img { width: 30px; height: 30px; border-radius: 7px; }
-  h1 { font-size: 22px; margin: 0; }
+  h1 { font-size: var(--fs-xl); margin: 0; }
   .lede { color: var(--text-secondary); margin: 0 0 26px; }
   .card { display: block; background: var(--surface); border: 1px solid var(--border);
           border-radius: 12px; padding: 18px 20px; margin: 14px 0; text-decoration: none; }
   .card:hover { border-color: var(--border-strong); }
   .card:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
-  .card h2 { font-size: 17px; margin: 0 0 6px; color: var(--text-primary); }
-  .card p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+  .card h2 { font-size: var(--fs-md); margin: 0 0 6px; color: var(--text-primary); }
+  .card p { margin: 0; color: var(--text-secondary); font-size: var(--fs-sm); }
   /* `margin`, not `margin-top`: this is a real <footer> landmark now and was a
      <p> before, so the rule is spelled out rather than left to depend on the
      element's own default margins. */
-  .note { color: var(--text-muted); font-size: 12.5px; margin: 30px 0 0; }
+  .note { color: var(--text-muted); font-size: var(--fs-xs); margin: 30px 0 0; }
   .note a { color: var(--accent); }
   .note a:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; border-radius: 3px; }
 </style>
