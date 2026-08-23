@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 122;
+const EXPECTED = 126;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -1200,10 +1200,70 @@ t('no schema halt here, and that is the deliberate difference', () => {
   eq(stored, ['lottery-details', 'lottery-discount', 'lottery-filing', 'lottery-game',
               'lottery-jackpot-cache', 'lottery-net-takehome', 'lottery-npeople',
               'lottery-payout', 'lottery-portfolio-sections', 'lottery-portfolio-seeded-from',
-              'lottery-portfolio-sliders', 'lottery-residence', 'lottery-tbill-adopted',
+              'lottery-portfolio-sliders', 'lottery-residence', 'lottery-sched',
+              'lottery-tbill-adopted',
               'lottery-tbill-cache', 'lottery-theme', 'lottery-winning',
               'lottery-winning-cache', 'lottery-wn-game'],
      'the stored keys changed — every one must still be a preference or a cache, or this repo needs a version marker like its siblings');
+});
+
+/* ── What opens open ────────────────────────────────────────────────────────
+   All three of the calculator's disclosures now open EXPANDED and collapse only
+   for a visitor who closed them before. The payment schedule was the odd one out
+   until 2026-08-22: it opened shut, so the thirty figures an annuity actually
+   consists of were something you had to know to ask for.
+
+   Its `remember` line is the half that is easy to miss. While it opened shut,
+   closing it was a no-op worth saving nothing, so nothing saved it; opening it
+   OPEN makes closing it a real preference, and without the write the reader shuts
+   the same panel on every single visit. */
+t('every disclosure on the calculator opens expanded', () => {
+  const bare = stripHtmlComments(CALC_SRC);
+  for (const id of ['details', 'wn', 'sched']) {
+    const btn = (bare.match(new RegExp(`<button[^>]*id="${id}-toggle"`)) || [])[0]
+      || (bare.match(new RegExp(`<button[^>]*aria-controls="${id}-body"[^>]*>`)) || [])[0] || '';
+    ok(/aria-expanded="true"/.test(btn),
+      `${id}: the toggle must say aria-expanded="true", or a screen reader is told the `
+      + 'panel is collapsed while it is on screen');
+    ok(new RegExp(`<span class="details-chevron open" id="${id}-chevron"`).test(bare),
+      `${id}: the chevron must start turned, or it points the wrong way at an open panel`);
+    ok(new RegExp(`<div class="[^"]*details-body open"[^>]*id="${id}-body"`).test(bare)
+       || new RegExp(`<div class="[^"]*open"[^>]*id="${id}-body"`).test(bare),
+      `${id}: the panel itself must carry .open`);
+  }
+});
+t('and closing one is remembered, or it has to be closed again every visit', () => {
+  const code = CALC_SRC.replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const key of ['lottery-details', 'lottery-winning', 'lottery-sched'])
+    ok(new RegExp(`setItem\\('${key}'`).test(code), `${key} is never written`);
+  /* Restored the same way round in all three: only a saved '0' collapses, so a
+     browser that has never expressed a preference gets the default. */
+  eq((code.match(/getItem\('lottery-(?:details|winning|sched)'\)==='0'/g) || []).length, 3,
+     'all three must restore with the "only if you closed it" test — a plain truthiness '
+     + 'check would collapse the panel for anyone who had ever opened it');
+});
+
+/* ── The help dots ──────────────────────────────────────────────────────────
+   Adopted from Golf Handicap, Sprint Predictability and PAPTrack on 2026-08-22:
+   a "?" beside the thing it explains, one shared dialog, keyed by `data-help`.
+   The discount rate is why — the page recommends a payout on the strength of a
+   number it never explained. */
+t('every help dot has an entry, and every entry has a dot', () => {
+  const bare = stripHtmlComments(CALC_SRC);
+  const dots = [...bare.matchAll(/data-help="([a-z]+)"/g)].map((m) => m[1]).sort();
+  ok(dots.length >= 4, 'the help dots have gone: ' + dots.join(', '));
+  ok(dots.includes('discount'), 'the discount rate must carry one — it is the reason this exists');
+  const keys = [...(CALC_SRC.match(/var HELP = \{[\s\S]*?\n\};/) || [''])[0]
+    .matchAll(/^  ([a-z]+): \[/gm)].map((m) => m[1]).sort();
+  eq(keys, dots, 'a dot with no entry opens nothing and says nothing; an entry with no dot '
+     + 'is prose nobody can reach');
+});
+t('each dot is labelled and spaced off the word it follows', () => {
+  const bare = stripHtmlComments(CALC_SRC);
+  for (const btn of bare.match(/<button class="help-btn"[\s\S]*?>/g) || [])
+    ok(/aria-label="/.test(btn), 'a bare "?" is unlabelled for a screen reader: ' + btn);
+  ok(/\.help-btn \{[^}]*margin-left: 7px/.test(CALC_SRC),
+     'the family gap is missing — an icon must never sit flush against its word');
 });
 
 /* ── The index page ─────────────────────────────────────────────────────────

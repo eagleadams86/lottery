@@ -149,6 +149,26 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   - **All four files are on `sw.js`'s SHELL allowlist, and `tests.html` pins that list by exact equality.** Adding an entry means editing the test too; that is the security review, by design. Their justification is written ABOVE the array rather than between the entries, unlike the `chart.min.js` note: the suite pins the list twice, and the second pass reads the RAW source and pulls every quoted string out of it, so a comment inside the array with an apostrophe in the prose hands that pass a fake entry.
   - `<meta name="theme-color">` follows the theme on all three pages, so an installed window's title bar does not stay dark behind a light page. The two app pages read it back from the pack's `--bg` inside `setTheme()`; the landing page has no picker and sets it once in its pre-paint boot, where the stylesheet has not loaded yet — so that one **lists the four values** and has to be kept in step with `theme.css`.
   - Offline predates all of this and is unchanged: it is `sw.js`, network-first. The manifest adds the window and the icon, not the caching.
+- **The calculator carries the family's help dot** (2026-08-22): `.help-btn` with a
+  `data-help` key, one `#help-dialog`, one delegated listener, and a `HELP` map of
+  `[title, html]`. Copied from Golf Handicap rather than re-invented, down to the 7px
+  `margin-left` — an icon never sits flush against the word it follows, family-wide.
+  Three things to keep right when adding one: the html in `HELP` is a **literal in this
+  file** and nothing a reader typed may ever reach that `innerHTML`; every dot needs an
+  `aria-label`, because "?" alone reads as nothing; and a heading whose text the script
+  rewrites with `textContent` needs its id moved onto an inner `<span>` first, or the
+  assignment deletes the button (`wt-title` and `rt-title` are both like this).
+  `tests.html` pins that the dots and the `HELP` keys are the same set in both
+  directions — a dot with no entry opens nothing, an entry with no dot is unreachable.
+- **All three disclosures open EXPANDED, and each remembers being closed.** The payment
+  schedule was the exception until 2026-08-22 — it opened shut, so the thirty figures an
+  annuity consists of were something you had to know to ask for. Opening it open is what
+  made its `localStorage` write necessary: while it opened shut, closing it was a no-op
+  worth saving nothing. All three restore with the same `=== '0'` test, so only a visitor
+  who actually closed one gets it collapsed. A new stored key must also be added to the
+  allowlist in `tests.html` — that list is deliberately exact, and it is what caught
+  `lottery-sched`.
+
 - **`color-scheme` is set per theme on ALL FOUR pages** — `dark` for midnight and dark, `light` for light AND sepia (sepia is a warm *light* theme). It is not one of our colours and overrides nothing in the pack; it is how a page tells the browser which way round it is, so browser-drawn UI follows. Without it the dark themes drew the calendar button inside a date field as a near-black glyph on a near-black box, and that glyph is not restylable from CSS — the number spinners, checkboxes and scrollbars had the same problem more quietly. Every sibling app carries the same block; these pages and Golf Handicap were the last without it.
 - **Both pages wear the app family's chrome since 2026-08-21**, and the pieces of it are the same ones every sibling carries. What to know before touching any of it:
   - **`--page-w: 1500px` and `--chrome-h: 30px` live in a `:root` block at the top of each page's `<style>`.** `--page-w` is read by BOTH the content wrapper (`.page` / `.app`) and the row inside the sticky header — they have to be the same number or the mark stops lining up with the left edge of the first card, which is why neither repeats the literal. 1500px is Sprint Predictability's and Flow Metrics' number.

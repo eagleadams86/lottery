@@ -143,7 +143,9 @@ Targeted at **Niagara County, NY residents** (outside NYC/Yonkers) who want to m
 - **Shorthand input** — accepts `325M`, `1.2B`, etc. An amount that can't be read is called out under the box instead of being silently ignored
 - **Themes** — dropdown in the upper right with the four themes plus Auto, listed alphabetically (Auto, Dark, Light, Midnight, Sepia); **defaults to Auto**, which follows the reader's own system — Light on a light one, Midnight on a dark one. Preference saved in `localStorage` and shared with the portfolio page
 - **Collapsible tax tables** — detailed breakdown hidden by default, expandable on demand
-- **Remembers your settings** — game selection, winner count, payout choice, filing status, residence, discount rate and tax breakdown state all restored on revisit
+- **Help where the page assumes knowledge** — a small **?** beside the discount rate, the effective tax rate and each of the two tax stages opens a plain-English explanation, the same affordance Golf Handicap, Sprint Predictability and PAPTrack carry. The discount-rate one is the reason it exists: the page recommends a payout on the strength of that number, and nothing on screen said what it was. It explains which way the rate pushes the answer, and that you don't have to pick the right one — Compare names the rate at which the two payouts are level, so all you decide is which side of it you're on
+- **Every section opens expanded** — the tax breakdown, the winning numbers and the payment schedule. The schedule was collapsed until 2026-08-22, which made the thirty figures an annuity actually consists of something you had to know to ask for. Close any of them and it stays closed on your next visit
+- **Remembers your settings** — game selection, winner count, payout choice, filing status, residence, discount rate, and which sections you've collapsed, all restored on revisit
 - **Feeds the portfolio** — net take-home is saved to `localStorage` and used to pre-fill the portfolio's take-home slider
 - **Cross-page navigation** — button to jump directly to the portfolio
 - **iOS compatible** — tested for mobile Safari quirks

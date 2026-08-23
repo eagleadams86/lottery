@@ -376,6 +376,31 @@
   /* The effective rate, as one line rather than half of a banner. It reads as the
      headline of the breakdown below it — which is what it is, the whole of those two
      tables in a single number — so it is set as a sentence and not as a tile. */
+  /* ── The family's help dot ──────────────────────────────────────────────
+     Golf Handicap, Sprint Predictability and PAPTrack all carry this: a small
+     round "?" beside the thing it explains, opening one shared dialog off a
+     `data-help` key. This page had neither, and it is the page in the family
+     that asks the most of a reader who has not met the vocabulary — a discount
+     rate decides which payout it recommends, and nothing on screen said what
+     one was.
+
+     The 7px gap is a standing preference across every app: an icon never sits
+     flush against the word it follows. Copied from Golf Handicap's rule rather
+     than re-picked, so the control is the same object in both. */
+  .help-btn {
+    margin-left: 7px; width: 18px; height: 18px; min-height: 18px; padding: 0;
+    border-radius: var(--radius-pill); font-size: var(--fs-xs); line-height: 1;
+    font-family: inherit; cursor: pointer;
+    background: var(--surface-alt); border: 1px solid var(--border-control);
+    color: var(--text-secondary); flex: 0 0 auto; vertical-align: middle;
+  }
+  .help-btn:hover { color: var(--text-primary); }
+  /* The label sits above its field, so the dot rides on the label's baseline. */
+  .fld > label .help-btn { vertical-align: baseline; }
+  #help-body p { margin: 0 0 10px; }
+  #help-body p:last-child { margin-bottom: 0; }
+  #help-body strong { color: var(--text-primary); }
+
   .effrate { font-size: var(--fs-sm); color: var(--text-secondary); margin-bottom: 10px; }
   .effrate strong { font-size: var(--fs-lg); font-weight: 600; color: var(--text-primary); margin-left: 6px; }
 
@@ -825,10 +850,13 @@
            nothing about a lump sum. Hidden rather than disabled: a control that
            cannot affect the answer is noise, not a locked door. -->
       <div class="fld" id="fld-discount" style="display:none">
-        <label for="discount">Your discount rate</label>
+        <label for="discount">Your discount rate<button class="help-btn" type="button"
+          data-help="discount" aria-label="What the discount rate is and how to pick one"
+          >?</button></label>
         <input type="number" id="discount" min="0" max="20" step="0.25" value="4"
           inputmode="decimal" oninput="onDiscount()" aria-describedby="discount-hint" />
-        <div class="hint" id="discount-hint">What a dollar today is worth to you</div>
+        <div class="hint" id="discount-hint">What future money is worth to you today.
+          Higher favours the lump sum, lower favours the annuity.</div>
       </div>
     </div>
   </div>
@@ -893,7 +921,9 @@
          the same figure as the "Net take-home" tile a few pixels above it, and the
          rate beside it is the one thing it said that nothing else did — so that
          moved down here, where it is the headline for the breakdown it summarises. -->
-    <p class="effrate">Effective total tax rate <strong id="eff-rate">&#8212;</strong></p>
+    <p class="effrate">Effective total tax rate<button class="help-btn" type="button"
+      data-help="effrate" aria-label="What the effective total tax rate means"
+      >?</button> <strong id="eff-rate">&#8212;</strong></p>
 
     <!-- Lump sum against annuity. Only on screen in Compare, and it is the first
          thing there because it is the answer to the question that mode asks —
@@ -914,24 +944,34 @@
            and every prize owed more at filing. With the brackets in, a smaller
            prize is over-withheld and the line is a REFUND — a heading that
            insisted otherwise would contradict the number under it. -->
-      <h3 class="sec-title" id="wt-title">Withheld at Payment</h3>
+      <h3 class="sec-title"><span id="wt-title">Withheld at Payment</span><button
+        class="help-btn" type="button" data-help="withheld"
+        aria-label="Why tax is taken in two stages">?</button></h3>
       <table><thead><tr><th scope="col">Item</th><th scope="col">Rate</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
       <tbody id="wtbody"></tbody></table>
       <hr>
-      <h3 class="sec-title" id="rt-title">Settled at Your Next Tax Return</h3>
+      <h3 class="sec-title"><span id="rt-title">Settled at Your Next Tax Return</span><button
+        class="help-btn" type="button" data-help="settled"
+        aria-label="What is still owed, or refunded, at your tax return">?</button></h3>
       <table><thead><tr><th scope="col">Item</th><th scope="col">Details</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
       <tbody id="rtbody"></tbody></table>
     </div>
 
-    <!-- The payment-by-payment schedule. Collapsed by default and only present
-         for a graduated annuity, because thirty rows below the summary is a
-         reference table, not the answer — unlike the tax breakdown, which is. -->
+    <!-- The payment-by-payment schedule. Only present for a graduated annuity,
+         and OPEN by default (2026-08-22, on Charles's call) — the same way round
+         as the tax breakdown and the winning numbers above it, and for the same
+         reason: it was shut unless you had opened it, so the thirty figures the
+         annuity actually consists of were something you had to know to ask for.
+         "Thirty rows is a reference table, not the answer" was the argument for
+         hiding it, and it holds right up until the reader is looking at a payout
+         made of exactly those thirty rows. Anyone who disagrees closes it once
+         and it stays closed — see toggleSched(). -->
     <div id="sched-section" style="display:none">
-      <h2 class="sec-hd"><button class="details-btn" onclick="toggleSched()" aria-expanded="false" aria-controls="sched-body" id="sched-toggle">
-        <span class="details-chevron" id="sched-chevron" aria-hidden="true">&#9654;</span>
+      <h2 class="sec-hd"><button class="details-btn" onclick="toggleSched()" aria-expanded="true" aria-controls="sched-body" id="sched-toggle">
+        <span class="details-chevron open" id="sched-chevron" aria-hidden="true">&#9654;</span>
         Payment Schedule
       </button></h2>
-      <div class="details-body" id="sched-body">
+      <div class="details-body open" id="sched-body">
         <div class="sched-wrap">
           <table><thead><tr><th scope="col">Year</th><th scope="col" style="text-align:right">Payment</th>
             <th scope="col" style="text-align:right">Tax</th><th scope="col" style="text-align:right">After tax</th></tr></thead>
@@ -1000,6 +1040,19 @@
 .foot-links a,.foot-copy a{color:inherit}
 .foot-copy{margin-top:6px}
 </style>
+
+<!-- ── The help dialog ──────────────────────────────────────────────────────
+     One window, filled from HELP by whichever `.help-btn` was pressed — the
+     shape Golf Handicap, Sprint Predictability and PAPTrack already use, so a
+     "?" behaves the same in all four. Narrow: this is prose, and the 560px
+     default is the family's reading width. -->
+<dialog id="help-dialog" aria-labelledby="help-title">
+  <h3 id="help-title">About</h3>
+  <div id="help-body"></div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end">
+    <button type="button" class="btn primary" onclick="closeHelp()">Close</button>
+  </div>
+</dialog>
 
 <!-- ── Share a link to these figures ────────────────────────────────────────
      A <dialog> opened modally, which is what gives it a focus trap and an
@@ -1176,6 +1229,12 @@ function restoreState(){
     setExpanded('details-toggle', false);
   }
   // Open by default; only collapse if this visitor closed it before.
+  if(localStorage.getItem('lottery-sched')==='0'){
+    document.getElementById('sched-body').classList.remove('open');
+    document.getElementById('sched-chevron').classList.remove('open');
+    setExpanded('sched-toggle', false);
+  }
+  // Open by default; only collapse if this visitor closed it before.
   if(localStorage.getItem('lottery-winning')==='0'){
     document.getElementById('wn-body').classList.remove('open');
     document.getElementById('wn-chevron').classList.remove('open');
@@ -1259,6 +1318,12 @@ function toggleSched(){
   var open=document.getElementById('sched-body').classList.toggle('open');
   document.getElementById('sched-chevron').classList.toggle('open', open);
   setExpanded('sched-toggle', open);
+  /* Remembered, which it was not while it was the one disclosure on this page
+     that opened shut: a reader who closed it had nothing to remember, so the
+     question never came up. Now that it opens OPEN, closing it has to stick, or
+     the reader is shutting the same panel on every visit. Same key shape and same
+     "only if you closed it" restore as the two sections above it. */
+  localStorage.setItem('lottery-sched', open ? '1' : '0');
 }
 
 /* One decimal is right for a tax rate and wrong for a discount rate, where 4%
@@ -1464,6 +1529,87 @@ function copyShare(){
    click ON the <dialog> lands on the element itself only when it fell outside
    the box, because everything inside it is a child. */
 document.getElementById('share-dialog').addEventListener('click', function(e){
+  if(e.target===this) this.close();
+});
+
+/* ── Help ───────────────────────────────────────────────────────────────────
+   The family's `data-help` map: a key per "?" button, [title, html]. Written as
+   prose that answers the question the reader actually has, not as a definition
+   — the discount rate one is the reason this exists, because the page recommends
+   a payout on the strength of a number it never explained.
+
+   The html here is a LITERAL in this file, never anything a reader typed, so
+   innerHTML is writing our own markup. Keep it that way: nothing from a share
+   link, a field or an API may ever reach this sink. */
+var HELP = {
+  discount: ['Your Discount Rate',
+    '<p>Money later is worth less than money now — you could have spent, invested or ' +
+    'paid down debt with it in the meantime. The <strong>discount rate</strong> is how ' +
+    'much less, per year. It is the one number that decides the argument between the ' +
+    'two payouts, which is why it only appears when an annuity is on screen.</p>' +
+    '<p><strong>A higher rate</strong> says money now matters a lot to you — you would ' +
+    'earn well on it, or you have debts to clear. Payments thirty years out get shrunk ' +
+    'hard, so <strong>the lump sum wins</strong>.</p>' +
+    '<p><strong>A lower rate</strong> says you are patient and would not do much with it ' +
+    'anyway. Future payments keep most of their value, so <strong>the annuity wins</strong>.</p>' +
+    '<p><strong>You do not have to pick the right number.</strong> Compare names the rate ' +
+    'at which the two payouts are exactly level — below it the annuity is ahead, above it ' +
+    'the lump sum is. All you have to decide is which side of that rate you are on.</p>' +
+    '<p>If you want a figure to start from: roughly what you would genuinely earn on the ' +
+    'lump sum after tax. Around 3–5% for something conservative; 7% or more only if you ' +
+    'would really put the lot in shares and leave it there. The default here is 4%.</p>' +
+    '<p>One thing the rate does not capture: the annuity is often ahead on <em>tax</em> ' +
+    'alone, because thirty tax returns each start at the bottom of the brackets where one ' +
+    'does not. That is already in the figures on the cards.</p>'],
+  effrate: ['Effective Total Tax Rate',
+    '<p>Every dollar of tax on this prize, added up and divided by the prize — the ' +
+    'withholding taken at payment <em>and</em> whatever is settled at your return, ' +
+    'federal and state together.</p>' +
+    '<p>It is lower than the top bracket you land in, and that is not a rounding error: ' +
+    'brackets are marginal, so only the part of the prize above each threshold is taxed ' +
+    'at that rate. The first dollars are still taxed at the lowest rates.</p>' +
+    '<p>On the annuity it is lower again, because each year is its own tax return that ' +
+    'starts at the bottom of the brackets.</p>'],
+  withheld: ['Withheld at Payment',
+    '<p>What is taken out before the money reaches you — a flat federal rate on gambling ' +
+    'winnings plus the state and city rates where you live. It is a deposit against the ' +
+    'bill, not the bill.</p>' +
+    '<p>The federal flat rate is well below the top bracket a jackpot lands in, which is ' +
+    'why a large prize almost always owes more at the return. It is not an extra tax; it ' +
+    'is the same tax, arriving in two stages.</p>'],
+  settled: ['Settled at Your Next Tax Return',
+    '<p>The difference between what was withheld and what is actually owed once the prize ' +
+    'is on your return with the rest of your income.</p>' +
+    '<p>On a jackpot this is normally more to pay, because the flat withholding rate is ' +
+    'below the top bracket. On a smaller prize it can be a <strong>refund</strong> — ' +
+    'over-withheld rather than under — which is why this heading does not promise one ' +
+    'direction.</p>' +
+    '<p>Either way it is money that moves months after the cheque, so it is worth knowing ' +
+    'about before spending the first figure.</p>'],
+};
+
+/* One delegated listener, so a "?" added later needs no wiring — the same shape
+   the sibling apps use. */
+document.addEventListener('click', function(e){
+  var btn = e.target.closest ? e.target.closest('.help-btn') : null;
+  if(!btn) return;
+  var h = HELP[btn.getAttribute('data-help')];
+  if(!h) return;
+  document.getElementById('help-title').textContent = h[0];
+  document.getElementById('help-body').innerHTML = h[1];
+  var d = document.getElementById('help-dialog');
+  d.showModal();
+  /* Back to the top, and this is not belt-and-braces. These panels are longer
+     than the dialog's max-height on a laptop, and showModal() focuses the first
+     focusable thing in the box — which here is Close, at the very bottom — so
+     the window opened already scrolled past its own heading and the first
+     sentence. The family note on the dialog CSS above describes the same fault;
+     capping the height is what makes it SCROLL rather than overflow, and this is
+     what puts it at the beginning of what it is scrolling. */
+  d.scrollTop = 0;
+});
+function closeHelp(){ document.getElementById('help-dialog').close(); }
+document.getElementById('help-dialog').addEventListener('click', function(e){
   if(e.target===this) this.close();
 });
 
