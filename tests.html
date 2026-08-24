@@ -1160,7 +1160,33 @@ let SW_SRC = '', KILL_SRC = '', INDEX_SRC = '', CALC_SRC = '', PORT_SRC = '', CH
    the file off the server while the frames ran yesterday's copy of it. A suite
    that can pass against a build which exists nowhere is worse than no suite. */
 const BUST = '?t=' + Date.now();
-const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+/* The text a READER sees, tags removed. Deliberately a scanner and not
+   `replace(/<[^>]+>/g, '')`: a single-pass tag strip is the shape CodeQL flags as
+   incomplete multi-character sanitization, and it is right to — one pass over
+   `<<p>p>` leaves a live tag behind. Nothing here is rendered, so the bug that
+   shape would cause here is only a wrong CHARACTER COUNT, but the alert it raises
+   is a real High sitting open on the security tab, where a true finding would be
+   missed among it. Callers normalise whitespace themselves, as they did before. */
+function visibleText(html) {
+  let out = '', inTag = false;
+  for (const ch of html) {
+    if (ch === '<') { inTag = true; continue; }
+    if (ch === '>') { inTag = false; continue; }
+    if (!inTag) out += ch;
+  }
+  return out;
+}
+
+/* Loop until the source stops changing. A SINGLE pass is fooled by a comment that
+   contains a comment opener: one sweep over `/* a /* b */` leaves a live `/*` behind,
+   and a helper that can be wrong about what is commented out is one that can miss a
+   live off-origin script — which is the whole reason these suites read the source. */
+const stripComments = (src) => {
+  let out = src, prev;
+  do { prev = out; out = out.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, ''); }
+  while (out !== prev);
+  return out;
+};
 
 group('Offline — the service worker');
 
@@ -1559,8 +1585,9 @@ t('every dot is a circled "i", never a "?"', () => {
      && /\.tile-help \{[^}]*background: transparent;/.test(CALC_SRC),
      'a 16px outlined circle — the filled 18px pill this page copied from Golf '
      + 'Handicap was the odd one out, not the standard');
-  ok(/\.tile-help::after \{ content: ''; position: absolute; inset: -4px; \}/.test(CALC_SRC),
-     "the 24px tap target, which is WCAG 2.2's and is not the circle's own size");
+  ok(/\.tile-help::after \{ content: ''; position: absolute; inset: -5px; \}/.test(CALC_SRC),
+     "a true 24px tap target: -5px, because `inset` grows from the PADDING box "
+       + "and the 1px border made -4px a 22px target");
   ok(/\.tile-help:hover \{ background: var\(--surface-alt\); border-color: var\(--text-secondary\);/
      .test(CALC_SRC),
      'and the hover fills rather than borrowing --focus-border, which would say '
@@ -1592,11 +1619,9 @@ t('every note is paragraphs, and every note bolds something', () => {
       /* A SHARE OF THE CHARACTERS, not a count per paragraph: a note that
          defines a list bolds one term per item and is right to. What goes
          wrong is bold stopping being the minority. */
-      const text = chunk.replace(/<[^>]+>/g, '').replace(/['`+\n]/g, ' ')
-        .replace(/\s+/g, ' ').length;
-      const boldText = (chunk.match(/<strong>([\s\S]*?)<\/strong>/g) || [])
-        .join('').replace(/<[^>]+>/g, '').replace(/['`+\n]/g, ' ')
-        .replace(/\s+/g, ' ').length;
+      const text = visibleText(chunk).replace(/['`+\n]/g, ' ').replace(/\s+/g, ' ').length;
+      const boldText = visibleText((chunk.match(/<strong>([\s\S]*?)<\/strong>/g) || [])
+        .join('')).replace(/['`+\n]/g, ' ').replace(/\s+/g, ' ').length;
       ok(bolds >= 1 && boldText / text < 0.4,
          page + ': ' + key + ' — bold must be a minority of the note');
     }
@@ -1688,7 +1713,7 @@ t('the portfolio help window is as wide as its text', () => {
   ok(/#helpBody p, #helpBody li \{ font-size: inherit; line-height: inherit;\s*color: inherit; margin: 0 0 10px; \}/.test(PORT_SRC),
      'and the paragraphs inside the box follow it rather than the page default');
   ok(/\.tile-help \{[^}]*width: 16px; height: 16px; min-height: 0;/.test(PORT_SRC)
-     && /\.tile-help::after \{ content: ''; position: absolute; inset: -4px; \}/.test(PORT_SRC),
+     && /\.tile-help::after \{ content: ''; position: absolute; inset: -5px; \}/.test(PORT_SRC),
      'and the dot is the family block, not a second version of it');
   ok(/onclick="closeHelp\(\)">Got It</.test(PORT_SRC), '"Got It", as in every other app');
   /* margin: auto is what centres a dialog, and this page's reset knocks it out —
