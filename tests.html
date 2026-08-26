@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 146;
+const EXPECTED = 156;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -2121,6 +2121,45 @@ function spinCases(where, getWin) {
 group('Select-on-focus versus a number field’s spin arrows');
 spinCases('the calculator', () => wc);
 spinCases('the portfolio', () => wp);
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CSV injection — the guard both pages went without until 2026-08-25.
+
+   Neither page has a free-text field: every cell either side of this is a fixed
+   label or a rounded number, so there was nothing to inject and nothing looked
+   wrong. That is exactly why it was worth closing — the family's other six
+   exporters all defuse, and the day somebody adds a field that carries typing,
+   the exporter it lands in should already be the safe one. */
+group('csvCell — a spreadsheet formula is defused, a number is not');
+
+function csvCases(label, W) {
+  t(label + ': a leading = is defused', () => {
+    eq(W().csvCell('=1+1'), '"\'=1+1"');
+  });
+  t(label + ': the other three formula leads are defused', () => {
+    eq(W().csvCell('+SUM(A1)'), '"\'+SUM(A1)"');
+    eq(W().csvCell('@SUM(A1)'), '"\'@SUM(A1)"');
+    eq(W().csvCell('-1+1'), '"\'-1+1"');
+  });
+  /* The reason this is two tests and not one: `-` leads the risky set, and every
+     negative figure in these tables starts with it. Defusing on the first
+     character alone would hand the spreadsheet a column of text. */
+  t(label + ': a plain negative number is left alone', () => {
+    eq(W().csvCell(-1234), '"-1234"');
+    eq(W().csvCell('-12.5'), '"-12.5"');
+    eq(W().csvCell(0), '"0"');
+  });
+  t(label + ': quotes are doubled and every cell is quoted', () => {
+    eq(W().csvCell('say "hi"'), '"say ""hi"""');
+    eq(W().csvCell('a,b'), '"a,b"');
+  });
+  t(label + ': null and undefined become an empty cell, not the word', () => {
+    eq(W().csvCell(null), '""');
+    eq(W().csvCell(undefined), '""');
+  });
+}
+csvCases('the calculator', () => wc);
+csvCases('the portfolio', () => wp);
 
 function run() {
   wc = document.getElementById('calc').contentWindow;

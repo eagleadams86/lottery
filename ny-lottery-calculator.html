@@ -1431,7 +1431,25 @@ function pctN(r){
    outright — a link that does nothing is worse than no link — and the clipboard
    works in every place these pages open. Everything written here is a number
    this page computed; nothing from a feed or a link is echoed into it. */
-function csvCell(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }
+/* Every cell goes through here, and the leading apostrophe on `=`, `+`, `-` and
+   `@` is not decoration: a spreadsheet reads a cell that starts with one of them
+   as a FORMULA, so text arriving in a cell becomes an instruction the moment the
+   file is opened. NOTHING ON THIS PAGE IS FREE TEXT TODAY — every value below is
+   a fixed label or a rounded number — so this is the guard going in BEFORE a
+   field that carries typing exists, which is the only time it costs nothing. The
+   apostrophe is the standard defusal and is invisible in the sheet. Same rule,
+   same wording, as every sibling app's csvCell.
+
+   A PLAIN NUMBER IS LEFT ALONE, and that exception is the whole reason this is
+   two tests rather than one: `-` leads the risky set, so defusing on the first
+   character alone would put an apostrophe in front of every negative figure in
+   the table and hand the spreadsheet a column of text. */
+var FORMULA_LEAD = /^[=+@-]/, PLAIN_NUMBER = /^[+-]?[0-9]+(\.[0-9]+)?$/;
+function csvCell(v){
+  var s = String(v == null ? '' : v);
+  if (FORMULA_LEAD.test(s) && !PLAIN_NUMBER.test(s)) s = "'" + s;
+  return '"' + s.replace(/"/g,'""') + '"';
+}
 function copyCSV(){
   var lump=parseField('lump-input',lUnit), jack=parseField('jackpot-input',jUnit);
   if(lump===null&&jack!==null) lump=jack*0.60;
