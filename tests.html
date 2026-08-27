@@ -67,7 +67,17 @@ function eq(actual, expected, note) {
   const a = JSON.stringify(actual), e = JSON.stringify(expected);
   if (a !== e) throw new Error((note ? note + ': ' : '') + 'expected ' + e + ', got ' + a);
 }
-function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy'); }
+/* `detail` is the value that FAILED, not more prose — the same signature Sprint
+   Predictability's suite grew on 2026-08-26, and for the same reason: call sites
+   here were passing a third argument to a two-argument `ok` and it was being
+   dropped on the floor, so an assertion could report what it expected and never
+   what it saw. CodeQL's js/superfluous-trailing-arguments is what noticed, both
+   times. */
+function ok(cond, note, detail) {
+  if (cond) return;
+  throw new Error((note || 'expected truthy')
+    + (detail === undefined ? '' : ' \u2014 got ' + detail));
+}
 /* ── The completeness floor ─────────────────────────────────────────────────
    "Everything that ran passed" is only half an answer. Nothing above counts the
    tests, so a group deleted by accident — or a `PAGES.forEach` that ends up
