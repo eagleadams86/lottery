@@ -362,6 +362,30 @@
   }
   .ctrl-row input[type=number]:focus { border-color: var(--focus-border); }
 
+  /* ── The family ring, restated where it was being out-specified ────────────
+     `outline: none` on the two rules above is the usual idiom for killing the
+     browser's own ring on a box you have styled yourself. But it is written on
+     the BASE rule, and `.input-card input[type=text]` and `.ctrl-row
+     input[type=number]` both out-specify the `input:focus-visible` rule at the
+     top of this file — so they were killing THIS APP'S ring too, on the three
+     boxes the whole calculator is driven from. The comment up there says
+     "visible keyboard focus on every control", and for those three it had not
+     been true.
+
+     What was left was the underline changing from --input-border to
+     --focus-border. That reads as a focus hint and is worth keeping, but it
+     cannot be the only one: it is 1.5px, and grey to blue is 1.48:1 between the
+     two states, where WCAG 2.2 SC 2.4.11 asks for the area of a 2px perimeter
+     and 3:1. Measured, both numbers.
+
+     Restated here rather than deleting the `outline: none`, which would bring
+     the browser's default ring back on a mouse click — the thing it is there to
+     stop. No border-radius: each box keeps its own, so the ring follows the
+     shape that is already there and nothing moves. */
+  .input-card input[type=text]:focus-visible,
+  .ctrl-row input[type=number]:focus-visible {
+    outline: 2px solid var(--focus-border); outline-offset: 2px; }
+
   /* Summary cards */
   /* Column counts are spelled out rather than left to auto-fit, which at in-between
      widths dropped the fourth card onto a row of its own and read as an afterthought.

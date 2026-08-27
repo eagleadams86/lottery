@@ -79,7 +79,7 @@ function ok(cond, note) { if (!cond) throw new Error(note || 'expected truthy');
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 156;
+const EXPECTED = 158;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -2118,6 +2118,63 @@ function spinCases(where, getWin) {
     eq(spinProbe(W, (box) => { spinFocusIn(W, box); }), false);
   });
 }
+/* ══════════════════════════════════════════════════════════════════════════
+   The keyboard ring on the three boxes this calculator is driven from.
+
+   `outline: none` on `.input-card input[type=text]` and `.ctrl-row
+   input[type=number]` is the usual idiom for killing the browser's own ring on
+   a box you have styled — but written on the BASE rule, both of them out-specify
+   the `input:focus-visible` rule at the top of the file, so they were killing
+   the app's ring too. Nothing looked broken: the underline still changed from
+   --input-border to --focus-border. That is 1.5px and 1.48:1 between the two
+   states, against the 2px perimeter and 3:1 WCAG 2.2 SC 2.4.11 asks for.
+
+   Asserted LIVE, because the bug was specificity and not text: every rule
+   involved was present and correct in the source the whole time, and a regex
+   over the file would have passed on the broken page. A text-entry box matches
+   :focus-visible on a programmatic focus, so no synthetic keyboard is needed —
+   which is just as well, since a synthetic click never reaches this page's spin
+   arrows either (see the group below). */
+group('The focus ring on the calculator’s own boxes');
+t('every box the calculator is driven from paints the family ring', () => {
+  const W = wc, d = W.document;
+  const ids = ['jackpot-input', 'lump-input', 'npeople'];
+  ids.forEach((id) => {
+    const el = d.getElementById(id);
+    ok(el, id + ' is on the page at all');
+    el.blur();
+    el.focus();
+    ok(el.matches(':focus-visible'),
+      id + ' counts as keyboard-focused — a text box always does, which is what '
+      + 'lets this be checked without a synthetic keyboard');
+    const cs = W.getComputedStyle(el);
+    ok(cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2,
+      id + ' draws a ring of at least 2px, not just a 1.5px underline: '
+        + cs.outlineStyle + ' ' + cs.outlineWidth);
+    ok(parseFloat(cs.outlineOffset) > 0,
+      id + '\u2019s ring stands off the box rather than sitting on its own border');
+    el.blur();
+  });
+});
+t('and it is the focus colour, not some colour of its own', () => {
+  const W = wc, d = W.document;
+  const want = W.getComputedStyle(d.documentElement)
+    .getPropertyValue('--focus-border').trim();
+  ok(want, 'the theme still defines --focus-border');
+  const el = d.getElementById('jackpot-input');
+  el.blur(); el.focus();
+  const got = W.getComputedStyle(el).outlineColor;
+  /* Compared as painted pixels: the token is a hex and the computed value is
+     rgb(), so the only honest comparison is through the same resolver. */
+  const probe = d.createElement('span');
+  probe.style.color = want;
+  d.body.appendChild(probe);
+  const resolved = W.getComputedStyle(probe).color;
+  probe.remove();
+  el.blur();
+  eq(got, resolved, 'the ring is --focus-border');
+});
+
 group('Select-on-focus versus a number field’s spin arrows');
 spinCases('the calculator', () => wc);
 spinCases('the portfolio', () => wp);
