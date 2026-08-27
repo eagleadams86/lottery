@@ -2123,56 +2123,109 @@ function spinCases(where, getWin) {
 
    `outline: none` on `.input-card input[type=text]` and `.ctrl-row
    input[type=number]` is the usual idiom for killing the browser's own ring on
-   a box you have styled — but written on the BASE rule, both of them out-specify
-   the `input:focus-visible` rule at the top of the file, so they were killing
-   the app's ring too. Nothing looked broken: the underline still changed from
-   --input-border to --focus-border. That is 1.5px and 1.48:1 between the two
-   states, against the 2px perimeter and 3:1 WCAG 2.2 SC 2.4.11 asks for.
+   a box you have styled. But written on the BASE rule both are (0,2,1), and the
+   `input:focus-visible` rule at the top of the file is (0,1,1) — so they were
+   killing the app's own ring too. Nothing looked broken: the underline still
+   changed from --input-border to --focus-border, which measures 1.5px and
+   1.48:1 between the two states, against the 2px perimeter at 3:1 that WCAG 2.2
+   SC 2.4.11 asks for.
 
-   Asserted LIVE, because the bug was specificity and not text: every rule
-   involved was present and correct in the source the whole time, and a regex
-   over the file would have passed on the broken page. A text-entry box matches
-   :focus-visible on a programmatic focus, so no synthetic keyboard is needed —
-   which is just as well, since a synthetic click never reaches this page's spin
-   arrows either (see the group below). */
+   RESOLVED THROUGH THE CASCADE, not by focusing anything. The first version of
+   this group did focus each box and read back the computed outline, which
+   passed here and failed in CI: whether a programmatic focus counts as
+   :focus-visible is a browser heuristic, and it does not survive a headless
+   runner that never had window focus. The bug was never about focus anyway — it
+   was about which rule wins — so the test now asks that directly: collect every
+   rule that sets an outline and matches the element, rank them the way the
+   cascade does, and look at what the winner says. Deterministic in any browser,
+   and it still fails on the exact mistake, because the winner then is the one
+   saying `none`. */
 group('The focus ring on the calculator’s own boxes');
-t('every box the calculator is driven from paints the family ring', () => {
+
+/* [id, class/attribute/pseudo-class, type] — CSS specificity, enough of it for
+   the selectors on this page. Pseudo-ELEMENTS are stripped before pseudo-classes
+   so `::before` is not counted as a class. */
+function specOf(sel) {
+  let s = ' ' + sel.trim() + ' ', a = 0, c = 0, e = 0;
+  s = s.replace(/\[[^\]]*\]/g, () => { c++; return ' '; });
+  s = s.replace(/::[a-z-]+/g, () => { e++; return ' '; });
+  s = s.replace(/:[a-z-]+(\([^)]*\))?/g, () => { c++; return ' '; });
+  s = s.replace(/#[\w-]+/g, () => { a++; return ' '; });
+  s = s.replace(/\.[\w-]+/g, () => { c++; return ' '; });
+  s.split(/[\s>+~]+/).forEach((x) => { if (/^[a-zA-Z][\w-]*$/.test(x)) e++; });
+  return [a, c, e];
+}
+/* Which rule the browser would land on for this element in its focus-visible
+   state: highest specificity, and the later one on a tie. */
+function winningOutlineRule(W, el) {
+  const hits = [];
+  let order = 0;
+  const walk = (rules) => {
+    for (const r of rules) {
+      order++;
+      if (r.cssRules && !r.selectorText) { walk(r.cssRules); continue; }
+      if (!r.selectorText || !r.style) continue;
+      if (!r.style.outline && !r.style.outlineStyle && !r.style.outlineWidth) continue;
+      for (const raw of r.selectorText.split(',')) {
+        const sel = raw.trim();
+        /* Ask whether the ELEMENT matches, with the state pseudo-class removed —
+           then rank by the selector as it is actually written, which is where
+           that pseudo-class earns its point. */
+        const base = sel.replace(/:focus-visible\b/g, '').trim() || '*';
+        let m = false;
+        try { m = el.matches(base); } catch (err) { m = false; }
+        if (m) hits.push({ sel: sel, order: order, spec: specOf(sel), style: r.style });
+      }
+    }
+  };
+  for (const sheet of W.document.styleSheets) {
+    let rules; try { rules = sheet.cssRules; } catch (err) { continue; }
+    walk(rules);
+  }
+  hits.sort((x, y) => (x.spec[0] - y.spec[0]) || (x.spec[1] - y.spec[1])
+    || (x.spec[2] - y.spec[2]) || (x.order - y.order));
+  return hits[hits.length - 1] || null;
+}
+
+/* A shorthand holding a var() cannot be decomposed, so `outlineWidth` and
+   friends come back EMPTY for the ring rule while `outline: none` decomposes
+   perfectly — read the whole declaration back as text and there is one answer
+   for both. Reading the longhands alone is how the first draft of this managed
+   to report "the ring is at least 2px" as a failure against the fixed page. */
+function outlineOf(st) {
+  const text = (st.outline
+    || [st.outlineWidth, st.outlineStyle, st.outlineColor]
+      .filter((v) => v && v !== 'initial').join(' ')).trim();
+  const px = /(?:^|\s)(\d*\.?\d+)px/.exec(text);
+  return { text: text, width: px ? parseFloat(px[1]) : 0,
+           isNone: /(^|\s)none(\s|$)/.test(text) };
+}
+
+t('every box the calculator is driven from wins a ring, not an `outline: none`', () => {
   const W = wc, d = W.document;
-  const ids = ['jackpot-input', 'lump-input', 'npeople'];
-  ids.forEach((id) => {
+  ['jackpot-input', 'lump-input', 'npeople'].forEach((id) => {
     const el = d.getElementById(id);
-    ok(el, id + ' is on the page at all');
-    el.blur();
-    el.focus();
-    ok(el.matches(':focus-visible'),
-      id + ' counts as keyboard-focused — a text box always does, which is what '
-      + 'lets this be checked without a synthetic keyboard');
-    const cs = W.getComputedStyle(el);
-    ok(cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2,
-      id + ' draws a ring of at least 2px, not just a 1.5px underline: '
-        + cs.outlineStyle + ' ' + cs.outlineWidth);
-    ok(parseFloat(cs.outlineOffset) > 0,
-      id + '\u2019s ring stands off the box rather than sitting on its own border');
-    el.blur();
+    ok(el, id + ' is on the page at all — without it the rest of this proves nothing');
+    const win = winningOutlineRule(W, el);
+    ok(win, id + ' is matched by some rule that sets an outline');
+    const o = outlineOf(win.style);
+    ok(!o.isNone,
+      id + ': the rule that WINS is `' + win.sel + '`, and it says outline: ' + o.text);
+    ok(o.width >= 2,
+      id + ': the ring is at least 2px, not the 1.5px underline left behind when '
+        + 'the base rule wins', o.text);
+    ok(/--focus-border/.test(o.text),
+      id + ': and it is the theme’s focus colour rather than one of its own', o.text);
   });
 });
-t('and it is the focus colour, not some colour of its own', () => {
+t('the ring stands off the box rather than sitting on its border', () => {
   const W = wc, d = W.document;
-  const want = W.getComputedStyle(d.documentElement)
-    .getPropertyValue('--focus-border').trim();
-  ok(want, 'the theme still defines --focus-border');
-  const el = d.getElementById('jackpot-input');
-  el.blur(); el.focus();
-  const got = W.getComputedStyle(el).outlineColor;
-  /* Compared as painted pixels: the token is a hex and the computed value is
-     rgb(), so the only honest comparison is through the same resolver. */
-  const probe = d.createElement('span');
-  probe.style.color = want;
-  d.body.appendChild(probe);
-  const resolved = W.getComputedStyle(probe).color;
-  probe.remove();
-  el.blur();
-  eq(got, resolved, 'the ring is --focus-border');
+  ['jackpot-input', 'lump-input', 'npeople'].forEach((id) => {
+    const win = winningOutlineRule(W, d.getElementById(id));
+    ok(win && parseFloat(win.style.outlineOffset) > 0,
+      id + ' offsets its ring, so it reads against the border already there',
+      win && win.style.outlineOffset);
+  });
 });
 
 group('Select-on-focus versus a number field’s spin arrows');
