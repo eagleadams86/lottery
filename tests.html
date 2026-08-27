@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 158;
+const EXPECTED = 160;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -1057,6 +1057,58 @@ t('anything that is not one of ours is refused', () => {
   eq(wp.readShare('#other=1'), null);
   eq(wp.readShare('#s=not-base64!!!'), null);
   eq(wp.readShare('#s=' + btoa('{"v":99}')), null, 'a payload from a newer build');
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   The live T-bill note must not move the page when it arrives.
+
+   `#tb-src` is EMPTY until the Treasury fetch returns — one to three seconds
+   after load — and then applyTbill() writes "live · Aug 26" into it. It sits
+   inline in a `width: 145px; flex-shrink: 0` label that already holds "T-bill
+   yield", so it had nowhere to go: the label wrapped to two lines, the row grew
+   19.5px, and every section below it — the waterfall, the projection, the whole
+   lower half — jumped down the page while somebody was reading it. It broke
+   mid-phrase too, leaving "26" alone on the second line.
+
+   Nothing about that is visible in a screenshot taken before the fetch lands,
+   and nothing about it is visible in one taken after. Only the two together
+   say it, which is why this measures BOTH states rather than looking at either.
+   Found 2026-08-26 while chasing something else entirely: a button appeared to
+   move when it took focus, and it turned out the page had simply grown under it
+   at that moment. */
+group('The live rate note arrives without moving the page');
+t('filling #tb-src changes nothing about the layout', () => {
+  const d = wp.document;
+  const src = d.getElementById('tb-src');
+  ok(src, 'the rate-source note is on the page at all');
+  const label = d.getElementById('sl-tb').closest('.sl-row').querySelector('label');
+  const was = src.textContent;
+  const measure = () => ({
+    doc: d.documentElement.scrollHeight,
+    label: Math.round(label.getBoundingClientRect().height * 10) / 10,
+  });
+  try {
+    src.textContent = '';
+    const empty = measure();
+    /* The exact string applyTbill() writes, longest realistic month included. */
+    src.textContent = 'live \u00b7 Sept 26';
+    const filled = measure();
+    eq(filled.label, empty.label,
+      'the label is the same height before and after the rate lands');
+    eq(filled.doc, empty.doc,
+      'and so is the page — this is the 19.5px that used to shove the waterfall down');
+  } finally { src.textContent = was; }
+});
+t('the note keeps its own line, and never breaks mid-phrase', () => {
+  const st = wp.getComputedStyle(wp.document.getElementById('tb-src'));
+  eq(st.display, 'block', 'its own line, so the label above it never re-wraps');
+  eq(st.whiteSpace, 'nowrap', '"live \u00b7 Aug 26" wraps as one thing or not at all — it used to '
+    + 'break after "Aug" and orphan the "26"');
+  /* The reserved line is what makes the two states identical, and `1lh` is the
+     only unit that lands on it exactly — an `em` fallback was measured at 3.2px
+     short. If an engine ever ignores it, the test above is what says so. */
+  ok(parseFloat(st.minHeight) > 0,
+    'and the line it will need is reserved before it has anything in it', st.minHeight);
 });
 
 group('syncSlider — the typed-value boundary (portfolio)');

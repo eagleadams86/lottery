@@ -242,7 +242,26 @@ header { position:sticky; top:0; z-index:20; background:var(--surface);
 footer { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
 footer .footnotes { flex:1 1 320px; min-width:0; }
 footer .applink { margin:0 0 4px auto; text-decoration:none; }
-.rate-src { font-size:var(--fs-xs); font-weight:400; color:var(--text3); text-transform:none; letter-spacing:0; margin-left:6px; }
+/* ── The rate note keeps its own line, and keeps it from first paint ─────────
+   This span is EMPTY until the Treasury fetch returns, one to three seconds
+   after load, and then applyTbill() writes "live · Aug 26" into it. Inline in a
+   `width:145px; flex-shrink:0` label that already holds "T-bill yield", it had
+   nowhere to go: the label wrapped from one line to two, the row grew 19.5px,
+   and everything below it — five sections and the whole waterfall — jumped down
+   the page while somebody was reading it. It also broke mid-phrase, orphaning
+   "26" on the second line.
+
+   So the note is its own block, it never breaks (`nowrap`), and the line it
+   will need is reserved BEFORE it has anything in it. `1lh` is exactly one line
+   box of this element; an `em` fallback was measured and left a 3.2px shift
+   behind, which is not worth having — better one honest unit that every engine
+   these pages run on supports, with tests.html measuring the empty and filled
+   states at four widths in case that ever stops being true.
+
+   Widening the label instead was measured and rejected: at 200px it takes the
+   range slider to 21px at 700px wide and to ZERO at 320px. */
+.rate-src { font-size:var(--fs-xs); font-weight:400; color:var(--text3); text-transform:none;
+  letter-spacing:0; display:block; white-space:nowrap; min-height:1lh; }
 /* Each section title is an <h2> wrapping a real <button>: the heading gives
    screen readers a navigable outline, the button makes it keyboard-operable.
    Both are stripped back to look exactly like the plain label they replaced. */
