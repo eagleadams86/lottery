@@ -1825,8 +1825,16 @@ window.addEventListener('hashchange', () => {
    A PLAIN NUMBER IS LEFT ALONE, and that exception is the whole reason this is
    two tests rather than one: `-` leads the risky set, so defusing on the first
    character alone would put an apostrophe in front of every negative figure in
-   the table and hand the spreadsheet a column of text. */
-var FORMULA_LEAD = /^[=+@-]/, PLAIN_NUMBER = /^[+-]?[0-9]+(\.[0-9]+)?$/;
+   the table and hand the spreadsheet a column of text.
+
+   The lead set is OWASP's full list — `=` `+` `-` `@` TAB CR — not the four
+   printable ones. A cell opening with a tab or a carriage return is the same
+   attack wearing a coat: some readers strip the whitespace and then find a
+   formula underneath. Neither can begin a number, so the carve-out above is
+   untouched by their being here. This is the family's one CSV rule; the same
+   two tests are in Flow Metrics, Golf Handicap, PAPTrack, Sprint Predictability
+   and the starter, and a change to it belongs in all seven. */
+var FORMULA_LEAD = /^[=+@\-\t\r]/, PLAIN_NUMBER = /^[+-]?[0-9]+(\.[0-9]+)?$/;
 function csvCell(v){
   var s = String(v == null ? '' : v);
   if (FORMULA_LEAD.test(s) && !PLAIN_NUMBER.test(s)) s = "'" + s;

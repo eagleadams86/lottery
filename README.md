@@ -24,7 +24,7 @@ right instruction — update the file too, in all four repos that carry it.
 | `sw-kill.js` | The escape hatch — copy it over `sw.js` and push to uninstall every installed worker. |
 | `ny-lottery-calculator.html` | After-tax lottery take-home calculator with live jackpots and winning numbers |
 | `lottery-portfolio.html` | What-if model of investing the lump sum as a tax-aware portfolio |
-| `chart.min.js` | Chart.js 4.4.1, vendored (no CDN) — byte-identical to the copies in Flow Metrics and Money Map. Third-party: never hand-edit it, and if it is ever updated, update all three and this table together |
+| `chart.min.js` | Chart.js 4.4.1, vendored (no CDN) — byte-identical to the copies in Flow Metrics, Money Map and Sprint Predictability. Third-party: never hand-edit it, and if it is ever updated, update all four and this table together |
 | `tax.js` | The tax engine both pages share — the 2026 federal, New York, NYC and Yonkers rate tables, the bracket maths, New York's tax-benefit recapture, and the annuity schedules. One file rather than two copies of the same tax law, because rates move every year and a page that missed the edit would go on quoting last year's answer with no sign anything was wrong |
 | `theme.css` | Shared color tokens + 4 theme palettes, linked by both pages. Generated in the claude-theme-pack repo (the source of truth for all apps); every color pair is script-verified to meet WCAG AA contrast, and the portfolio's five asset colours come from its categorical `--series-*` ramp |
 | `favicon.ico` | The icon all three pages share — the fallback a browser fetches from the site root on its own |

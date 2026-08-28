@@ -2308,10 +2308,16 @@ function csvCases(label, W) {
   t(label + ': a leading = is defused', () => {
     eq(W().csvCell('=1+1'), '"\'=1+1"');
   });
-  t(label + ': the other three formula leads are defused', () => {
+  t(label + ': the other five formula leads are defused', () => {
     eq(W().csvCell('+SUM(A1)'), '"\'+SUM(A1)"');
     eq(W().csvCell('@SUM(A1)'), '"\'@SUM(A1)"');
     eq(W().csvCell('-1+1'), '"\'-1+1"');
+    /* TAB and CR ride in the lead set beside the four printable characters: a
+       reader that strips the whitespace finds the formula underneath. Neither
+       can begin a number, so the carve-out below is untouched by their being
+       there. */
+    eq(W().csvCell('\tHYPERLINK(x)'), '"\'\tHYPERLINK(x)"');
+    eq(W().csvCell('\rcmd'), '"\'\rcmd"');
   });
   /* The reason this is two tests and not one: `-` leads the risky set, and every
      negative figure in these tables starts with it. Defusing on the first
