@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 163;
+const EXPECTED = 165;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -2576,6 +2576,58 @@ t('a line chart answers a hover anywhere in the year, not only on the point', as
     const b = bar.getDatasetMeta(0).data[2];
     ok(hits(bar, b.x, b.y) > 0, 'and the bar still answers when the pointer is on it');
   } finally { f.remove(); }
+});
+
+t('every tooltip wears the theme, not Chart.js’s black bubble', () => {
+  /* Asked for on 2026-08-30, together with Money Map's. Chart.js's own tooltip
+     is a hard-coded 80%-black box with white text: legible on Midnight, and the
+     wrong object on Light and Sepia — a slab of near-black over a
+     paper-coloured card, the one thing on the page not following the theme
+     picker. Flow Metrics and Sprint Predictability have shipped these six values
+     for a long time.
+
+     Read from the SHARED frame, which is 1x1px: nothing here is a measurement,
+     only resolved options, and a CSS variable resolves the same at any size. */
+  /* Through chartIn(), not through c1..c4: those are top-level `let`s, which —
+     unlike a function declaration — are not properties of the frame's window, so
+     the suite cannot see them. chartIn is the page's own lookup, written for the
+     full-screen button and reused here. */
+  const chartFor = (id) => {
+    const cv = wp.document.getElementById(id);
+    return cv && wp.chartIn(cv.closest('.chart-card'));
+  };
+  const charts = [['income by holding', chartFor('c1')], ['allocation', chartFor('c2')],
+                  ['10-year growth', chartFor('c3')], ['drawdown', chartFor('c4')]];
+  const theme = wp.tipTheme();
+  ok(theme.backgroundColor, 'the page hands back a themed tooltip at all',
+     JSON.stringify(theme));
+  charts.forEach(([label, chart]) => {
+    ok(chart, label + ' is drawn');
+    const t = chart.options.plugins.tooltip;
+    ok(!/rgba\(0,\s*0,\s*0/.test(String(t.backgroundColor)),
+       label + ' is off Chart.js\'s hard-coded black bubble', String(t.backgroundColor));
+    eq([t.backgroundColor, t.titleColor, t.bodyColor, t.borderColor, t.borderWidth, t.padding],
+       [theme.backgroundColor, theme.titleColor, theme.bodyColor, theme.borderColor, 1, 10],
+       label + ' paints from the one block, so none of the four can drift alone:');
+    /* Merged, not assigned over: each of these charts writes its own `label`
+       callback, and losing it would leave the tooltip reading "12345" with no
+       idea which line it belongs to. */
+    ok(typeof t.callbacks.label === 'function',
+       label + ' still has its own label callback');
+  });
+});
+
+t('the tooltip colours are the pack’s, not invented here', () => {
+  ok(PORT_SRC, 'lottery-portfolio.html was not read — loadSources must run first');
+  const src = stripHtmlComments(PORT_SRC);
+  for (const tok of ['--surface-alt', '--text-primary', '--text-secondary', '--border-strong']) {
+    ok(src.includes(`cssVar('${tok}')`), tok + ' is read from the theme pack');
+  }
+  /* One function, four call sites: four copies of six values is four places for
+     the next palette change to be forgotten. */
+  ok(/function tipTheme\(\)/.test(src), 'and they live in one function');
+  eq((src.match(/tipTheme\(\)/g) || []).length, 5,
+     'declared once and used by all four charts:');
 });
 
 t('the full-screen button is furniture, so it never prints', () => {

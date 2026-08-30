@@ -1263,6 +1263,33 @@ if (printMedia && printMedia.addEventListener)
 
 function tc() { return cssVar('--chart-tick'); }
 function gc() { return cssVar('--chart-grid'); }
+/* ── The tooltip wears the theme (2026-08-30) ────────────────────────────────
+   Chart.js's own bubble is a hard-coded 80%-black box with white text. It is
+   legible on Midnight and it is the wrong object on Light and Sepia — a slab of
+   near-black over a paper-coloured card, the one thing on the page that did not
+   follow the theme picker. Flow Metrics and Sprint Predictability have themed
+   theirs for a long time; asked for here and in Money Map on 2026-08-30, and
+   every value below is copied from them property by property.
+
+   `--surface-alt` is the pack's own name for the shade; Sprint Predictability
+   writes `--bg-card-alt`, which theme.css declares as an alias of it in one
+   place, so the two apps paint the same colour under different names. Colour
+   boxes are LEFT ON, unlike Flow Metrics, whose charts are mostly one series:
+   the drawdown lists three lines at once and the swatch is what ties each
+   figure to the line it came from.
+
+   Read at the moment a chart is built, like tc() and gc() beside it — a theme
+   change destroys and rebuilds all four (see `rebuild` in render). */
+function tipTheme() {
+  return {
+    backgroundColor: cssVar('--surface-alt'),
+    titleColor: cssVar('--text-primary'),
+    bodyColor: cssVar('--text-secondary'),
+    borderColor: cssVar('--border-strong'),
+    borderWidth: 1,
+    padding: 10,
+  };
+}
 /* SIZES are read back the same way, and for a stronger reason than the colours.
    Chart text is painted onto a canvas, so it inherits nothing — every size in a
    Chart.js config is a NUMBER OF PIXELS, which is the one thing the rem ramp
@@ -1528,7 +1555,8 @@ function render() {
       },
       options: {
         responsive:true, maintainAspectRatio:false, animation:false,
-        plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${fm(c.parsed.y)}` }}},
+        plugins: { legend:{display:false}, tooltip: Object.assign(tipTheme(),
+                   { callbacks:{ label: c => `${c.dataset.label}: ${fm(c.parsed.y)}` }})},
         scales: {
           x: { stacked:true, grid:{display:false}, ticks:{ font:{ size: fsPx('xs') }, color:tc() }},
           y: { stacked:true, grid:{color:gc()},    ticks:{ font:{ size: fsPx('xs') }, color:tc(), callback: v => fm(v) }}
@@ -1563,7 +1591,8 @@ function render() {
       },
       options: {
         responsive:true, maintainAspectRatio:false, cutout:'64%', animation:false,
-        plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.label}: ${fm(c.raw)}` }}}
+        plugins: { legend:{display:false}, tooltip: Object.assign(tipTheme(),
+                   { callbacks:{ label: c => `${c.label}: ${fm(c.raw)}` }})}
       }
     });
   } else {
@@ -1610,7 +1639,8 @@ function render() {
            the comparison both of these charts are drawn to make — weak against
            chosen against strong, and the equity bucket against the total. */
         interaction: { mode: 'index', intersect: false },
-        plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${fm(c.raw)}` }}},
+        plugins: { legend:{display:false}, tooltip: Object.assign(tipTheme(),
+                   { callbacks:{ label: c => `${c.dataset.label}: ${fm(c.raw)}` }})},
         scales: {
           x: { grid:{display:false}, ticks:{ font:{ size: fsPx('xs') }, color:tc() }},
           y: { grid:{color:gc()},    ticks:{ font:{ size: fsPx('xs') }, color:tc(), callback: v => fmShort(v) }}
@@ -1686,7 +1716,8 @@ function render() {
            needed it most: its three lines are drawn with no points at all. */
         interaction: { mode: 'index', intersect: false },
         plugins: { legend: { display: false },
-                   tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fm(c.raw)}` } } },
+                   tooltip: Object.assign(tipTheme(),
+                     { callbacks: { label: c => `${c.dataset.label}: ${fm(c.raw)}` } }) },
         scales: {
           x: { grid: { display: false }, ticks: { font:{ size: fsPx('xs') }, color: tc(), maxTicksLimit: 9 } },
           y: { grid: { color: gc() }, beginAtZero: true,

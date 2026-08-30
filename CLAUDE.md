@@ -345,6 +345,29 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   jackpots, deployed separately and nothing to do with the browser. `sw.js` is the service
   worker in the page.
 
+## The chart tooltip wears the theme (2026-08-30)
+
+**`tipTheme()` — six values, `Object.assign`ed under each of the four charts'
+own tooltip options.** Chart.js's own bubble is a hard-coded 80%-black box with
+white text: legible on Midnight, and the wrong object on Light and Sepia — a
+slab of near-black over a paper-coloured card, the one thing on the page not
+following the theme picker. Flow Metrics and Sprint Predictability have shipped
+these values for a long time; ported here and to Money Map on 2026-08-30.
+
+- **`--surface-alt` / `--text-primary` / `--text-secondary` / `--border-strong`,
+  `borderWidth: 1`, `padding: 10`.** Sprint Predictability writes
+  `--bg-card-alt`, which `theme.css` declares as an alias of `--surface-alt` in
+  one place — the same colour under two names. No new colour is invented.
+- **The theme is the BASE and each chart's own object goes over it**, so the
+  `label` callback every one of these writes is never replaced. Losing it would
+  leave a tooltip reading a bare figure with nothing saying which line it is.
+- One function, four call sites: four copies of six values would be four places
+  for the next palette change to be forgotten. The suite counts the call sites.
+- Read when a chart is built, like `tc()` and `gc()` beside it — a theme change
+  destroys and rebuilds all four (see `rebuild` in `render`).
+- **Colour boxes stay on**, unlike Flow Metrics (mostly single-series): the
+  drawdown lists three lines at once and the swatch ties each figure to its line.
+
 ## Hovering a chart (2026-08-30)
 
 **The two LINE charts hover by column: `interaction: { mode: 'index',
