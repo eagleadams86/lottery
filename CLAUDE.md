@@ -345,6 +345,24 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   jackpots, deployed separately and nothing to do with the browser. `sw.js` is the service
   worker in the page.
 
+## Chart text is on the ramp, and in the page's face (2026-08-30)
+
+**`applyChartTextDefaults()` sets four Chart.js defaults before the four charts
+are built: `color`, `borderColor`, `font.family` and `font.size = fsPx('xs')`.**
+Sprint Predictability's block, ported the same day the family's tooltips were
+swept.
+
+This page already passed `font:{ size: fsPx('xs') }` to every axis it NAMES.
+What that left behind were the two it does not name — **the tooltip and the
+legend**, at Chart.js's built-in 12px — and all of them in Chart.js's built-in
+Helvetica rather than the face the page is set in.
+
+- **Set BEFORE the constructions**, inside `render()`'s `rebuild` branch: Chart.js
+  copies the defaults into a chart at that moment and never looks at them again,
+  and `rebuild` is also the branch a theme change goes down.
+- The explicit `font:{ size }` on the axes is the same value and is left alone.
+- `xs` is the chrome step — what ticks, legends and tooltips are family-wide.
+
 ## The chart tooltip wears the theme (2026-08-30)
 
 **`tipTheme()` — six values, `Object.assign`ed under each of the four charts'

@@ -1280,6 +1280,26 @@ function gc() { return cssVar('--chart-grid'); }
 
    Read at the moment a chart is built, like tc() and gc() beside it — a theme
    change destroys and rebuilds all four (see `rebuild` in render). */
+/* ── Chart text, on the ramp and in the app's own face (2026-08-30) ─────────
+   Sprint Predictability's four lines, ported so that a chart here and a chart in
+   a sibling are the same text beside each other. This page already passed
+   `font:{ size: fsPx('xs') }` to every axis it names, which left the two it does
+   NOT name — the TOOLTIP and the legend — at Chart.js's built-in 12px, and left
+   all of them in Chart.js's built-in Helvetica rather than the face the page is
+   set in.
+
+   Global rather than per-chart because Chart.js reads these at construction and
+   all four charts want the same answer; the explicit `font:{ size }` on the axes
+   is the same value and is left alone. `xs` is the chrome step — what ticks,
+   legends and tooltips are everywhere in the family. Called from render() just
+   before the four are built, which is also where a theme change rebuilds them. */
+function applyChartTextDefaults() {
+  Chart.defaults.color = tc();
+  Chart.defaults.borderColor = gc();
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  Chart.defaults.font.size = fsPx('xs');
+}
+
 function tipTheme() {
   return {
     backgroundColor: cssVar('--surface-alt'),
@@ -1537,6 +1557,9 @@ function render() {
     [c1, c2, c3, c4].forEach(c => c && c.destroy());
     c1 = c2 = c3 = c4 = null;
     _chartsTheme = themeNow;
+    /* Before any of the four are constructed, because Chart.js copies the
+       defaults into a chart at that moment and never looks at them again. */
+    applyChartTextDefaults();
   }
 
   const afterData = rows.map(r => Math.round(r.after));

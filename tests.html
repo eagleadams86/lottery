@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 165;
+const EXPECTED = 166;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -2614,6 +2614,32 @@ t('every tooltip wears the theme, not Chart.js’s black bubble', () => {
        idea which line it belongs to. */
     ok(typeof t.callbacks.label === 'function',
        label + ' still has its own label callback');
+  });
+});
+
+t('chart text is on the ramp, and in the page’s own face', () => {
+  /* Chart text is painted onto a canvas, so it inherits nothing: every size in a
+     Chart.js config is a raw number of pixels, which is the one thing the rem
+     ramp exists to stop a page containing. This page already passed
+     `font:{ size: fsPx('xs') }` to every axis it NAMES — which left the two it
+     does not name, the tooltip and the legend, at Chart.js's built-in 12px, and
+     left all of them in Chart.js's built-in Helvetica rather than the face the
+     page is set in. Swept across the family on 2026-08-30. */
+  const ramp = wp.fsPx('xs');
+  ok(ramp > 0, 'the page resolves the chrome step to pixels', ramp);
+  eq(wp.Chart.defaults.font.size, ramp, 'the chart default is the ramp’s xs step:');
+  eq(wp.Chart.defaults.font.family, wp.getComputedStyle(wp.document.body).fontFamily,
+     'and the face is the page’s, not Chart.js’s Helvetica:');
+  const chartFor = (id) => {
+    const cv = wp.document.getElementById(id);
+    return cv && wp.chartIn(cv.closest('.chart-card'));
+  };
+  ['c1', 'c2', 'c3', 'c4'].forEach((id) => {
+    const t = chartFor(id).options.plugins.tooltip;
+    eq([t.bodyFont.size, t.titleFont.size], [ramp, ramp],
+       id + '’s tooltip is drawn at it — the default has to be set BEFORE the chart '
+       + 'is constructed, because Chart.js copies it in at that moment:');
+    eq(t.bodyFont.family, wp.Chart.defaults.font.family, id + ' is in the same face:');
   });
 });
 
