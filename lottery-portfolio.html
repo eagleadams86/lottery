@@ -1593,6 +1593,23 @@ function render() {
       },
       options: {
         responsive:true, maintainAspectRatio:false, animation:false,
+        /* ── Hover anywhere in a year's column ────────────────────────────
+           Chart.js defaults to `nearest` with `intersect: true`, which means a
+           tooltip appears only when the pointer is ON a point. These are LINE
+           charts drawn over 11 and 41 years: the 10-year points are 3px across,
+           and the drawdown's are `pointRadius: 0` — invisible — so the reader
+           had to hit a target that on one chart is small and on the other is not
+           drawn at all. Measured on 2026-08-30: a pointer anywhere between two
+           points, or anywhere else in the column, resolved to nothing.
+
+           `index` with `intersect: false` is the family's rule for a line chart
+           (Money Map states it: "a 3px point is a target nobody should have to
+           hit"; the bar and the donut here stay on the default, because a bar
+           and an arc ARE their own targets). It also reads out EVERY line for
+           that year at once rather than the one nearest the pointer, which is
+           the comparison both of these charts are drawn to make — weak against
+           chosen against strong, and the equity bucket against the total. */
+        interaction: { mode: 'index', intersect: false },
         plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${fm(c.raw)}` }}},
         scales: {
           x: { grid:{display:false}, ticks:{ font:{ size: fsPx('xs') }, color:tc() }},
@@ -1665,6 +1682,9 @@ function render() {
                 tension: 0.25, pointRadius: 0, borderWidth: d.dash.length ? 1.5 : 2.5 })) },
       options: {
         responsive: true, maintainAspectRatio: false, animation: false,
+        /* The same rule as the growth chart above, and this is the chart that
+           needed it most: its three lines are drawn with no points at all. */
+        interaction: { mode: 'index', intersect: false },
         plugins: { legend: { display: false },
                    tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fm(c.raw)}` } } },
         scales: {

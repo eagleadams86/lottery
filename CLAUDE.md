@@ -345,6 +345,26 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   jackpots, deployed separately and nothing to do with the browser. `sw.js` is the service
   worker in the page.
 
+## Hovering a chart (2026-08-30)
+
+**The two LINE charts hover by column: `interaction: { mode: 'index',
+intersect: false }`.** Money Map states the family rule — "a 3px point is a
+target nobody should have to hit" — and both of these were on the Chart.js
+default (`nearest` / `intersect: true`), which answers only when the pointer is
+ON a point. `c3`'s points are 3px across; **`c4`'s are `pointRadius: 0`**, so its
+tooltip could only be summoned by landing on something that is not drawn. Measured
+before the change: a pointer between two points, or anywhere else in the column,
+resolved to nothing at all.
+
+Index mode also reads out EVERY line for that year rather than the nearest one,
+which is the comparison both charts exist to make — weak against chosen against
+strong, and the equity bucket against the total.
+
+**`c1` (bars) and `c2` (the donut) keep the default, deliberately**: a bar and an
+arc are their own targets, and index mode there would answer about a whole column
+when the reader is pointing at one specific thing. The suite pins all four,
+including the regression — that the old options resolved zero at the same point.
+
 ## One chart, filling the window (2026-08-30)
 
 **Each of the portfolio's four chart cards carries a ⤢ button that lifts the card

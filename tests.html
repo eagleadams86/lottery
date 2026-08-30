@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 162;
+const EXPECTED = 163;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -2491,6 +2491,90 @@ t('a chart fills the window under a header that stays live', async () => {
     await new Promise((r) => setTimeout(r, 250));
     ok(growth.querySelector('.chart-max').getBoundingClientRect().width > 0,
        'and unfolding it offers the button again');
+  } finally { f.remove(); }
+});
+
+/* ────────────────────────────────────────────────────────── */
+group('Hovering a chart');
+
+/* Charles, 2026-08-30: "the chart tooltips in financial-plan are good — check
+   the rest of the family." Money Map's rule, stated in its own source, is that a
+   LINE chart hovers by column (`interaction: { mode: 'index', intersect: false }`)
+   because "a 3px point is a target nobody should have to hit", while a bar keeps
+   the default, because a bar IS its own target.
+
+   Both line charts here were on the default. The 10-year growth chart's points
+   are 3px across and the drawdown's are `pointRadius: 0` — not drawn at all — so
+   on that one the tooltip could only be summoned by landing on something
+   invisible, which is the same failure Money Map's retirement chart records
+   ("in practice it never appeared at all").
+
+   IT NEEDS A FRAME WITH A REAL SIZE: the resolution below is geometry, and the
+   suite's shared frames are 1x1px, so every coordinate read from them is zero. */
+t('a line chart answers a hover anywhere in the year, not only on the point', async () => {
+  const f = document.createElement('iframe');
+  f.setAttribute('data-lottery-tests', '');
+  f.setAttribute('aria-hidden', 'true');
+  f.style.cssText = 'position:absolute;left:-9999px;width:1280px;height:900px;border:0';
+  await new Promise((resolve) => {
+    f.onload = resolve;
+    f.src = 'lottery-portfolio.html?tips=' + Date.now();
+    document.body.appendChild(f);
+  });
+  try {
+    const W = f.contentWindow;
+    await new Promise((r) => setTimeout(r, 400));
+    const CH = W.Chart;
+    ok(CH && CH.Interaction, 'Chart.js exposes the interaction modes this reads');
+
+    /* What the chart would resolve for a pointer at (x, y) — the library's own
+       lookup, which is exactly what decides whether a tooltip appears. */
+    const hits = (chart, x, y, mode, intersect) => {
+      const o = chart.options.interaction || {};
+      const m = mode || o.mode || 'nearest';
+      const it = intersect === undefined ? o.intersect !== false : intersect;
+      return CH.Interaction.modes[m](
+        chart, { x, y, native: {}, type: 'mousemove' },
+        { intersect: it, axis: o.axis || 'x' }, false).length;
+    };
+    const mid = (chart) => {
+      const d = chart.getDatasetMeta(0).data;
+      const i = Math.floor(d.length / 2);
+      return { d, i, betweenX: (d[i].x + d[i + 1].x) / 2, betweenY: (d[i].y + d[i + 1].y) / 2 };
+    };
+
+    const lines = [['c3', W.c3, 2, 'the 10-year growth chart'],
+                   ['c4', W.c4, 3, 'the 40-year drawdown']];
+    lines.forEach(([id, chart, sets, label]) => {
+      ok(chart, label + ' is drawn');
+      const o = chart.options.interaction || {};
+      eq([o.mode, o.intersect], ['index', false], label + ' hovers by column:');
+      const m = mid(chart);
+      /* Between two points, and again high up in the column where no line runs
+         at all — both are places a reader's pointer lands and neither is on a
+         mark. */
+      eq(hits(chart, m.betweenX, m.betweenY), sets,
+         label + ' answers between two points, with every line for that year:');
+      eq(hits(chart, m.d[m.i].x, chart.chartArea.top + 12), sets,
+         label + ' answers anywhere in the column, not just on the line:');
+      /* The regression, stated rather than implied: this is what the reader had
+         before, and it is why the change was needed. */
+      eq(hits(chart, m.betweenX, m.betweenY, 'nearest', true), 0,
+         label + ' resolved NOTHING there under the Chart.js default, which is what '
+         + 'it shipped with:');
+    });
+
+    /* And the other half of Money Map's rule: a bar and an arc are their own
+       targets, so they keep the default. Changing those to index would read out
+       every series in the column for a chart where the reader is pointing at one
+       specific thing. */
+    const bar = W.c1, donut = W.c2;
+    eq((bar.options.interaction || {}).mode, undefined,
+       'the income bars keep the default — a bar is its own target:');
+    eq((donut.options.interaction || {}).mode, undefined,
+       'and so does the allocation donut:');
+    const b = bar.getDatasetMeta(0).data[2];
+    ok(hits(bar, b.x, b.y) > 0, 'and the bar still answers when the pointer is on it');
   } finally { f.remove(); }
 });
 
