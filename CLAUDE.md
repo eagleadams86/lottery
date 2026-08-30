@@ -345,6 +345,41 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   jackpots, deployed separately and nothing to do with the browser. `sw.js` is the service
   worker in the page.
 
+## One chart, filling the window (2026-08-30)
+
+**Each of the portfolio's four chart cards carries a ⤢ button that lifts the card
+into a fixed overlay filling the window under the header.** Flow Metrics' feature
+(2026-08-21); Money Map, Sprint Predictability and the starter carry it too, so a
+change to the behaviour belongs in all of them. It is NOT the Fullscreen API and
+NOT a modal `<dialog>`: the phrase that shaped it is "with the menu still
+visible", and both of those take the header away. `#chartMaxi` is an ordinary
+fixed div at z-index 15 against the header's 20, starting at `--maxi-top` (the
+header's MEASURED height) and outside `.app`, which goes `inert` while it is open.
+
+**The card is MOVED, not copied.** A theme change destroys and rebuilds all four
+charts into the same canvases; a second canvas up there would leave those redraws
+painting the copy left on the page. A hidden `.chart-slot` holds the card's seat.
+Nothing here rewrites the cards' markup, so unlike Money Map and Sprint
+Predictability this needs no suspend/resume around a render — the buttons are
+built once and only re-dressed. `syncMaxiButtons()` still runs at the end of
+`render()` and from `toggleSection()`, because both change what is drawable.
+
+Three things worth keeping:
+- **The name is read while the card is at home, and remembered on it.** Two of
+  the four cards have no heading of their own — the SECTION above them names them
+  — and a maximised card has been moved out of that section, so `closest` finds
+  nothing and the button said "Leave full screen — this chart" at the moment it
+  most needed to say what you were looking at. `card.dataset.chartName`.
+- **`.chart-max svg { pointer-events: none; }`** — pressing the button rewrites
+  its own innerHTML to the arrows-in icon, which DETACHES whatever the pointer
+  landed on, and a detached node answers null to every `closest()` a delegated
+  handler further up asks. Money Map's card heading acted on that null and folded
+  the card instead of filling the window.
+- **`.chart-max[hidden] { display: none; }`** — `.chart-max` declares
+  `display: flex`, and an author rule beats the browser's own
+  `[hidden] { display: none }` whatever the specificities. **A test that asserts
+  `btn.hidden` is deaf to this**: read the computed display.
+
 ## Fields (2026-08-20)
 
 - **A box you land on has its contents SELECTED**, so typing replaces the figure

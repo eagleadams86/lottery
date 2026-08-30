@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 160;
+const EXPECTED = 162;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -2338,6 +2338,174 @@ function csvCases(label, W) {
 }
 csvCases('the calculator', () => wc);
 csvCases('the portfolio', () => wp);
+
+/* ────────────────────────────────────────────────────────── */
+group('One chart, filling the window');
+
+/* Flow Metrics' feature (2026-08-21), ported to the portfolio on 2026-08-30 —
+   every app in the family that draws a chart carries it now. The phrase that
+   shaped it, "with the menu still visible", is the whole design: it is why this
+   is a plain overlay under a sticky header rather than the Fullscreen API or a
+   modal <dialog>, both of which take the header away.
+
+   IT NEEDS ITS OWN FRAME. The suite's shared frames are 1x1px, so every
+   rectangle read from them is zero and "the chart got taller" would pass on a
+   chart that was never laid out. This one is 1280x900. */
+t('a chart fills the window under a header that stays live', async () => {
+  const f = document.createElement('iframe');
+  f.setAttribute('data-lottery-tests', '');   // or the page busts out of the frame
+  f.setAttribute('aria-hidden', 'true');
+  f.style.cssText = 'position:absolute;left:-9999px;width:1280px;height:900px;border:0';
+  await new Promise((resolve) => {
+    f.onload = resolve;
+    f.src = 'lottery-portfolio.html?maxi=' + Date.now();
+    document.body.appendChild(f);
+  });
+  try {
+    const W = f.contentWindow, D = W.document;
+    await new Promise((r) => setTimeout(r, 300));
+
+    const overlay = D.getElementById('chartMaxi');
+    ok(overlay, 'the page carries the overlay a maximised card is moved into');
+    eq(W.getComputedStyle(D.querySelector('header')).zIndex, '20',
+       'the header sits on a layer of its own');
+    ok(Number(W.getComputedStyle(overlay).zIndex) < 20,
+       'and the overlay is painted UNDER it, so the theme picker stays visible and '
+       + 'clickable', W.getComputedStyle(overlay).zIndex);
+    ok(!D.querySelector('.app').contains(overlay),
+       'the overlay is outside .app — which is marked inert while it is open');
+    eq(overlay.tagName, 'DIV',
+       'and it is a plain div: a real <dialog> is promoted to the top layer, which would '
+       + 'paint over the very header this exists to keep');
+
+    const cards = ['c1', 'c2', 'c3', 'c4'].map((id) => D.getElementById(id).closest('.chart-card'));
+    eq(D.querySelectorAll('.chart-max').length, 4,
+       'all four charts carry a button, and nothing else does');
+    /* The COMPUTED DISPLAY, never the `hidden` property. `.chart-max` declares
+       `display: flex`, and an author rule beats the browser's own
+       `[hidden] { display: none }` whatever their specificities — so the
+       attribute reads true over a button anybody can see. That is how a folded
+       card in Money Map came to offer a button that did nothing (2026-08-30). */
+    const shown = (btn) => W.getComputedStyle(btn).display !== 'none';
+    ok(cards.every((c) => shown(c.querySelector('.chart-max'))),
+       'and every one is on offer, because every one has a chart under it');
+
+    /* Both charts with no heading of their own are named by their SECTION, and
+       a maximised card has been moved out of that section — so the name is read
+       while the card is still at home and remembered on it. Without that, the
+       button said "Leave full screen — this chart" at the moment it most needed
+       to say what you were looking at. */
+    eq(cards[2].dataset.chartName, '10-Year Growth Projection (Equity Bucket)',
+       'a card with no heading of its own takes the name off its section');
+    eq(cards[3].dataset.chartName, 'Does It Last?', 'and so does the drawdown chart');
+
+    /* ── A REAL press, not a synthetic one ──────────────────────────────────
+       `btn.click()` makes the BUTTON the target and is blind to what broke this
+       in Money Map on the day it shipped: a real pointer lands on the `<path>`
+       inside the icon, the handler rewrites that icon, and the detached path
+       answers null to every `closest()` a delegated handler further up asks.
+       `pointer-events: none` on the icon is what makes the button the smallest
+       thing under the pointer. */
+    const pressTarget = (card) => {
+      const b = card.querySelector(':scope > .chart-max');
+      b.scrollIntoView({ block: 'center' });
+      const r = b.getBoundingClientRect();
+      return D.elementFromPoint(Math.round(r.left + r.width / 2),
+                                Math.round(r.top + r.height / 2));
+    };
+    const growth = cards[2];
+    ok(pressTarget(growth) === growth.querySelector('.chart-max'),
+       'what a pointer hits in the middle of the button IS the button, so rewriting the '
+       + 'icon mid-click cannot orphan the event target',
+       (pressTarget(growth) || {}).tagName);
+
+    const home = { parent: growth.parentElement,
+                   at: [...growth.parentElement.children].indexOf(growth) };
+    const live = W.chartIn(growth);
+    ok(live, 'the card has a live Chart.js instance behind it');
+    pressTarget(growth).dispatchEvent(new W.MouseEvent('click', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 250));
+    ok(growth.parentElement === overlay, 'pressing it moves the card into the overlay');
+    ok(W.maxiCard() === growth, 'and the app knows which card is up');
+    ok(W.chartIn(growth) === live, 'the same chart instance — the card was moved, not copied');
+    ok(live.canvas === growth.querySelector('canvas'),
+       'and it still owns the canvas that is now on screen');
+    ok(D.querySelector('.app').inert, 'the page underneath is out of the tab order');
+    ok(D.body.classList.contains('maxi-open'), 'and it is not scrolling behind the chart');
+    eq(W.getComputedStyle(D.documentElement).getPropertyValue('--maxi-top').trim(),
+       Math.round(D.querySelector('header').getBoundingClientRect().height) + 'px',
+       'the overlay starts exactly where the header ends — measured, never guessed');
+    ok(/Leave full screen — 10-Year Growth/.test(
+         growth.querySelector('.chart-max').getAttribute('aria-label')),
+       'the button says how to get out, and what of',
+       growth.querySelector('.chart-max').getAttribute('aria-label'));
+    /* THE CHART ACTUALLY GOT BIGGER. Without this the group could pass on a card
+       moved into a box with no height — and `.chart-card` clips its overflow,
+       which is the other way that happens. */
+    const boxH = growth.querySelector('.chartbox').getBoundingClientRect().height;
+    ok(boxH > 400, 'and the chart box fills what is left of the window', Math.round(boxH));
+
+    /* A THEME CHANGE REBUILDS ALL FOUR CHARTS, and the card up here has to be the
+       one being drawn into — that is the whole reason it is moved rather than
+       copied, and the theme picker is in the header this overlay leaves live. */
+    const sel = D.getElementById('theme-select');
+    const wasTheme = sel.value;
+    sel.value = sel.value === 'light' ? 'dark' : 'light';
+    sel.dispatchEvent(new W.Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 500));
+    ok(W.maxiCard() === growth, 'a theme change leaves the chart up');
+    ok(W.chartIn(growth) !== live, 'and rebuilds it');
+    ok(W.chartIn(growth).canvas === growth.querySelector('canvas'),
+       'into the canvas that is on screen, not a copy left behind on the page');
+    sel.value = wasTheme;
+    sel.dispatchEvent(new W.Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 400));
+
+    pressTarget(growth).dispatchEvent(new W.MouseEvent('click', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 250));
+    ok(growth.parentElement === home.parent, 'pressing it again puts the card back');
+    eq([...growth.parentElement.children].indexOf(growth), home.at,
+       'in the same place on the page it came from');
+    eq(D.querySelectorAll('.chart-slot').length, 0, 'and the placeholder is cleared away');
+    ok(W.maxiCard() === null, 'nothing is maximised');
+    ok(!D.querySelector('.app').inert, 'the page is reachable again');
+    ok(!D.body.classList.contains('maxi-open'), 'and scrolling again');
+
+    /* Escape is the second way out; a click on the backdrop is the third, and is
+       this page's rule for every dialog — which is why the overlay keeps a
+       margin round the card for that click to land on. */
+    growth.querySelector('.chart-max').click();
+    await new Promise((r) => setTimeout(r, 200));
+    D.dispatchEvent(new W.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    ok(W.maxiCard() === null, 'Escape closes it');
+    ok(Number(W.getComputedStyle(overlay).paddingTop.replace('px', '')) > 0,
+       'and there is a margin round the card for a click-outside to land on');
+
+    /* A section folded up takes its chart with it, so the button goes too. */
+    W.toggleSection('growth');
+    await new Promise((r) => setTimeout(r, 250));
+    eq(Math.round(growth.querySelector('.chart-max').getBoundingClientRect().width), 0,
+       'a folded section offers no button — a button that does nothing is worse than '
+       + 'no button');
+    W.toggleSection('growth');
+    await new Promise((r) => setTimeout(r, 250));
+    ok(growth.querySelector('.chart-max').getBoundingClientRect().width > 0,
+       'and unfolding it offers the button again');
+  } finally { f.remove(); }
+});
+
+t('the full-screen button is furniture, so it never prints', () => {
+  ok(PORT_SRC, 'lottery-portfolio.html was not read — loadSources must run first');
+  ok(PORT_SRC.includes('.chart-max, #chartMaxi { display: none !important; }'),
+    'a full-screen chart is a thing you do to a SCREEN — on paper the page IS the '
+    + 'window, and the card prints where it sits');
+  ok(PORT_SRC.includes('.chart-max[hidden] { display: none; }'),
+    'and a hidden button actually goes: `.chart-max` declares display:flex, and an '
+    + 'author rule beats the browser\'s own [hidden] rule whatever the specificities');
+  ok(PORT_SRC.includes('.chart-max svg { pointer-events: none; }'),
+    'and the icon is never the event target, so rewriting it mid-click cannot orphan '
+    + 'what a delegated handler further up will ask about');
+});
 
 function run() {
   wc = document.getElementById('calc').contentWindow;
