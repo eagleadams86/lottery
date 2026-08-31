@@ -38,6 +38,13 @@
    reasoning, in PAPTrack, Golf Handicap and Money Map. */
 :root                 { color-scheme: dark; }
 [data-theme="dark"]   { color-scheme: dark; }
+/* Auto has no palette of its own — theme.css resolves it to Light or, under
+   prefers-color-scheme: dark, to Midnight. `light dark` is the honest answer:
+   it tells the browser the page works either way and to draw its own controls
+   to match the system. The other three pages carry the same rule; this page
+   missed it, so a light-system visitor on Auto got dark scrollbars on a light
+   page. */
+[data-theme="auto"]   { color-scheme: light dark; }
 [data-theme="light"]  { color-scheme: light; }
 [data-theme="sepia"]  { color-scheme: light; }
 

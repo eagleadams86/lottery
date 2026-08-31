@@ -593,7 +593,8 @@ body.maxi-open { overflow: hidden; }
            script runs, so an empty <select> laid out at about 40px and then
            jumped to its full width the moment the options arrived — the same
            re-flow every sibling app writes its header controls out at final
-           size to avoid. Midnight carries `selected` to match the theme the
+           size to avoid. Auto carries `selected` (the family default since
+           2026-08-22; it was Midnight before) to match the theme the
            boot script in <head> has already applied, so the picker never reads
            one theme while the page shows another. THEMES is read back off
            these options below, so this list is the only place they live. -->
@@ -2326,9 +2327,14 @@ function applyTbill(rate, dateStr){
   // yet — reapplying the cached rate on every load stomped a manual override
   // for the whole 6-hour TTL, though the README promises an override sticks.
   // Same seeded-from pattern as the take-home slider in loadSliders().
+  // And NEVER on a share-link visit: the link always carries the sender's
+  // T-bill value, and on a browser that had not yet adopted the live rate this
+  // moved the slider over it a moment after the link set it — the same stomp
+  // seededFromShare stops for the take-home slider. Skipping the write inside
+  // the guard is also what keeps a look from becoming a save.
   var r = Math.min(7, Math.max(2, Math.round(rate*10)/10));
   var adopted = parseFloat(localStorage.getItem('lottery-tbill-adopted'));
-  if (r !== adopted) {
+  if (!fromShare && r !== adopted) {
     document.getElementById('sl-tb').value = r;
     localStorage.setItem('lottery-tbill-adopted', String(r));
   }

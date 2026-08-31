@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 166;
+const EXPECTED = 167;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -1057,6 +1057,21 @@ t('anything that is not one of ours is refused', () => {
   eq(wp.readShare('#other=1'), null);
   eq(wp.readShare('#s=not-base64!!!'), null);
   eq(wp.readShare('#s=' + btoa('{"v":99}')), null, 'a payload from a newer build');
+});
+t('the live T-bill rate is never adopted over a shared link’s value', () => {
+  /* Source-level, because `fromShare` is a top-level `let` in a classic script
+     and so is not a window property this suite could flip from outside. The
+     link always carries sl-tb, and on a browser that had not yet adopted the
+     live rate applyTbill() moved the slider over the sender's value a moment
+     after the link set it — the same stomp seededFromShare stops for the
+     take-home slider in loadSliders(). */
+  const code = PORT_SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  const fn = (code.match(/function applyTbill\([\s\S]*?\n\}/) || [''])[0];
+  ok(fn, 'applyTbill has gone');
+  const guard = (fn.match(/if\s*\(([^)]*)\)\s*\{[\s\S]{0,120}?sl-tb/) || [])[1] || '';
+  ok(/!fromShare/.test(guard),
+    'applyTbill must guard its slider move (and the adoption it records) with !fromShare',
+    guard || 'no guard found');
 });
 
 /* ══════════════════════════════════════════════════════════════════════════

@@ -790,7 +790,8 @@
            script runs, so an empty <select> laid out at about 40px and then
            jumped to its full width the moment the options arrived — the same
            re-flow every sibling app writes its header controls out at final
-           size to avoid. Midnight carries `selected` to match the theme the
+           size to avoid. Auto carries `selected` (the family default since
+           2026-08-22; it was Midnight before) to match the theme the
            boot script in <head> has already applied, so the picker never reads
            one theme while the page shows another. THEMES is read back off
            these options below, so this list is the only place they live. -->
@@ -1055,7 +1056,9 @@
       <tbody id="rtbody"></tbody></table>
     </div>
 
-    <!-- The payment-by-payment schedule. Only present for a graduated annuity,
+    <!-- The payment-by-payment schedule. Only present while an annuity is what
+         the page is describing (either plan — Powerball's 30 growing payments
+         or NY Lotto's 26 equal ones; see showingAnnuity in calc()),
          and OPEN by default (2026-08-22, on Charles's call) — the same way round
          as the tax breakdown and the winning numbers above it, and for the same
          reason: it was shut unless you had opened it, so the thirty figures the
@@ -1192,7 +1195,7 @@
   </fieldset>
 
   <p class="sub" style="margin-top:14px">This is a <strong>snapshot</strong>, frozen as it looks
-    right now &mdash; move a slider afterwards and the link still says what it said, so send a
+    right now &mdash; change a figure afterwards and the link still says what it said, so send a
     fresh one when the numbers move. There is no way to withdraw one once sent, so treat it like
     emailing a spreadsheet. Nothing identifying rides along: no account, no email, not even your
     theme.</p>
