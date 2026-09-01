@@ -2002,9 +2002,11 @@ t('the footer and the policy are both real landmarks, in that order', () => {
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 
 /* The offline group reads files rather than frames, so it is fetched here and
-   handed to run() — the test bodies themselves stay synchronous, like every
-   other one on this page. A missing file leaves its variable empty and fails
-   its own test rather than taking the suite down. */
+   handed to run(). Most bodies on this page are synchronous; the two that are
+   not — the full-screen chart and the chart-hover tests, which each boot a
+   frame — are awaited by run(), which is why it is async. A missing file
+   leaves its variable empty and fails its own test rather than taking the
+   suite down. */
 async function loadSources() {
   /* Same buster the frames use. Without it the source-level tests read the
      file off the server while the frames ran a cached copy — or, worse, both
@@ -2558,10 +2560,22 @@ t('a line chart answers a hover anywhere in the year, not only on the point', as
       return { d, i, betweenX: (d[i].x + d[i + 1].x) / 2, betweenY: (d[i].y + d[i + 1].y) / 2 };
     };
 
-    const lines = [['c3', W.c3, 2, 'the 10-year growth chart'],
-                   ['c4', W.c4, 3, 'the 40-year drawdown']];
+    /* Through the page's own chartIn(), NOT through `W.c3`. c1..c4 are top-level
+       `let`s, so they are not properties of the frame's window — but the
+       CANVASES carry those very ids, and named access hands back the <canvas>
+       element instead. That is truthy, so an `ok(chart, ...)` guard waves it
+       through, and the failure lands further down as `options` of undefined.
+       This test read four canvases for its whole life and never said so,
+       because nothing awaited it. */
+    const chartFor = (id) => {
+      const cv = W.document.getElementById(id);
+      return cv && W.chartIn(cv.closest('.chart-card'));
+    };
+    const lines = [['c3', chartFor('c3'), 2, 'the 10-year growth chart'],
+                   ['c4', chartFor('c4'), 3, 'the 40-year drawdown']];
     lines.forEach(([id, chart, sets, label]) => {
-      ok(chart, label + ' is drawn');
+      ok(chart && chart.options, label + ' is drawn, and what we hold is the chart '
+         + 'rather than its canvas');
       const o = chart.options.interaction || {};
       eq([o.mode, o.intersect], ['index', false], label + ' hovers by column:');
       const m = mid(chart);
@@ -2583,10 +2597,18 @@ t('a line chart answers a hover anywhere in the year, not only on the point', as
        targets, so they keep the default. Changing those to index would read out
        every series in the column for a chart where the reader is pointing at one
        specific thing. */
-    const bar = W.c1, donut = W.c2;
-    eq((bar.options.interaction || {}).mode, undefined,
+    const bar = chartFor('c1'), donut = chartFor('c2');
+    ok(bar && bar.options && donut && donut.options,
+       'the bar and the donut are charts too, not their canvases');
+    /* Read from RESOLVED options, so "keeps the default" is spelt as the value
+       Chart.js actually falls back to — nearest, and intersect on. Asking for
+       `undefined` here could never pass whatever the page did: the library
+       fills these in before anyone can read them. */
+    eq([(bar.options.interaction || {}).mode, (bar.options.interaction || {}).intersect],
+       ['nearest', true],
        'the income bars keep the default — a bar is its own target:');
-    eq((donut.options.interaction || {}).mode, undefined,
+    eq([(donut.options.interaction || {}).mode, (donut.options.interaction || {}).intersect],
+       ['nearest', true],
        'and so does the allocation donut:');
     const b = bar.getDatasetMeta(0).data[2];
     ok(hits(bar, b.x, b.y) > 0, 'and the bar still answers when the pointer is on it');
@@ -2684,7 +2706,12 @@ t('the full-screen button is furniture, so it never prints', () => {
     + 'what a delegated handler further up will ask about');
 });
 
-function run() {
+/* `async`, and every body is AWAITED below. Two of the tests on this page are
+   async — the full-screen chart and the chart-hover group both have to boot a
+   frame and let it settle — and an un-awaited async body is not a test at all:
+   it returns a promise, the try/catch sees nothing thrown, and the row is
+   recorded green before a single assertion inside it has run. */
+async function run() {
   wc = document.getElementById('calc').contentWindow;
   wp = document.getElementById('port').contentWindow;
   const out = document.getElementById('out');
@@ -2703,7 +2730,7 @@ function run() {
     const name = document.createElement('td'); name.textContent = item.name;
     const msg = document.createElement('td'); msg.className = 'msg';
     try {
-      item.fn();
+      await item.fn();
       tr.className = 'pass'; st.textContent = '✓'; pass++;
     } catch (e) {
       tr.className = 'fail'; st.textContent = '✕'; msg.textContent = e.message; fail++;
