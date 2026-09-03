@@ -2138,8 +2138,21 @@ document.addEventListener('keydown', (e) => {
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (document.querySelector('dialog[open]')) return;
+  /* AN ARROW BELONGS TO WHATEVER ALREADY CLAIMS IT. Form controls are the
+     obvious half — the header's pickers stay live over a maximised chart on
+     purpose, and Left in a <select> is the select's. The ARIA roles are the half
+     that bit: a radio group, a tab strip, a listbox and a slider all move their
+     own selection with Left and Right, and none of them is an <input>. Money Map
+     found it — its Net Worth card carries an "as of" radio pair INSIDE the card,
+     so it is still on screen and still reachable while that card fills the
+     window, and Right both moved the month and stepped the chart. Written as
+     roles rather than as that one class, because the next such control will be
+     the same shape and nobody will remember this. */
   const t = e.target;
-  if (t && t.closest && t.closest('input, select, textarea, [contenteditable="true"]')) return;
+  if (t && t.closest && t.closest('input, select, textarea, [contenteditable="true"],'
+      + ' [role="radiogroup"], [role="tablist"], [role="listbox"], [role="menu"],'
+      + ' [role="menubar"], [role="slider"], [role="spinbutton"], [role="grid"],'
+      + ' [role="tree"]')) return;
   e.preventDefault();
   maxiStep(e.key === 'ArrowRight' ? 1 : -1);
 });

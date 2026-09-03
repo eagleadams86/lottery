@@ -467,6 +467,15 @@ the same day, so a change belongs in both.
   offset from its containing block's *padding* box — `.chart-max`'s own `10px`
   therefore lands a border-width further in.
 
+- **The arrow-key handler skips ARIA ROLES, not just form controls.** Money Map
+  found it on 2026-09-03: its Net Worth card carries an "as of" radio pair INSIDE
+  the card, so it is still reachable while that card fills the window, and Right
+  both moved the month and stepped the chart. A `<button role="radio">` is not an
+  `<input>`. The guard names radiogroup, tablist, listbox, menu, menubar, slider,
+  spinbutton, grid and tree, and the same list is in all four apps — nothing here
+  puts such a control inside a chart card TODAY, which is exactly why it would be
+  missed the day something does.
+
 Its own `t()` with its own 1280x900 frame, so a walk that breaks does not take
 the assertions about getting up there down with it.
 
