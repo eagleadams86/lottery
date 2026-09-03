@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 167;
+const EXPECTED = 168;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -2508,6 +2508,7 @@ t('a chart fills the window under a header that stays live', async () => {
     await new Promise((r) => setTimeout(r, 250));
     ok(growth.querySelector('.chart-max').getBoundingClientRect().width > 0,
        'and unfolding it offers the button again');
+
   } finally { f.remove(); }
 });
 
@@ -2693,6 +2694,117 @@ t('the tooltip colours are the pack’s, not invented here', () => {
      'declared once and used by all four charts:');
 });
 
+/* ── Walking the four charts without coming back down ────────────────────────
+   Charles, 2026-09-03: arrows beside the leave-full-screen button that step
+   through the charts on the screen you came from. This page has no tabs, so the
+   walk is all four in the order they are laid out — minus any whose section is
+   folded, because stepping into a section the reader closed is stepping
+   somewhere they cannot see.
+
+   The arrows live in the OVERLAY and not in a card: a step moves one card out
+   and another in, and a button inside the card would be detached under the
+   pointer mid-press, taking the keyboard's focus to <body> with it.
+
+   ITS OWN FRAME, at a real size, for the same reason the test above has one —
+   and its own test, so a walk that breaks does not take the assertions about
+   getting up there with it. */
+t('the arrows walk the charts without coming back down', async () => {
+  const f = document.createElement('iframe');
+  f.setAttribute('data-lottery-tests', '');   // or the page busts out of the frame
+  f.setAttribute('aria-hidden', 'true');
+  f.style.cssText = 'position:absolute;left:-9999px;width:1280px;height:900px;border:0';
+  await new Promise((resolve) => {
+    f.onload = resolve;
+    f.src = 'lottery-portfolio.html?walk=' + Date.now();
+    document.body.appendChild(f);
+  });
+  try {
+    const W = f.contentWindow, D = W.document;
+    await new Promise((r) => setTimeout(r, 300));
+    const overlay = D.getElementById('chartMaxi');
+    const shown = (el) => W.getComputedStyle(el).display !== 'none';
+    const cards = ['c1', 'c2', 'c3', 'c4'].map((id) => D.getElementById(id).closest('.chart-card'));
+    const nav = D.getElementById('maxiNav');
+    const prevArrow = D.getElementById('maxiPrev');
+    const nextArrow = D.getElementById('maxiNext');
+    ok(nav.parentElement === overlay,
+       'the arrows are the overlay\u2019s own and not a card\u2019s');
+    ok(!shown(nav), 'and they are not on the page while nothing is filling the window');
+    eq(D.querySelectorAll('.chart-max').length, 4,
+       'and they are not counted as chart buttons \u2014 still four of those, one per chart');
+
+    const walkHome = [...D.querySelectorAll('.sec-body .chart-card canvas')].map(c => c.id).join(',');
+    cards[0].querySelector('.chart-max').click();
+    await new Promise((r) => setTimeout(r, 250));
+    ok(shown(nav), 'they appear when a chart fills the window');
+    ok(overlay.classList.contains('has-nav'), 'and the heading is told to leave room');
+    eq(W.maxiGroup().length, 4, 'all four charts are on the walk');
+    eq(W.maxiGroup()[0], cards[0], 'starting with the one that is up');
+    ok(/Next chart — /.test(nextArrow.getAttribute('aria-label')),
+       'the arrow names the chart it lands on, not just a direction',
+       nextArrow.getAttribute('aria-label'));
+
+    const svgWas = nextArrow.firstElementChild;
+    nextArrow.focus();
+    nextArrow.click();
+    await new Promise((r) => setTimeout(r, 150));
+    ok(W.maxiCard() === cards[1], 'Next steps to the chart beside it');
+    ok(cards[0].closest('.sec-body') && cards[0].parentElement !== overlay,
+       'and the one that was up is back in its own seat');
+    eq(D.querySelectorAll('.chart-slot').length, 1,
+       'with exactly one placeholder held \u2014 the seat of whatever is up now');
+    ok(D.activeElement === nextArrow,
+       'the arrow still has the keyboard, so it can be pressed again');
+    ok(nextArrow.firstElementChild === svgWas,
+       'and the arrow itself was never rebuilt under the pointer');
+    ok(overlay.classList.contains('open') && D.querySelector('.app').inert,
+       'the window did not come down and go back up \u2014 same window, different chart');
+    ok(W.chartIn(W.maxiCard()) !== null,
+       'and the live Chart.js instance came with the card rather than a copy being drawn');
+
+    nextArrow.click(); nextArrow.click(); nextArrow.click();
+    await new Promise((r) => setTimeout(r, 150));
+    ok(W.maxiCard() === cards[0], 'the last chart steps forward to the first');
+    prevArrow.click();
+    await new Promise((r) => setTimeout(r, 150));
+    ok(W.maxiCard() === cards[3], 'and the first steps back to the last');
+
+    /* A folded section is a chart the reader has put away. The walk is read
+       fresh on every press, so folding one takes it out at once. */
+    W.toggleSection('growth');
+    await new Promise((r) => setTimeout(r, 250));
+    eq(W.maxiGroup().length, 3, 'a folded section drops out of the walk');
+    ok(W.maxiGroup().indexOf(cards[2]) < 0, 'and it is the folded one that has gone');
+    W.toggleSection('growth');
+    await new Promise((r) => setTimeout(r, 250));
+    eq(W.maxiGroup().length, 4, 'unfolding it puts it back');
+
+    /* The arrow keys do the same, but never out of a control. */
+    D.dispatchEvent(new W.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await new Promise((r) => setTimeout(r, 150));
+    ok(W.maxiCard() === cards[0], 'Right steps to the next chart');
+    D.dispatchEvent(new W.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    await new Promise((r) => setTimeout(r, 150));
+    ok(W.maxiCard() === cards[3], 'and Left steps back');
+    /* The theme picker is in the header and stays live over a maximised chart on
+       purpose, so Right inside it belongs to the picker. */
+    D.getElementById('theme-select')
+     .dispatchEvent(new W.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await new Promise((r) => setTimeout(r, 150));
+    ok(W.maxiCard() === cards[3],
+       'an arrow pressed in the theme picker is the picker\u2019s, not the walk\u2019s');
+
+    W.closeMaxi();
+    await new Promise((r) => setTimeout(r, 200));
+    eq([...D.querySelectorAll('.sec-body .chart-card canvas')].map(c => c.id).join(','), walkHome,
+       'a whole walk and then out leaves every card in the seat it started in');
+    eq(D.querySelectorAll('.chart-slot').length, 0, 'with no placeholder left behind');
+    ok(!shown(nav), 'and the arrows gone with the window');
+    ok(!overlay.classList.contains('has-nav'),
+       'so nothing is left holding space beside a heading');
+  } finally { f.remove(); }
+});
+
 t('the full-screen button is furniture, so it never prints', () => {
   ok(PORT_SRC, 'lottery-portfolio.html was not read — loadSources must run first');
   ok(PORT_SRC.includes('.chart-max, #chartMaxi { display: none !important; }'),
@@ -2701,9 +2813,12 @@ t('the full-screen button is furniture, so it never prints', () => {
   ok(PORT_SRC.includes('.chart-max[hidden] { display: none; }'),
     'and a hidden button actually goes: `.chart-max` declares display:flex, and an '
     + 'author rule beats the browser\'s own [hidden] rule whatever the specificities');
-  ok(PORT_SRC.includes('.chart-max svg { pointer-events: none; }'),
+  ok(PORT_SRC.includes('.chart-max svg, .maxi-step svg { pointer-events: none; }'),
     'and the icon is never the event target, so rewriting it mid-click cannot orphan '
-    + 'what a delegated handler further up will ask about');
+    + 'what a delegated handler further up will ask about \u2014 for the step arrows '
+    + 'as well as the button they sit beside');
+  ok(PORT_SRC.includes('.maxi-nav[hidden] { display: none; }'),
+    'and the arrows go the same way the button does when there is nothing to walk');
 });
 
 /* `async`, and every body is AWAITED below. Two of the tests on this page are

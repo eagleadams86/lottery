@@ -441,6 +441,35 @@ Three things worth keeping:
   `[hidden] { display: none }` whatever the specificities. **A test that asserts
   `btn.hidden` is deaf to this**: read the computed display.
 
+## Stepping between charts in full screen (2026-09-03)
+
+**A `‹` and a `›` beside the ⤢ walk the four charts without coming back down.**
+Charles asked for it on 2026-09-03; built first in Flow Metrics and ported here
+the same day, so a change belongs in both.
+
+- **The arrows live in the OVERLAY, not in a card.** A step moves one card out
+  and another in, and a button inside the card would be detached under the
+  pointer mid-press — a detached button takes the keyboard's focus to `<body>`
+  with it, so you could press Next once and have nothing left to press. This is
+  the same trap as the icon rewrite above, reached from the other side.
+- **`maxiCard()` reads `#chartMaxi > .chart-card`, not `firstElementChild`.**
+  The overlay is no longer empty when nothing is up: it holds the arrows and the
+  live region permanently.
+- **The walk is this page's own answer to "that screen".** Flow Metrics walks a
+  sub-tab; this page has no tabs, so it walks all four in laid-out order, minus
+  any whose SECTION IS FOLDED — a folded section is a chart the reader has put
+  away. It is read fresh on every press, so unfolding puts it straight back.
+- **The card returns to its own seat before the next one leaves its own**, so the
+  page never holds two `.chart-slot`s and the order the next walk is read from is
+  the real one. Nothing else the overlay owns is touched by a step.
+- **`.maxi-nav` is positioned from a sum that includes the card's 0.5px BORDER**
+  (20 + 0.5 + 10 down; + 26 + 6 across), because an absolutely positioned box is
+  offset from its containing block's *padding* box — `.chart-max`'s own `10px`
+  therefore lands a border-width further in.
+
+Its own `t()` with its own 1280x900 frame, so a walk that breaks does not take
+the assertions about getting up there down with it.
+
 ## Fields (2026-08-20)
 
 - **A box you land on has its contents SELECTED**, so typing replaces the figure
