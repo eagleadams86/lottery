@@ -2019,8 +2019,19 @@ function applyJackpots(data, ts){
   if(!ok) return false;
   document.getElementById('game-row').style.display='flex';
   document.getElementById('manual-wrap').style.display='block';
-  document.getElementById('manual-inputs').classList.remove('open');
-  document.getElementById('manual-chevron').classList.remove('open');
+  /* Folding the manual section away is the feed saying "you don't need to type
+     these in any more" — and it must not fold away a SHARED figure, which is
+     the only thing on the page the answer on the right is drawn from. Without
+     this the boxes still held 750, correctly, and nobody could see them: a
+     $340.0M lump share with no visible source. applyShareLink() opens this
+     section for exactly that reason; this is the line that used to close it
+     again a moment later. `setExpanded` goes with the fold either way, or the
+     toggle goes on telling a screen reader it is expanded while it is not. */
+  if(!(fromShare && sharedFigures)){
+    document.getElementById('manual-inputs').classList.remove('open');
+    document.getElementById('manual-chevron').classList.remove('open');
+    setExpanded('manual-toggle', false);
+  }
   var d=new Date(ts);
   var t=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   // Within the 6-hour TTL "Updated 11:50 PM" can be yesterday's pull, and a

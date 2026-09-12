@@ -98,6 +98,18 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
       the row is on screen — pressing a card is how you LEAVE a shared view, so hiding the
       live figures entirely would take the exit with them. What the feed may not touch is the
       two amount boxes, their M/B toggles, `wnGame` (the sender chose that too), and `calc()`.
+    - **THE SECOND HALF, and it was only found by opening a real link on the live site.**
+      `applyJackpots()` also FOLDS THE MANUAL SECTION SHUT — the feed saying "you don't need
+      to type these in any more" — three lines before it reaches `selectGame()`. The first
+      build of this fix guarded `selectGame()` and stopped there, so the boxes correctly kept
+      750 and 340 and **nobody could see them**: a $340.0M lump share with nothing on screen
+      it could have come from, which is the exact thing `applyShareLink()` calls `openManual()`
+      to prevent. A figure you cannot see is not a figure that survived. The fold is now behind
+      the same condition, with `setExpanded('manual-toggle', false)` moved inside it — it was
+      never there, so after any `openManual()` the toggle went on claiming `aria-expanded=true`
+      over a closed section. **The lesson is the one worth keeping: a guard on the function
+      that writes a value is not a guard on everything that happens on the way to it.** The
+      suite now asserts the box's `getBoundingClientRect().height`, not just its `.value`.
     - **A deliberate press is not a race and is not guarded.** Pressing a card under a shared
       link is a request for that game's live figures and it gets them — and the moment it
       does, `releaseSharedFigures()` rewrites the banner to "You have replaced the shared

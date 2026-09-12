@@ -325,6 +325,18 @@ t('the jackpot feed never rewrites the figures a shared link arrived with', asyn
     eq(s.D.getElementById('jackpot-input').value, '750',
        'the advertised jackpot is the sender’s, not the current one');
     eq(s.D.getElementById('lump-input').value, '340', 'and so is the cash lump sum');
+    /* Value AND visibility. The first build of this fix guarded selectGame()
+       and stopped there, so the boxes kept 750 and 340 — and applyJackpots()
+       folded the manual section shut three lines earlier, which is what
+       applyShareLink() had just opened. On the live site that read as a
+       $340.0M lump share with nothing on screen it could have come from.
+       A figure you cannot see is not a figure that survived. */
+    ok(s.D.getElementById('jackpot-input').getBoundingClientRect().height > 0,
+       'the box holding the shared jackpot must still be ON SCREEN');
+    ok(s.D.getElementById('manual-inputs').classList.contains('open'),
+       'the feed must not fold away the only visible source of the answer');
+    eq(s.D.getElementById('manual-toggle').getAttribute('aria-expanded'), 'true',
+       'and the toggle must not tell a screen reader otherwise');
     eq(s.D.getElementById('from-share-text').textContent,
        'These figures came from a shared link.',
        'and the banner may only say that while it is still true');
