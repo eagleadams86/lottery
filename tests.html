@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 168;
+const EXPECTED = 172;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -260,6 +260,137 @@ t('a negative or absurd amount never reaches the boxes', () => {
   eq(wc.readShare(mk({ v: 1, j: '-500', ju: 'M' })).j, '');
   eq(wc.readShare(mk({ v: 1, j: '999999', ju: 'B' })).j, '', 'past MAX_AMOUNT');
   eq(wc.readShare(mk({ v: 1, j: '500', ju: 'M' })).j, '500', 'a real one survives');
+});
+
+/* ── The feed answering behind a shared link ─────────────────────────────────
+   Charles, 2026-09-12: a link carrying an advertised jackpot of 750 opened
+   showing 232 — the CURRENT jackpot — under a banner still saying the figures
+   came from the sender. applyShareLink() filled the boxes, then fetchJackpots()
+   resolved and applyJackpots() ended with selectGame(activeGame), which
+   overwrote both boxes from gameData and recalculated. Off the network that is
+   a race; off the 6-hour localStorage cache it is not a race at all, because
+   the cache branch of fetchJackpots() runs before any await — which is why a
+   warm cache lost the shared figures every time and a cold one kept them.
+
+   So these two boot the REAL page in its own frame with a warm cache and a
+   share fragment, rather than calling the guard's own name — the bug was in
+   which call site ran, not in any one function, and a test that calls
+   selectGame(activeGame, true) by hand would have passed on the broken build
+   too. The cache is written here and put back afterwards: the app's own frames
+   read the same key on this origin. */
+const SHARE_FIXTURE = { v: 1, g: 'pb', w: 'pb', p: 'lump', f: 'single', r: 'ny',
+                        d: 0.04, n: 1, j: '750', ju: 'M', l: '340', lu: 'M' };
+/* The live figures from the report: 232 advertised, 100 cash. Deliberately
+   nothing like 750/340, so a box holding the wrong one is unmistakable. */
+const LIVE_FIXTURE = { pb: { jackpot: 232e6, cashValue: 100e6 },
+                       mm: { jackpot: 410e6, cashValue: 190e6 } };
+const CACHE_KEY = 'lottery-jackpot-cache';
+
+async function bootSharedFrame() {
+  const prior = localStorage.getItem(CACHE_KEY);
+  localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: LIVE_FIXTURE }));
+  const hash = '#s=' + btoa(JSON.stringify(SHARE_FIXTURE))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const f = document.createElement('iframe');
+  f.setAttribute('data-lottery-tests', '');   // or the page busts out of the frame
+  f.setAttribute('aria-hidden', 'true');
+  f.style.cssText = 'position:absolute;left:-9999px;width:1280px;height:900px;border:0';
+  await new Promise((resolve) => {
+    f.onload = resolve;
+    f.src = 'index.html?share=' + Date.now() + hash;
+    document.body.appendChild(f);
+  });
+  await new Promise((r) => setTimeout(r, 150));
+  return {
+    W: f.contentWindow,
+    D: f.contentWindow.document,
+    done() {
+      f.remove();
+      if (prior === null) localStorage.removeItem(CACHE_KEY);
+      else localStorage.setItem(CACHE_KEY, prior);
+    }
+  };
+}
+
+t('the jackpot feed never rewrites the figures a shared link arrived with', async () => {
+  const s = await bootSharedFrame();
+  try {
+    ok(s.W.fromShare, 'the frame did not open as a shared link at all');
+    ok(s.D.getElementById('from-share').classList.contains('on'),
+       'the banner must be on screen, or there is nothing making the claim');
+    /* The cache was warm, so applyJackpots has already run once by now. Run it
+       again explicitly, which is what the network answering a moment later
+       does, so the assertion does not rest on the boot timing. */
+    eq(s.W.applyJackpots(LIVE_FIXTURE, Date.now()), true, 'the fixture must render');
+    eq(s.D.getElementById('jackpot-input').value, '750',
+       'the advertised jackpot is the sender’s, not the current one');
+    eq(s.D.getElementById('lump-input').value, '340', 'and so is the cash lump sum');
+    eq(s.D.getElementById('from-share-text').textContent,
+       'These figures came from a shared link.',
+       'and the banner may only say that while it is still true');
+    /* The live jackpots are information, not an overwrite: they belong on the
+       cards and in the status line, which is also how you find the way out. */
+    ok(s.D.getElementById('pb-amt').textContent.includes('232'),
+       'the card still carries the current jackpot', s.D.getElementById('pb-amt').textContent);
+    ok(/^Updated /.test(s.D.getElementById('fetch-status').textContent),
+       'and the page still says when it last looked');
+    ok(s.D.getElementById('game-row').style.display === 'flex',
+       'and the game row is on screen, because pressing a card is the way out');
+  } finally { s.done(); }
+});
+
+t('pressing a game card is a request for that game, and it says the figures changed', async () => {
+  const s = await bootSharedFrame();
+  try {
+    eq(s.D.getElementById('jackpot-input').value, '750', 'the shared figure must survive the boot');
+    /* A press, not the feed — real_press is overkill here, the card is a plain
+       <button> with an onclick and nothing redraws under the pointer. */
+    s.D.getElementById('btn-mm').click();
+    eq(s.D.getElementById('jackpot-input').value, '410',
+       'a deliberate press loads that game’s live figures');
+    eq(s.D.getElementById('lump-input').value, '190');
+    ok(s.D.getElementById('from-share-text').textContent.includes('replaced the shared figures'),
+       'and the banner stops vouching for numbers that are no longer the sender’s',
+       s.D.getElementById('from-share-text').textContent);
+    ok(s.D.getElementById('from-share').classList.contains('on'),
+       '— but stays on screen, because "Back to Mine" is still the way home');
+    ok(s.W.fromShare,
+       'the sender’s PREFERENCES are still not this visitor’s to save');
+    /* And from here the feed is free again: there are no shared figures left to
+       protect, so a later refresh behaves like any ordinary visit. */
+    s.W.applyJackpots(LIVE_FIXTURE, Date.now());
+    eq(s.D.getElementById('jackpot-input').value, '410', 'the feed may refresh what it now owns');
+  } finally { s.done(); }
+});
+
+t('a link that carried no amounts has nothing to protect', async () => {
+  /* The guard is on the FIGURES, not on the banner: a sender whose own feed had
+     failed shares a link with empty boxes, and holding those empty would leave
+     the reader a calculator with no jackpot in it and no way to see why. */
+  const prior = localStorage.getItem(CACHE_KEY);
+  localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: LIVE_FIXTURE }));
+  const hash = '#s=' + btoa(JSON.stringify(Object.assign({}, SHARE_FIXTURE, { j: '', l: '' })))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const f = document.createElement('iframe');
+  f.setAttribute('data-lottery-tests', '');
+  f.setAttribute('aria-hidden', 'true');
+  f.style.cssText = 'position:absolute;left:-9999px;width:1280px;height:900px;border:0';
+  await new Promise((resolve) => {
+    f.onload = resolve;
+    f.src = 'index.html?empty=' + Date.now() + hash;
+    document.body.appendChild(f);
+  });
+  try {
+    await new Promise((r) => setTimeout(r, 150));
+    const W = f.contentWindow, D = f.contentWindow.document;
+    ok(W.fromShare, 'it is still a shared link');
+    eq(W.sharedFigures, false, 'but it carried no figures');
+    eq(D.getElementById('jackpot-input').value, '232', 'so the feed fills the boxes as usual');
+  } finally {
+    f.remove();
+    if (prior === null) localStorage.removeItem(CACHE_KEY);
+    else localStorage.setItem(CACHE_KEY, prior);
+  }
 });
 
 group('calculator formatters');

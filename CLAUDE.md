@@ -82,6 +82,38 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
     it is worse: touch one control and the sender's other eleven figures silently become yours.
     (The theme and which sections you left open are still saved — they are your furniture and
     no link carries them.)
+  - **THE FEED MAY NOT REWRITE THE FIGURES A LINK ARRIVED WITH (2026-09-12).** `remember()`
+    guards what gets SAVED; it never guarded what is on SCREEN, and for three weeks the live
+    jackpot quietly replaced the sender's. A link carrying an advertised jackpot of 750 opened
+    showing 232 — the current one — under a banner still saying "These figures came from a
+    shared link", and the reader had no way to know. `applyShareLink()` filled the two boxes,
+    then `fetchJackpots()` answered and `applyJackpots()` ended with `selectGame(activeGame)`,
+    which overwrites both boxes from `gameData` and calls `calc()`. It looked like a race
+    because a COLD cache kept the shared figures and a warm one lost them — but the cache
+    branch of `fetchJackpots()` runs before any `await`, so a warm cache lost them every time.
+    The fix is one line, and **it is on the call site rather than inside `selectGame()`**:
+    `applyJackpots()` calls `selectGame(activeGame, true)`, and that `fromFeed` flag returns
+    early once the game row is redrawn. Three things follow and all three are the point:
+    - **The row stays live.** The two cards get the current jackpots, "Updated …" is true, and
+      the row is on screen — pressing a card is how you LEAVE a shared view, so hiding the
+      live figures entirely would take the exit with them. What the feed may not touch is the
+      two amount boxes, their M/B toggles, `wnGame` (the sender chose that too), and `calc()`.
+    - **A deliberate press is not a race and is not guarded.** Pressing a card under a shared
+      link is a request for that game's live figures and it gets them — and the moment it
+      does, `releaseSharedFigures()` rewrites the banner to "You have replaced the shared
+      figures with the current jackpot." A changed figure must be shown (the family standard),
+      and a banner vouching for numbers nobody sent is the same lie by a slower route.
+      `fromShare` itself stays TRUE: the sender's preferences are still not yours to save.
+    - **`sharedFigures` is a second flag on purpose.** `fromShare` says whose PREFERENCES
+      these are; `sharedFigures` says whose FIGURES are in the boxes, and they come apart in
+      both directions. A link that carried no amounts (`j` and `l` both empty — a sender whose
+      own feed had failed) has nothing to protect, so the feed fills the boxes as usual;
+      holding them empty would leave the reader a calculator with no jackpot in it.
+    `tests.html` pins all three by booting the real page in its own frame with a **warm cache
+    and a share fragment**, not by calling the guard's own name — the bug was in which call
+    site ran, so a test that called `selectGame(activeGame, true)` by hand would have passed on
+    the broken build too. Removing the one-line guard turns two of them red with the exact
+    reported symptom (`expected "750", got "232"`).
   - **A `hashchange` listener is load-bearing.** Pasting a link into a tab already on the page
     changes only the fragment, which is not a navigation — nothing reloads and nothing runs.
     That is the most likely way anyone opens one, since the page is already in front of them.

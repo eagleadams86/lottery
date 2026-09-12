@@ -1229,6 +1229,11 @@ var filing='single';          // see filingStatus() in tax.js
 var lives='ny';               // 'ny' | 'nyc' | 'yonkers' — see residence()
 var discount=0.04;            // the annuity comparison's discount rate
 var fromShare=false;          // opened from a link: don't overwrite their prefs
+/* fromShare says whose PREFERENCES these are; this says whose FIGURES are in
+   the two amount boxes. They come apart: a link that carried no amounts has
+   nothing to protect, and a deliberate press replaces the sender's amounts
+   while the preferences stay theirs. Only this one guards the boxes. */
+var sharedFigures=false;
 var jUnit='M', lUnit='M'; // current unit (Millions/Billions) for the two manual inputs
 // Powerball: Mon(1) Wed(3) Sat(6) · Mega Millions: Tue(2) Fri(5)
 function nextDraw(drawDays) {
@@ -1615,8 +1620,25 @@ function applyShareLink(){
   });
   /* The amounts arrived with the link, so the boxes that hold them have to be
      visible — otherwise the figures on the right have no visible source. */
-  if(p.j||p.l) openManual();
+  sharedFigures = !!(p.j||p.l);
+  if(sharedFigures) openManual();
+  /* Set rather than assumed: a SECOND link can arrive by hashchange into a page
+     where releaseSharedFigures() has already rewritten this sentence, and the
+     new link's figures are once again the sender's. */
+  document.getElementById('from-share-text').textContent=
+    'These figures came from a shared link.';
   document.getElementById('from-share').classList.add('on');
+}
+
+/* The link's figures have just been replaced by a deliberate press, so the
+   banner's claim — "these figures came from a shared link" — has stopped being
+   true. Say what is on screen now instead of silently leaving a sentence that
+   vouches for numbers nobody sent. "Back to Mine" stays: it still reloads into
+   this visitor's own saved settings, which is what it always meant. */
+function releaseSharedFigures(){
+  sharedFigures=false;
+  document.getElementById('from-share-text').textContent=
+    'You have replaced the shared figures with the current jackpot.';
 }
 
 /* Pasting a link into the address bar of a tab ALREADY ON THIS PAGE changes
@@ -2009,7 +2031,10 @@ function applyJackpots(data, ts){
   var st=document.getElementById('fetch-status');
   st.className='fetch-status ok';
   st.textContent='Updated '+t+' — tap a game below';
-  selectGame(activeGame);
+  /* The FEED asking for the row to be redrawn, not a press — and the difference
+     matters, because this call lands underneath a share link that is already on
+     screen. See selectGame(). */
+  selectGame(activeGame, true);
   return true;
 }
 
@@ -2060,7 +2085,25 @@ async function fetchJackpots(force){
 }
 
 // ── Game select ───────────────────────────────────────────────────────────────
-function selectGame(g){
+/* `fromFeed` — the jackpot feed answering, rather than a press on a card.
+
+   A share link is a look at the SENDER's figures, and until 2026-09-12 the feed
+   answering behind one quietly replaced them: applyShareLink() put 750 in the
+   box, then fetchJackpots() resolved — off the network, or off a 6-hour cache
+   that was already warm, which is why it looked like a race — and this function
+   overwrote both boxes from gameData and recalculated. The banner still said
+   the figures came from the sender. They didn't, and nothing on screen said so.
+
+   So the two halves of this function are now told apart. The game row is live
+   either way: the cards carry the current jackpots, "Updated …" is true, and
+   pressing a card is how you leave a shared view. What the feed may NOT touch
+   is the two amount boxes, their M/B toggles, the numbers row the sender chose,
+   or the answer calc() draws from them.
+
+   The guard is here rather than around the two boxes because a deliberate press
+   is not a race — it is a request for that game's live figures, and it gets
+   them (and then says so; see releaseSharedFigures). */
+function selectGame(g, fromFeed){
   activeGame=g;
   remember('lottery-game', g);
   ['pb','mm'].forEach(function(k){
@@ -2068,6 +2111,7 @@ function selectGame(g){
     b.className='game-btn'+(g===k?' active':'');
     b.setAttribute('aria-pressed', String(g===k));
   });
+  if(fromFeed && fromShare && sharedFigures) return;
   /* Picking a jackpot card moves the numbers row with it — the two cards are
      the same two games — but not the other way round: picking Pick 10 down
      there says nothing about which jackpot you are calculating on. */
@@ -2078,6 +2122,9 @@ function selectGame(g){
   renderWinning();
   var gd=gameData[g];
   if(!gd||!gd.jackpot) return;
+  // Past this line the two boxes definitely change, so this is the one place
+  // that can honestly retire the banner's claim.
+  if(fromShare && sharedFigures) releaseSharedFigures();
   var j=gd.jackpot, cv=gd.cashValue||0;
   if(j>=1e9){  setUnit('j','B'); document.getElementById('jackpot-input').value=+(j/1e9).toFixed(3); }
   else        { setUnit('j','M'); document.getElementById('jackpot-input').value=+(j/1e6).toFixed(1); }
