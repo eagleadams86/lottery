@@ -18,7 +18,7 @@
       "name": "Take-Home Calculator",
       "short_name": "Calculator",
       "description": "What a jackpot pays after federal and NY State tax",
-      "url": "ny-lottery-calculator.html",
+      "url": "./",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {

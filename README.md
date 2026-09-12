@@ -2,7 +2,7 @@
 
 A pair of lightweight single-page web tools for calculating **real after-tax lottery winnings** for New York State residents, with live jackpot data and recent winning numbers pulled automatically.
 
-- **Calculator:** [eagleadams86.github.io/lottery/ny-lottery-calculator.html](https://eagleadams86.github.io/lottery/ny-lottery-calculator.html)
+- **Calculator:** [eagleadams86.github.io/lottery/](https://eagleadams86.github.io/lottery/)
 - **Portfolio:** [eagleadams86.github.io/lottery/lottery-portfolio.html](https://eagleadams86.github.io/lottery/lottery-portfolio.html)
 
 ---
@@ -19,16 +19,16 @@ right instruction — update the file too, in all four repos that carry it.
 
 | File | Description |
 |------|-------------|
-| `index.html` | The landing page at [eagleadams86.github.io/lottery/](https://eagleadams86.github.io/lottery/) — links to both tools. It exists so GitHub Pages serves *our* page there; without it Pages rendered this README instead, on a page with no Content-Security-Policy that pulled a script from a CDN. `.nojekyll` beside it turns that rendering off for good. |
+| `index.html` | **The calculator** — what [eagleadams86.github.io/lottery/](https://eagleadams86.github.io/lottery/) serves. Until 2026-09-12 this was a two-card launcher and the calculator sat one click behind it; with only two tools, each linking the other from its own footer, the chooser only asked which of two doors you wanted before showing you either. The file still has to exist, for its original reason: without one, Pages rendered this README instead, on a page with no Content-Security-Policy that pulled a script from a CDN. `.nojekyll` beside it turns that rendering off for good. |
 | `sw.js` | Service worker: keeps both pages, the stylesheet, the icons and the install manifest on your device so they open offline. Never caches a jackpot, a winning number or a yield — those are live figures, and a stale one is a wrong answer. |
 | `sw-kill.js` | The escape hatch — copy it over `sw.js` and push to uninstall every installed worker. |
-| `ny-lottery-calculator.html` | After-tax lottery take-home calculator with live jackpots and winning numbers |
+| `ny-lottery-calculator.html` | The calculator's old address, now a three-line redirect to `./`. It carries the URL **fragment** across, because that is where a share link keeps its figures — links copied out of the page before 2026-09-12 name this file, and a redirect that dropped the fragment would land you on the calculator with the shared figures silently gone |
 | `lottery-portfolio.html` | What-if model of investing the lump sum as a tax-aware portfolio |
 | `chart.min.js` | Chart.js 4.4.1, vendored (no CDN) — byte-identical to the copies in Flow Metrics, Money Map and Sprint Predictability. Third-party: never hand-edit it, and if it is ever updated, update all four and this table together |
 | `tax.js` | The tax engine both pages share — the 2026 federal, New York, NYC and Yonkers rate tables, the bracket maths, New York's tax-benefit recapture, and the annuity schedules. One file rather than two copies of the same tax law, because rates move every year and a page that missed the edit would go on quoting last year's answer with no sign anything was wrong |
 | `theme.css` | Shared color tokens + 4 theme palettes, linked by both pages. Generated in the claude-theme-pack repo (the source of truth for all apps); every color pair is script-verified to meet WCAG AA contrast, and the portfolio's five asset colours come from its categorical `--series-*` ramp |
 | `favicon.ico` | The icon all three pages share — the fallback a browser fetches from the site root on its own |
-| `manifest.webmanifest` | The install manifest — what makes Chrome and Edge offer "Install app" on a Mac or a PC. One for the whole site, not one per page: both tools wear the same mark, so two installs would be two identical icons in the Dock. It installs the pair, opening on the landing page, and its **shortcuts** put either tool one right-click away on the icon |
+| `manifest.webmanifest` | The install manifest — what makes Chrome and Edge offer "Install app" on a Mac or a PC. One for the whole site, not one per page: both tools wear the same mark, so two installs would be two identical icons in the Dock. It installs the pair, opening on the calculator, and its **shortcuts** put either tool one right-click away on the icon |
 | `icon-192.png`, `icon-512.png`, `icon-512-maskable.png` | The install icons the manifest names. The first two are rounded (nothing masks a `purpose: any` icon); the maskable one is the same drawing with square corners, because a launcher crops it to its own outline |
 | `make_favicon.py` | Draws `favicon.ico` to match the inline SVG icon in the pages, and the three install icons above, from the one drawing |
 | `worker.js` | Cloudflare Worker source for the jackpot CORS proxy (deployed separately at `lottery-proxy.charlie-adams-176.workers.dev`) |
@@ -51,7 +51,7 @@ fall back to them **labelled as earlier figures**) — which means shortly after
 offline page may still show those recent figures with their date, and past the six hours
 you get its ordinary "couldn't load, enter it yourself" state.
 
-What's kept is only the two pages, the landing page, the privacy policy, the stylesheet, the
+What's kept is only the two pages, the old calculator address, the privacy policy, the stylesheet, the
 tax tables, the vendored chart library, the install manifest and its icons: files already
 public in this repo, and nothing else. **Nothing you type is ever put
 there.** That matters because every one of these apps shares a single browser origin, so
@@ -93,11 +93,10 @@ Native mobile ports have shipped and their build plans now live in their own (pr
 
 ### Both pages
 
-- **Install it like an app** — on a Mac or a PC, open the site in Chrome or Edge and choose "Install NY Lottery". It gets its own window with no browser chrome and its own icon in the Dock or on the taskbar, opening on the two-card landing page; right-click that icon and you can jump straight to either tool. On an iPhone or iPad, Safari's Share ▸ "Add to Home Screen" does the same
+- **Install it like an app** — on a Mac or a PC, open the site in Chrome or Edge and choose "Install NY Lottery". It gets its own window with no browser chrome and its own icon in the Dock or on the taskbar, opening on the calculator; right-click that icon and you can jump straight to either tool. On an iPhone or iPad, Safari's Share ▸ "Add to Home Screen" does the same
 - **Split down the middle on a laptop** — from 1000px up, the calculator becomes two equal columns: what you're telling the page on the left (the jackpots, the amounts, the payout and filing controls, the headline tiles and the latest winning numbers), what it's telling you back on the right (the effective rate and the full tax breakdown). Below 1000px it stacks into one column in the same order, so nothing moves around on a phone
 - **The app family's layout** — the same page width and the same header as [Sprint Predictability](https://github.com/eagleadams86/sprint-velocity), [Flow Metrics](https://github.com/eagleadams86/team-dashboard) and [PAPTrack](https://github.com/eagleadams86/paptrack). The header is a bar across the top that **stays put as you scroll**, so the theme picker and the link to the other page are always a click away rather than somewhere above the first card
 - **The theme picker is written out at its final size, with Auto pre-selected.** Both pages built its four options from script at the *foot* of the file, into an empty `<select>` in a header that had already painted — so the control laid out at about 40px and jumped to its full width a moment later, on every load. The options live in the markup now and `THEMES` is read back off them, which is the rule every sibling app follows and the one place the four ids live. Fixed 2026-08-21 and pinned in `tests.html`
-- **The landing page is a real `<main>` / `<footer>` pair too.** Both tools and the privacy policy had the landmarks from 2026-08-20; the launcher was still a `<div>` of prose with a styled `<p>` at the foot. `</main>` closes before the `<footer>`, because a `<footer>` nested inside `main` is not contentinfo at all
 - **Wider, and actually using it** — the portfolio's holdings table and charts have the room they always wanted, and the calculator splits in two on a laptop screen: what it's asking of you on the left (jackpots, amounts, how many winners, the latest draw) and what it tells you back on the right (your share, tax, take-home). On a phone both pages stack exactly as they always did
 - **Keyboard and screen-reader landmarks** — a skip link straight to the content, and real `main` and `footer` regions to jump between
 - **Share what's on screen** — the `↗ Share` button in the header turns the figures into a link, with the numbers carried *inside the link itself*: nothing is uploaded and no copy is kept, so there is also no way to withdraw one once sent. The window is the same one [Sprint Predictability](https://github.com/eagleadams86/sprint-velocity), [Flow Metrics](https://github.com/eagleadams86/team-dashboard), Money Map and Golf Handicap open — same width, same panel, same *Copy link / Preview it / Done* — with one difference stated in it: these links are **not** read-only, because a lottery scenario is something you want the other person to play with. Opening someone else's link is deliberately **a look, not a save** — the page says at the top where the figures came from, saves none of them for the whole visit, and *Back to mine* returns you to your own settings exactly as you left them. Pasting a link into a tab already showing the page works too, which is the way most people will actually open one
@@ -187,7 +186,7 @@ Both pages are built to meet WCAG 2.1 AA:
 ```
 GitHub Pages (static hosting)
     ├── tax.js ───────────────── the rate tables and bracket maths, loaded by both pages
-    ├── ny-lottery-calculator.html
+    ├── index.html ───────────── the calculator (ny-lottery-calculator.html redirects here)
     │       ├── jackpots ──────► Cloudflare Worker (CORS proxy)
     │       │                    lottery-proxy.charlie-adams-176.workers.dev
     │       │                        └── scrapes usamega.com

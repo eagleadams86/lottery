@@ -48,12 +48,12 @@
      Offline was already here — that is sw.js, and it predates this; what the
      manifest adds is the window and the icon, not the caching.
 
-     ONE manifest for all three pages, not one each, and that is deliberate. Both
-     app pages wear the SAME mark (see the note on it in CLAUDE.md), so two
-     installs would put two identical icons in the Dock with no way to tell them
-     apart. Instead this installs the pair — `start_url` is the landing page,
-     which is already a two-card launcher — and the manifest's `shortcuts` put
-     both pages one right-click away on the icon itself.
+     ONE manifest for both pages, not one each, and that is deliberate. Both app
+     pages wear the SAME mark (see the note on it in CLAUDE.md), so two installs
+     would put two identical icons in the Dock with no way to tell them apart.
+     Instead this installs the pair — `start_url` is `./`, which since 2026-09-12
+     IS the calculator rather than a launcher standing in front of it — and the
+     manifest's `shortcuts` put both pages one right-click away on the icon.
 
      The icons it names are FILES rather than the inline SVG data URI above,
      because a manifest's icons are fetched by URL. make_favicon.py writes them
@@ -107,7 +107,7 @@
    restyled from CSS. It fixes the number spinners, checkboxes and scrollbars too,
    which have the same problem more quietly.
 
-   All four pages carry it, and the pairing follows the PALETTE rather than the
+   All three pages carry it, and the pairing follows the PALETTE rather than the
    theme's name: sepia is a warm LIGHT theme and takes `light`. Same block, same
    reasoning, in PAPTrack, Golf Handicap and Money Map. */
 :root                 { color-scheme: dark; }
@@ -828,7 +828,7 @@ body.maxi-open { overflow: hidden; }
        new tab" all keep working, and it needs no script. Last in the footer so it is
        last in the tab order, and so it falls below the notes rather than above them
        when the row wraps. -->
-  <a class="theme-btn applink" href="ny-lottery-calculator.html"
+  <a class="theme-btn applink" href="./"
      title="NY Lottery — After-Tax Calculator: what a jackpot is actually worth after federal and NY State tax">&larr;&nbsp;Calculator</a>
   </footer>
 
@@ -2669,8 +2669,9 @@ loadSectionStates(); render();
 fetchTbillYield();
 </script>
 <!-- ── Offline ────────────────────────────────────────────────────────────────
-     The same registration the other two pages carry — whichever page you open
-     first installs the one worker, and all three are in its scope. The
+     The same registration the other app page carries — whichever of the two you
+     open first installs the one worker, and everything under `./` is in its
+     scope, privacy.html and the old calculator address included. The
      strategy, the allowlist and the reasoning live in sw.js, which is worth
      reading before changing anything here.
 

@@ -50,7 +50,7 @@
 <body>
 <div class="wrap">
   <h1>Lottery — Pure-Function Tests</h1>
-  <p class="sub">Runs against the real <code>ny-lottery-calculator.html</code> and <code>lottery-portfolio.html</code> in hidden iframes.</p>
+  <p class="sub">Runs against the real <code>index.html</code> (the calculator) and <code>lottery-portfolio.html</code> in hidden iframes.</p>
   <div id="summary">Loading apps…</div>
   <table><tbody id="out"></tbody></table>
 </div>
@@ -1227,7 +1227,7 @@ t('federal/NY drag rows are computed per holding, not a fixed 77/23 split', () =
    What is worth asserting is the SHAPE of the thing. Cache Storage is keyed by
    ORIGIN and shared with every sibling app, so "only files already public in
    this repo, ever" is the promise holding this up. */
-let SW_SRC = '', KILL_SRC = '', INDEX_SRC = '', CALC_SRC = '', PORT_SRC = '', CHART_SRC = '',
+let SW_SRC = '', KILL_SRC = '', STUB_SRC = '', CALC_SRC = '', PORT_SRC = '', CHART_SRC = '',
     PKG = '', PRIVACY_SRC = '', TAX_SRC = '';
 /* One cache-buster for this run, shared by the hidden frames and by every
    source fetch, so both are always looking at the same revision — and at the
@@ -1332,7 +1332,7 @@ t('every parseInt spells out its radix', () => {
      rule with nothing enforcing it collects. chart.min.js is excluded — it is
      third-party and minified, and not ours to hold to a house style. */
   const sources = { portfolio: PORT_SRC, calculator: CALC_SRC,
-                    worker: SW_SRC, 'kill switch': KILL_SRC, index: INDEX_SRC };
+                    worker: SW_SRC, 'kill switch': KILL_SRC, 'redirect stub': STUB_SRC };
   for (const [name, src] of Object.entries(sources)) {
     const body = stripComments(src);
     let from = 0;
@@ -1462,11 +1462,14 @@ t('the kill switch stays a pure uninstaller', () => {
   ok(/startsWith\('lot-shell-'\)/.test(code), 'and clear only this repo’s caches');
 });
 
-t('all three pages register the worker, frame-guarded, after load', () => {
-  /* Whichever page you open first installs it, and all three are in its scope —
-     so someone who bookmarked the calculator gets offline too. The frame guard
-     is what stops this very suite installing one while it runs. */
-  for (const [name, src] of [['index.html', INDEX_SRC], ['the calculator', CALC_SRC],
+t('both pages register the worker, frame-guarded, after load', () => {
+  /* Whichever of the two you open first installs it, and everything under `./`
+     is in its scope — so privacy.html and the old calculator address are covered
+     without registering it themselves. The frame guard is what stops this very
+     suite installing one while it runs. (It was three pages until 2026-09-12,
+     when the launcher that used to be index.html was retired and the calculator
+     took its place.) */
+  for (const [name, src] of [['the calculator', CALC_SRC],
                              ['the portfolio', PORT_SRC]]) {
     ok(/navigator\.serviceWorker\.register\('sw\.js', \{ scope: '\.\/' \}\)/.test(src),
       `${name} must register the worker`);
@@ -1868,45 +1871,61 @@ t('the tax year is the same one both pages tell the reader', () => {
      'the footnote names a different year from tax.js — bump them together');
 });
 
+/* ── What /lottery/ serves, and what the old address does now ───────────────
+   Until 2026-09-12 `/lottery/` served a two-card chooser and the calculator sat
+   one click behind it at ny-lottery-calculator.html. With two tools, each
+   already linking the other from its own footer, the chooser only asked which of
+   two doors you wanted before showing you either — so the calculator moved into
+   index.html and the chooser was retired.
+
+   The REASON index.html has to exist is untouched by that: without one, Pages
+   fell back to a Jekyll rendering of README.md — a page on this shared origin
+   with no CSP that pulled a script from cdnjs. So the tests below still pin a
+   CSP and zero external script on whatever is served there; it is simply the
+   calculator that is served there now. */
 group('index.html — the page /lottery/ actually serves');
 
+t('it is the CALCULATOR, with no launcher standing in front of it', () => {
+  ok(CALC_SRC, 'index.html is missing — Pages will fall back to rendering the README');
+  ok(/function taxBreakdown\(/.test(CALC_SRC),
+    'index.html is not the calculator — something else is being served at /lottery/');
+  ok(!/<a class="card" href=/.test(CALC_SRC),
+    'the two-card chooser is back in front of the calculator');
+});
+
 t('it ships a CSP and loads no third-party script', () => {
-  ok(INDEX_SRC, 'index.html is missing — Pages will fall back to rendering the README');
-  ok(/http-equiv="Content-Security-Policy"/.test(INDEX_SRC), 'index.html must carry a CSP');
-  ok(!/<script[^>]+src=/i.test(INDEX_SRC), 'index.html must load no external script');
-  /* Attributes only, not prose: the file's own comment names the cdnjs script
-     that used to be served here, which is the whole reason it exists. */
-  const urls = [...INDEX_SRC.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]);
+  ok(/http-equiv="Content-Security-Policy"/.test(CALC_SRC), 'index.html must carry a CSP');
+  ok(!/<script[^>]+src="https?:/i.test(CALC_SRC), 'index.html must load no external script');
+  /* Attributes only, not prose: the page names the cdnjs script that used to be
+     served at this address, which is the whole reason the file exists. */
+  const urls = [...CALC_SRC.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]);
   for (const u of urls)
     ok(!/cdnjs|unpkg|jsdelivr|cloudflare\.com\/ajax/i.test(u),
       `index.html points at a CDN: ${u}`);
 });
 
-t('it links both tools, the privacy policy and How it works', () => {
-  for (const href of ['ny-lottery-calculator.html', 'lottery-portfolio.html', 'privacy.html'])
-    ok(INDEX_SRC.includes('href="' + href + '"'), `index.html must link ${href}`);
-  ok(/>How it works</.test(INDEX_SRC), 'the footer link is labelled "How it works" family-wide');
-  ok(/MIT licensed/.test(INDEX_SRC), 'and carries the authorship line every public page has');
+t('it links the portfolio, the privacy policy and How it works', () => {
+  for (const href of ['lottery-portfolio.html', 'privacy.html'])
+    ok(CALC_SRC.includes('href="' + href + '"'), `index.html must link ${href}`);
+  ok(/>How it works</.test(CALC_SRC), 'the footer link is labelled "How it works" family-wide');
+  ok(/MIT licensed/.test(CALC_SRC), 'and carries the authorship line every public page has');
 });
 
-t('and its own landmarks — a real main, then a real footer', () => {
-  /* The landing page is the one page here that was still a <div> of prose with
-     a styled <p> at the foot: the two app pages and the policy all had the pair
-     by 2026-08-21 and this did not. Comments stripped first and looped, for the
-     same reason the privacy group below gives. */
-  const bare = stripHtmlComments(INDEX_SRC);
-  ok(/<main>/.test(bare),
-    'no main landmark on the launcher, so contentinfo would be the only one');
-  /* Matched by the WRAPPER's class rather than by a bare '<footer', for the
-     reason the note above gives: a bare match passes on the prose in a comment.
-     The element carried class="note" until 2026-08-23, when this page took the
-     family's three-line footer — .footnotes is what identifies it now, and it is
-     load-bearing rather than decorative, because `footer` is a flex ROW and
-     without the wrapper the three lines lay out side by side. */
-  ok(/<div class="footnotes">/.test(bare),
-    'the footer is a real <footer> — a styled <p> is not a contentinfo landmark');
-  ok(bare.indexOf('</main>') < bare.indexOf('<div class="footnotes">'),
-    'with main CLOSED before it: a <footer> inside main is not contentinfo at all');
+t('and the old address still opens it, fragment and all', () => {
+  /* The stub at ny-lottery-calculator.html is not politeness. shareURL() builds
+     a share link out of location.pathname, so every link copied out of this page
+     before the move reads /lottery/ny-lottery-calculator.html#s=<figures> — the
+     file has to stay, and it has to carry the FRAGMENT across or the figures in
+     a shared link vanish while the page still looks like it worked. */
+  ok(STUB_SRC, 'ny-lottery-calculator.html is gone — every share link ever copied is dead');
+  ok(!/function taxBreakdown\(/.test(STUB_SRC) && STUB_SRC.length < 4000,
+    'the old address is meant to be a redirect, not a second copy of the calculator');
+  ok(/location\.replace\('\.\/' \+ location\.search \+ location\.hash\)/.test(STUB_SRC),
+    'the redirect must carry search AND hash — a meta refresh alone drops the share payload');
+  ok(/<noscript>/.test(STUB_SRC), 'and a reader with script off still gets a way across');
+  ok(/http-equiv="Content-Security-Policy"/.test(STUB_SRC),
+    'even a redirect stub carries a CSP — every page on this origin shares one jar');
+  ok(!/<script[^>]+src=/i.test(STUB_SRC), 'and loads nothing of its own');
 });
 
 t('its theme picker is written out at full size, with auto pre-selected', () => {
@@ -1940,8 +1959,7 @@ t('its theme picker is written out at full size, with auto pre-selected', () => 
    picker's `selected`, pinned just above. A place left on midnight is a silent
    disagreement — on a dark-mode machine every combination looks identical. */
 t('and the markup and setTheme agree that the default is auto', () => {
-  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC],
-                             ['the launcher', INDEX_SRC]]) {
+  for (const [name, src] of [['the calculator', CALC_SRC], ['the portfolio', PORT_SRC]]) {
     ok(src, name + ': did not load, so nothing below proves anything');
     ok(/<html[^>]*\sdata-theme="auto"/.test(src),
       name + ': <html> must carry data-theme="auto", or a script-less load falls back '
@@ -2013,10 +2031,10 @@ async function loadSources() {
      read caches of different ages and the suite reported green against a build
      that does not exist anywhere. */
   const grab = async (f) => { try { const r = await fetch(f + BUST, { cache: 'no-store' }); return r.ok ? await r.text() : ''; } catch (e) { return ''; } };
-  [SW_SRC, KILL_SRC, INDEX_SRC, CALC_SRC, PORT_SRC, CHART_SRC, PKG, PRIVACY_SRC, TAX_SRC] =
+  [SW_SRC, KILL_SRC, STUB_SRC, CALC_SRC, PORT_SRC, CHART_SRC, PKG, PRIVACY_SRC, TAX_SRC] =
     await Promise.all(
-    [grab('sw.js'), grab('sw-kill.js'), grab('index.html'),
-     grab('ny-lottery-calculator.html'), grab('lottery-portfolio.html'),
+    [grab('sw.js'), grab('sw-kill.js'), grab('ny-lottery-calculator.html'),
+     grab('index.html'), grab('lottery-portfolio.html'),
      grab('chart.min.js'), grab('package.json'), grab('privacy.html'),
      grab('tax.js')]);
 }
@@ -2034,7 +2052,7 @@ window.addEventListener('load', () => {
     document.body.appendChild(f);
     return f;
   };
-  const calc = frame('calc', 'ny-lottery-calculator.html', 'calculator under test');
+  const calc = frame('calc', 'index.html', 'calculator under test');
   const port = frame('port', 'lottery-portfolio.html', 'portfolio under test');
   /* Both pages are classic scripts at the foot of the body, so their function
      declarations exist by each frame's load event; poll for both frames. */
@@ -2086,7 +2104,7 @@ function refuse() {
     '<br><br><code>cd ~/claude-lottery &amp;&amp; python3 -m http.server 8010</code><br>' +
     'then open <code>http://localhost:8010/tests.html</code>.<br><br>' +
     'Nothing has been changed by opening this page — ' +
-    '<a href="ny-lottery-calculator.html">back to the calculator</a>.';
+    '<a href="./">back to the calculator</a>.';
   if (!onDisk) td.querySelector('strong').textContent = location.hostname;
   tr.appendChild(td);
   document.getElementById('out').appendChild(tr);

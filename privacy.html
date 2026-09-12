@@ -33,7 +33,7 @@
    restyled from CSS. It fixes the number spinners, checkboxes and scrollbars too,
    which have the same problem more quietly.
 
-   All four pages carry it, and the pairing follows the PALETTE rather than the
+   All three pages carry it, and the pairing follows the PALETTE rather than the
    theme's name: sepia is a warm LIGHT theme and takes `light`. Same block, same
    reasoning, in PAPTrack, Golf Handicap and Money Map. */
 :root                 { color-scheme: dark; }
@@ -41,7 +41,7 @@
 /* Auto has no palette of its own — theme.css resolves it to Light or, under
    prefers-color-scheme: dark, to Midnight. `light dark` is the honest answer:
    it tells the browser the page works either way and to draw its own controls
-   to match the system. The other three pages carry the same rule; this page
+   to match the system. The other two pages carry the same rule; this page
    missed it, so a light-system visitor on Auto got dark scrollbars on a light
    page. */
 [data-theme="auto"]   { color-scheme: light dark; }
@@ -89,7 +89,7 @@ footer { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
        where it sat until 2026-08-21: axe-core's `region` rule found it on all
        six privacy pages at once. A <nav> is what it always was; now it says so,
        and a reader moving by landmark can find the way back. -->
-  <nav aria-label="Back to the calculator"><a class="back" href="ny-lottery-calculator.html">← Back to the calculator</a></nav>
+  <nav aria-label="Back to the calculator"><a class="back" href="./">← Back to the calculator</a></nav>
 
   <!-- A real <main>, so the policy itself is a landmark a screen reader can jump
        straight to — and so the <footer> below is genuinely the OTHER end of the

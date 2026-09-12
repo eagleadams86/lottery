@@ -60,7 +60,7 @@
 /* Bump when the shell list changes, so old caches are purged on activate. It is
    NOT load-bearing for freshness — network-first means a forgotten bump cannot
    serve you stale code — it only stops dead entries accumulating. */
-const CACHE = 'lot-shell-v3';
+const CACHE = 'lot-shell-v4';
 const PREFIX = 'lot-shell-';
 
 /* THE ALLOWLIST, and the security boundary of this file. Every entry is a file
@@ -87,7 +87,18 @@ const PREFIX = 'lot-shell-';
    pulls every quoted string out of the array. A comment sitting inside it with an
    apostrophe in the prose would hand that pass a fake entry to check. */
 const SHELL = [
+  /* The root entry is the CALCULATOR itself since 2026-09-12, not a launcher
+     standing in front of it — shellKey below folds index.html onto this same
+     key, which is why one entry covers both spellings of the address.
+     (No apostrophes in these notes, per the warning above this list.) */
   './',
+  /* The calculator used to live at this address, which is now a three-line
+     redirect to the root. It stays on the list because it is the address inside
+     every share link copied out of the page before the move — shareURL builds
+     them from location.pathname — and the one anybody bookmarked. Dropping it
+     would hand exactly those readers a dead URL with no network, which is the
+     case offline exists for. Nothing new is cached by keeping it: the same
+     public file as before, three lines long now instead of 150 KB. */
   'ny-lottery-calculator.html',
   'lottery-portfolio.html',
   'theme.css',

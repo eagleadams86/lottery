@@ -54,7 +54,7 @@ async function fromUSAMega(slug) {
   // Numbers only. This used to also scrape a `nextDraw` date string out of the
   // page and hand it to the client, which never read it — the calculator has
   // always computed the next draw itself from the fixed Mon/Wed/Sat and Tue/Fri
-  // schedule (`nextDraw()` in ny-lottery-calculator.html), which needs no
+  // schedule (`nextDraw()` in index.html, the calculator), which needs no
   // network and can't go stale. So it was free-text from a third party crossing
   // a trust boundary for nothing. Removed 2026-08-20. Radix 10 is explicit on
   // both parses: these strings are digits and commas, but a leading zero should

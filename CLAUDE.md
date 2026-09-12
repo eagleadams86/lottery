@@ -148,11 +148,11 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   believing anything.
 - `theme.css` here is a **copy of the generated file from `~/claude-theme-pack`** (private repo eagleadams86/claude-theme-pack) — the source of truth for the palette of ALL apps. Both HTML pages `<link>` to it. 4 themes: Midnight (the base palette), Dark, Light, Sepia — plus `auto`, which is a picker entry and a resolution rule rather than a fifth palette, and which is the **default** since 2026-08-22. Never edit `theme.css` directly: change `tokens.json` in the pack, run its `build.py` + `check_contrast.py`, then copy the regenerated file here. If this app ever needs a color the pack doesn't have, follow the drift policy in the pack's CLAUDE.md (flag it, don't diverge silently).
 - **The site is INSTALLABLE on a Mac or a PC (2026-08-21), and offline is a separate, older thing.** `manifest.webmanifest` is what turns Chrome's "Install page as app…" into a real install. Four things have to stay in step or installing silently stops being offered, with nothing but a console line to say so:
-  - **`manifest-src 'self'` in the CSP of all three pages.** It falls back to `default-src`, which is `'none'` here, so without the directive the manifest fetch is refused. Suspect this first.
-  - **ONE manifest, not one per page, and that is a design decision rather than a shortcut.** Both app pages wear the SAME mark on purpose, so two installs would be two identical icons in the Dock with nothing to tell them apart. `start_url` is the landing page — already a two-card launcher — and the manifest's `shortcuts` put either tool one right-click away on the icon. If the two pages ever get distinct marks, this is the decision to revisit.
+  - **`manifest-src 'self'` in the CSP of both pages that link the manifest.** It falls back to `default-src`, which is `'none'` here, so without the directive the manifest fetch is refused. Suspect this first.
+  - **ONE manifest, not one per page, and that is a design decision rather than a shortcut.** Both app pages wear the SAME mark on purpose, so two installs would be two identical icons in the Dock with nothing to tell them apart. `start_url` is `./`, which since 2026-09-12 IS the calculator rather than a launcher standing in front of it, and the manifest's `shortcuts` put either tool one right-click away on the icon (the calculator's shortcut points at `./` for the same reason). If the two pages ever get distinct marks, this is the decision to revisit.
   - **`make_favicon.py` writes the install icons too** — `icon-192.png`, `icon-512.png` (rounded, `purpose: any`, since nothing masks those) and `icon-512-maskable.png` (square, full bleed, since a launcher supplies its own outline). Nothing had to move for the maskable crop and the script says why: the ball is centred at (54,54) with `BALL_SCALE` putting its radius at 34.5 of the 108 viewport, inside the safe zone's 43.2. **Raise `BALL_SCALE` past 43.2 and that stops being true** — the maskable icon would then need its own smaller scale.
   - **All four files are on `sw.js`'s SHELL allowlist, and `tests.html` pins that list by exact equality.** Adding an entry means editing the test too; that is the security review, by design. Their justification is written ABOVE the array rather than between the entries, unlike the `chart.min.js` note: the suite pins the list twice, and the second pass reads the RAW source and pulls every quoted string out of it, so a comment inside the array with an apostrophe in the prose hands that pass a fake entry.
-  - `<meta name="theme-color">` follows the theme on all three pages, so an installed window's title bar does not stay dark behind a light page. The two app pages read it back from the pack's `--bg` inside `setTheme()`; the landing page has no picker and sets it once in its pre-paint boot, where the stylesheet has not loaded yet — so that one **lists the four values** and has to be kept in step with `theme.css`.
+  - `<meta name="theme-color">` follows the theme on both app pages, so an installed window's title bar does not stay dark behind a light page. They read it back from the pack's `--bg` inside `setTheme()`. The launcher used to be a third case — no picker, so it listed the four values in its pre-paint boot and had to be kept in step with `theme.css` — and that copy went with it on 2026-09-12.
   - Offline predates all of this and is unchanged: it is `sw.js`, network-first. The manifest adds the window and the icon, not the caching.
 - **A control is only on screen where it changes something, and a figure says whose it
   is** (both 2026-08-22, both reported by Charles, both the same fault). The discount
@@ -297,21 +297,27 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
 - **`tests.html` pins the pure functions in both pages — open it (same local server, `http://localhost:8010/tests.html`) and check "All N tests pass" whenever you touch `tax.js`, the calculator's `parseField`/`ball`/`fmtDrawDate`/`gameBlock`/`pbBlock`/`mmBlock`/`winnersValue`/`nextDraw`/`taxBreakdown`/`annuityBreakdown`/`readShare`, or the portfolio's `computeIncome`/`portfolioRates`/`drawdown`/`readShare`/`parseLatest1yr`/`tint`/`posToM`/`mToPos`/`syncSlider` or the formatters.** It loads both real pages in hidden same-origin iframes and calls the functions directly (all plain `function` declarations, so no app-side hook is needed). Needs `http://localhost` — `file://` iframes are blocked in some browsers. The jackpot-proxy CORS error in the console while it runs is the documented localhost limitation, not a test failure. CI runs the same page headless on every push (`.github/workflows/tests.yml`) and fails the build if the summary goes red. When a rule pinned there changes, change the matching test in the same commit.
 - **`privacy.html` is the privacy policy for both pages** (static page, same midnight shell as the sibling apps, linked from each page's footer beside the copyright line). Added 2026-08-18. Nothing is stored but preferences and nothing is sent to the three public feeds, so it is short — but every page on the shared origin carries one. Update it if either page starts talking to a new endpoint.
 - Write commit subject lines in plain English a non-developer can read (what changed and why it matters, not implementation detail). The "Recent changes" section that showed them on both pages was removed 2026-08-18, across the whole app family, and the GitHub API went out of both CSPs with it.
-- **The landing page is a `<main>` / `<footer>` pair as well (2026-08-21).** Both tools and
-  `privacy.html` gained the landmarks on 2026-08-20 and the launcher was missed — it was a
-  `<div>` of prose with a styled `<p class="note">` at the foot. `</main>` closes BEFORE the
-  `<footer>`, for the reason spelled out in the privacy-page section below: a `<footer>` nested
-  inside `main` is not contentinfo at all. `.note` sets `margin`, not `margin-top`, now that
-  the element carrying it is no longer a `<p>`.
+- **`index.html` IS the calculator (2026-09-12), and the two-card launcher is gone.** With
+  only two tools, each already linking the other from its own footer, the chooser at `/lottery/`
+  only asked which of two doors you wanted before showing you either. `ny-lottery-calculator.html`
+  — the calculator's address since the repo began — is now a **redirect stub**, and it is not
+  optional politeness: `shareURL()` builds a share link out of `location.pathname`, so every
+  link copied out of the page before the move reads
+  `/lottery/ny-lottery-calculator.html#s=<figures>`. The stub is a script rather than a
+  `<meta refresh>` precisely because a refresh carries the path and nothing else — the figures
+  would vanish while the page still looked like it worked. It carries a CSP like every other
+  page here, stays on the worker's SHELL list so the old address works offline too, and
+  `tests.html` pins all of it. **Don't fold it away.**
 - **`index.html` exists to stop Pages serving something else, and `.nojekyll` keeps it that
   way.** Until 2026-08-18 this repo had no index, so `https://eagleadams86.github.io/lottery/`
   served a Jekyll rendering of README.md: a page on the family's shared origin with **no CSP**
   that pulled `anchor.min.js` from cdnjs. Every page on that origin can reach the localStorage
   and sync sessions of the apps holding work data, so a third-party script on any of them is a
-  hole in all of them. Don't delete either file, and if the landing page is ever restyled it
+  hole in all of them. That reason is untouched by the move above — it is simply the calculator
+  that is served there now. Don't delete either file, and whatever is served at that address
   keeps its CSP and its zero external scripts. `tests.html` pins both.
-- **There IS a service worker (`sw.js`), and it covers all three pages** — one worker, scope
-  `./`, registered from whichever page you open first. `lot-shell-` is its cache prefix, and
+- **There IS a service worker (`sw.js`), and it covers every page here** — one worker, scope
+  `./`, registered from whichever of the two app pages you open first. `lot-shell-` is its cache prefix, and
   `activate` must only ever delete caches with that prefix: Cache Storage is origin-wide and a
   sibling app's cache is not ours to touch. Only files already public in this repo are ever
   cached (`./`, both pages, `theme.css`, `tax.js`, `chart.min.js`, `privacy.html`,
