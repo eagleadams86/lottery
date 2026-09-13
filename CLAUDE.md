@@ -171,6 +171,13 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
     a before-tax return now). New keys: `lottery-invested`, `lottery-cmp-view` (both
     through `remember()`, both in the link as `iv`/`cv`), and `lottery-growth` for the
     Invested Year by Year disclosure. `presentValue()` left `tax.js` with its last caller.
+  - **The "Ahead here" pill is absolutely positioned in the card's top-right corner**
+    (same day, reported by Charles). Under the sentence it made the winning card a line
+    taller, so the whole page jumped every time the return crossed the break-even.
+    Every `.cmp-ttl` reserves `padding-right: 6.5rem` — both cards, so a title cannot
+    wrap differently by winning — and the badge stays right after the title in the
+    markup so it is read out before the figure. The Compare frame test flips 7% → 6.75%
+    and asserts the card heights and the verdict's position do not move.
   - `.situation` is a fixed TWO-column grid now: its fields come and go as a pair, and
     auto-fit made three-and-a-straggler of four fields in the half-width column.
   - Deliberately not modelled, and the `invested` help note says so: brackets changing

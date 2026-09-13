@@ -606,7 +606,7 @@
      phone — and the verdict line underneath belongs to both of them, so it sits
      outside the grid rather than inside the winner's card. */
   .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-  .cmp-card { padding: 0.9rem 1rem; background: var(--bg-card-alt); border: 1px solid var(--border);
+  .cmp-card { position: relative; padding: 0.9rem 1rem; background: var(--bg-card-alt); border: 1px solid var(--border);
               border-radius: var(--radius); }
   .cmp-card.win { border-color: var(--ok); }
   .cmp-ttl { font-size: var(--fs-xs); font-weight: 600; color: var(--text-hint); text-transform: uppercase;
@@ -616,7 +616,15 @@
   .cmp-sub { font-size: var(--fs-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.6; }
   /* Never the border alone: the winning card is named in the verdict sentence
      under the pair, and this badge says which one it is in words. */
-  .cmp-badge { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: var(--radius-pill);
+  /* IN THE TOP-RIGHT CORNER, OUT OF THE FLOW (2026-09-13, reported by Charles). It
+     sat under the sentence, so the winning card was a line taller than the other,
+     and every time the return crossed the break-even the cards changed height and
+     shoved the verdict, the breakdown and everything under them down or up. Out
+     of the flow it costs neither card any height. Every title keeps room for it —
+     both, not just the winner's — so a title can never wrap differently by winning. */
+  .cmp-ttl { padding-right: 6.5rem; }
+  .cmp-badge { position: absolute; top: calc(0.9rem - 3px); right: 1rem;
+               display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill);
                font-size: var(--fs-xs); font-weight: 600; background: var(--ok-bg); color: var(--ok); }
   .verdict { margin: 12px 0 0; font-size: var(--fs-sm); color: var(--text-primary); line-height: 1.7; }
   /* Which end of the run Compare's figures are read from. It changes the tiles in
@@ -2714,9 +2722,12 @@ function levelWords(be){
 function fmtZ(n){ return n>0 ? fmtM1(n) : '$0'; }
 
 function cmpCard(title,big,sub,win){
+  /* The badge follows the title in the markup, whatever the CSS does with it, so it
+     is read out as "Lump sum, Ahead here" before the figure it qualifies. */
   return '<div class="cmp-card'+(win?' win':'')+'"><div class="cmp-ttl">'+title+'</div>'+
+    (win?'<div class="cmp-badge">Ahead here</div>':'')+
     '<div class="cmp-big">'+big+'</div><div class="cmp-sub">'+sub+'</div>'+
-    (win?'<div class="cmp-badge">Ahead here</div>':'')+'</div>';
+    '</div>';
 }
 
 function mc(l,v,c){ return '<div class="mc"><div class="ml">'+l+'</div><div class="mv '+c+'">'+v+'</div></div>'; }

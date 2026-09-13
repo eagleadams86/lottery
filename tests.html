@@ -677,6 +677,24 @@ t('Compare shows one kind of money per view, and both views crown the same winne
     eq(D.getElementById('view-future').textContent, 'In 30 Years');
     eq(D.getElementById('view-future').getAttribute('aria-pressed'), 'true');
     eq(localStorage.getItem('lottery-cmp-view'), priorView, 'a shared link saved its view');
+
+    /* The "Ahead here" pill sat UNDER the sentence (reported 2026-09-13), so the
+       winning card was a line taller and the whole page jumped each time the return
+       crossed the break-even. 7% has the lump sum ahead; 6.75% the annuity — the
+       pair from the report. Measured, not read off the CSS: the fault was a height. */
+    W.setCmpView('today');
+    const verdictTop = () => D.getElementById('cmp-verdict').getBoundingClientRect().top;
+    const heights = () => [...D.querySelectorAll('#cmp-cards .cmp-card')]
+      .map((el) => el.getBoundingClientRect().height);
+    const top7 = verdictTop(), h7 = heights();
+    ok(cards()[0].win, 'at 7% the lump sum should be ahead');
+    W.invReturn = 0.0675; W.calc();
+    ok(cards()[1].win, 'at 6.75% the annuity should be ahead — the flip this check needs never happened');
+    eq(heights(), h7, 'the cards changed height when the winner changed');
+    eq(verdictTop(), top7, 'the verdict moved when the winner changed, so everything under it did too');
+    eq(D.querySelectorAll('#cmp-cards .cmp-badge').length, 1, 'one pill, on the winner');
+    eq(W.getComputedStyle(D.querySelector('#cmp-cards .cmp-badge')).position, 'absolute',
+      'the pill is back in the flow');
   } finally {
     f.remove();
     if (prior === null) localStorage.removeItem(CACHE_KEY);
