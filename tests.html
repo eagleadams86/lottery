@@ -246,11 +246,14 @@ t('a hand-edited link cannot put a value anywhere it does not belong', () => {
   const mk = (o) => '#s=' + btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const p = wc.readShare(mk({ v: 1, g: '<img src=x>', w: 'constructor', p: 'evil',
                               f: '__proto__', r: 'mars', n: 1e9, d: 99,
+                              iv: '__proto__', cv: ['future'],
                               j: '9e99', ju: 'Z', l: 'alert(1)', lu: {} }));
   eq(p.g, 'pb'); eq(p.w, null); eq(p.p, 'lump');
   eq(p.f, 'single'); eq(p.r, 'ny');
   eq(p.n, 1000, 'the winner count is clamped, not trusted');
-  eq(p.d, 0.04, 'a 99 discount rate is not a rate');
+  eq(p.d, wc.DEFAULT_RETURN, 'a 99% return is not a rate');
+  eq(p.iv, 'stocks', 'a holding that is not on the list falls back');
+  eq(p.cv, 'today', 'an array that stringifies to a real view is still not one');
   eq(p.j, '', 'an amount past the ceiling is dropped');
   eq(p.l, '', 'an unreadable amount is dropped');
   eq(p.ju, 'M'); eq(p.lu, 'M');
@@ -535,12 +538,6 @@ t('an unknown plan falls back rather than returning nothing', () => {
   eq(wc.annuitySchedule(1e6, 'no-such-plan').length, 30);
   eq(wc.annuitySchedule(0, 'graduated30').length, 0, 'no jackpot, no schedule');
 });
-t('present value discounts every payment but the first', () => {
-  const s = [100, 100, 100];
-  near(wc.presentValue(s, 0), 300, 'at 0% it is just the sum');
-  near(wc.presentValue(s, 0.10), 100 + 100 / 1.1 + 100 / 1.21);
-  ok(wc.presentValue(s, 0.05) < 300, 'a positive rate must reduce it');
-});
 t('thirty tax returns beat one, which is the whole argument', () => {
   /* Each payment is its own year, so each one walks up the brackets from the
      bottom. The effective rate on the annuity must therefore be LOWER than on
@@ -550,6 +547,141 @@ t('thirty tax returns beat one, which is the whole argument', () => {
   ok(a.eff < lump.eff, 'annuity ' + a.eff + ' should be under lump ' + lump.eff);
   near(a.gross, 500e6);
   near(a.net, a.gross - a.tax, 'net and tax must account for every dollar');
+});
+
+/* ── Both payouts, invested ──────────────────────────────────────────────────
+   2026-09-13, from Charles's question: Compare shrank the annuity to today's
+   money at a discount rate, and the screen mixed that figure with raw totals.
+   It now follows BOTH payouts invested, taxing the growth the year and the way
+   it is really taxed, and reads today's money off the same run — so the two
+   views can never pick different winners. The $251M / $106.6M Powerball below
+   is the one in his screenshot. */
+group('investing both payouts — Compare, since 2026-09-13');
+function withSituation(fn) {
+  const f = wc.filing, l = wc.lives;
+  wc.filing = 'single'; wc.lives = 'ny';
+  try { return fn(); } finally { wc.filing = f; wc.lives = l; }
+}
+t('a year with nothing but a lottery payment costs exactly what ordinaryTax says', () => {
+  /* The growth view and the tax breakdown must agree about what a payment
+     costs, or the invested run starts from a different figure than the card. */
+  for (const amt of [0, 3000, 250e3, 5e6, 100e6])
+    for (const st of ['single', 'mfj'])
+      for (const w of ['ny', 'nyc', 'yonkers'])
+        near(wc.yearTax(amt, 0, 0, st, w).total, wc.ordinaryTax(amt, st, w).total, `${amt} ${st} ${w}`);
+  eq(wc.yearTax(100e6, 0, 0, 'single', 'ny').niit, 0, 'lottery winnings are not investment income');
+});
+t('dividends stack on top of the year’s payment; interest is ordinary income', () => {
+  const base = wc.yearTax(100e6, 0, 0, 'single', 'ny').total;
+  near(wc.yearTax(100e6, 0, 1e6, 'single', 'ny').total - base, 1e6 * (0.20 + 0.038 + 0.109),
+    'a dividend in a jackpot year meets the 20% band, NIIT and New York');
+  near(wc.yearTax(100e6, 1e6, 0, 'single', 'ny').total - base, 1e6 * (0.37 + 0.038 + 0.109),
+    'interest meets the ordinary top rate, NIIT and New York');
+  const small = wc.yearTax(0, 0, 40000, 'single', 'ny');
+  eq(small.niit, 0, 'NIIT only starts above its threshold');
+  eq(small.fed, 0, 'a gain inside the standard deduction and the 0% band owes no federal tax');
+});
+t('at a 0% return both payouts finish on their after-tax totals', () => withSituation(() => {
+  const b = wc.taxBreakdown(106.6e6, 1), a = wc.annuityBreakdown(251e6, 1, 'graduated30');
+  const g = wc.growthCompare(b.share, a, 0, 'stocks');
+  near(g.lump.end, b.net, 'nothing grew, so the lump sum is its after-tax figure');
+  near(g.ann.end, a.net, 'and the annuity is its after-tax total');
+  near(g.annToday, a.net, 'with no growth, today’s money is that total too');
+  eq(g.lump.saleTax, 0, 'no gain, no tax at the sale');
+  eq(g.years, 30); eq(g.soldIn, wc.TAX_YEAR + 30);
+}));
+t('growth is taxed along the way, and deferring the tax is worth something', () => withSituation(() => {
+  const b = wc.taxBreakdown(106.6e6, 1), a = wc.annuityBreakdown(251e6, 1, 'graduated30');
+  const st = wc.growthCompare(b.share, a, 0.07, 'stocks');
+  const bd = wc.growthCompare(b.share, a, 0.07, 'bonds');
+  ok(st.lump.end < b.net * Math.pow(1.07, 30), 'the invested lump sum grew as if nothing were taxed');
+  ok(st.lump.end > b.net * Math.pow(1.035, 30), 'it was taxed at more than half, which no rate here is');
+  ok(st.lump.rows.every((r) => r.tax > 0), 'every stock year pays tax on its dividend');
+  ok(st.lump.saleTax > 0, 'price growth is taxed when it is sold');
+  eq(bd.lump.saleTax, 0, 'interest is taxed as it comes, so bonds leave nothing for the end');
+  ok(bd.lump.end < st.lump.end, 'taxed every year must finish behind taxed mostly at the end');
+  /* The basis trap the portfolio page learnt: reinvested dividends are basis,
+     price growth never is. A gain as large as the whole balance means the
+     dividends were forgotten; one of zero means the growth was. */
+  ok(st.lump.gain > 0 && st.lump.gain < st.lump.balance - b.net, 'the cost basis is wrong: gain ' + st.lump.gain);
+}));
+t('today’s money is the same run read backwards, so the views cannot disagree', () => withSituation(() => {
+  const b = wc.taxBreakdown(106.6e6, 1), a = wc.annuityBreakdown(251e6, 1, 'graduated30');
+  for (const style of ['stocks', 'bonds'])
+    for (const r of [0.02, 0.05, 0.065, 0.07, 0.1, 0.15]) {
+      const g = wc.growthCompare(b.share, a, r, style);
+      near(g.lumpToday, b.net, 'the lump sum in today’s money IS its after-tax figure');
+      eq(g.annToday >= g.lumpToday, g.ann.end >= g.lump.end, `${style} at ${r}: the views picked different winners`);
+    }
+}));
+t('the break-even return is where the two finish level', () => withSituation(() => {
+  const b = wc.taxBreakdown(106.6e6, 1), a = wc.annuityBreakdown(251e6, 1, 'graduated30');
+  const be = wc.breakEvenRate(b.share, a, 'stocks');
+  ok(be > 0.06 && be < 0.075, 'the screenshot’s Powerball in stock funds should level near 6.8%, got ' + be);
+  const at = wc.growthCompare(b.share, a, be, 'stocks');
+  ok(Math.abs(at.ann.end - at.lump.end) < at.lump.end * 1e-6, 'not level at the rate it names');
+  const lo = wc.growthCompare(b.share, a, be - 0.005, 'stocks');
+  const hi = wc.growthCompare(b.share, a, be + 0.005, 'stocks');
+  ok(lo.ann.end > lo.lump.end, 'below it the annuity must be ahead');
+  ok(hi.lump.end > hi.ann.end, 'above it the lump sum must be ahead');
+  ok(wc.breakEvenRate(b.share, a, 'bonds') > be, 'taxing all the growth every year must favour the annuity');
+  eq(wc.levelAt(0), 'None'); eq(wc.levelAt(1), 'Over 100%'); eq(wc.levelAt(0.0676), '6.76%');
+}));
+t('Compare shows one kind of money per view, and both views crown the same winner', async () => {
+  /* Booted from a share link so nothing it sets is SAVED — a link is a look —
+     and so the situation is fixed: single, New York State, $251M / $106.6M, 7%. */
+  const fixture = Object.assign({}, SHARE_FIXTURE,
+    { p: 'compare', j: '251', l: '106.6', d: 0.07, iv: 'stocks', cv: 'today' });
+  const prior = localStorage.getItem(CACHE_KEY), priorView = localStorage.getItem('lottery-cmp-view');
+  localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: LIVE_FIXTURE }));
+  const hash = '#s=' + btoa(JSON.stringify(fixture))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const f = document.createElement('iframe');
+  f.setAttribute('data-lottery-tests', '');
+  f.setAttribute('aria-hidden', 'true');
+  f.style.cssText = 'position:absolute;left:-9999px;width:1280px;height:900px;border:0';
+  await new Promise((resolve) => {
+    f.onload = resolve;
+    f.src = 'index.html?cmp=' + Date.now() + hash;
+    document.body.appendChild(f);
+  });
+  try {
+    await new Promise((r) => setTimeout(r, 150));
+    const W = f.contentWindow, D = W.document;
+    const tiles = () => [...D.querySelectorAll('#mgrid .mc')].map((el) =>
+      ({ l: el.querySelector('.ml').textContent, v: el.querySelector('.mv').textContent }));
+    const cards = () => [...D.querySelectorAll('#cmp-cards .cmp-card')].map((el) =>
+      ({ big: el.querySelector('.cmp-big').textContent, win: el.classList.contains('win') }));
+    const t1 = tiles(), c1 = cards();
+    eq(t1.length, 4, 'four tiles');
+    ok(!t1.some((x) => /after tax/i.test(x.l)),
+      'a raw after-tax total is back among the tiles, beside figures in today’s money: '
+      + t1.map((x) => x.l).join(' / '));
+    ok(/today/i.test(t1[0].l) && /today/i.test(t1[1].l), 'the tiles must say which money they are in');
+    eq(t1[0].v, c1[0].big, 'the lump sum tile and card are one figure');
+    eq(t1[1].v, c1[1].big, 'the annuity tile and card are one figure');
+    ok(parseFloat(t1[3].v) > 6 && parseFloat(t1[3].v) < 7.5, 'break-even tile: ' + t1[3].v);
+    eq(D.getElementById('fld-return').style.display, '', 'the return is on screen on Compare');
+    eq(D.getElementById('fld-invested').style.display, '', 'and so is the holding');
+    eq(D.getElementById('growth-section').style.display, 'block', 'the year-by-year run is on Compare');
+    eq(D.querySelectorAll('#growthbody tr').length, 33, 'thirty years, the tax total, the sale and the end');
+    const winToday = c1.findIndex((c) => c.win);
+    ok(winToday >= 0, 'nothing is marked ahead');
+
+    W.setCmpView('future');
+    const t2 = tiles(), c2 = cards();
+    ok(new RegExp('in ' + (W.TAX_YEAR + 30)).test(t2[0].l), 'the future tiles name the year: ' + t2[0].l);
+    eq(t2[0].v, c2[0].big); eq(t2[1].v, c2[1].big);
+    eq(c2.findIndex((c) => c.win), winToday, 'the two views crowned different winners');
+    eq(t2[3].v, t1[3].v, 'the break-even is one number in both views');
+    eq(D.getElementById('view-future').textContent, 'In 30 Years');
+    eq(D.getElementById('view-future').getAttribute('aria-pressed'), 'true');
+    eq(localStorage.getItem('lottery-cmp-view'), priorView, 'a shared link saved its view');
+  } finally {
+    f.remove();
+    if (prior === null) localStorage.removeItem(CACHE_KEY);
+    else localStorage.setItem(CACHE_KEY, prior);
+  }
 });
 
 group('taxBreakdown — the arithmetic behind calc() (calculator)');
@@ -1645,7 +1777,8 @@ t('no schema halt here, and that is the deliberate difference', () => {
   const stored = [...src.matchAll(/localStorage\.setItem\('([^']+)'/g),
                   ...src.matchAll(/\bremember\('([^']+)'/g)]
     .map((m) => m[1]).filter((v, i, a) => a.indexOf(v) === i).sort();
-  eq(stored, ['lottery-details', 'lottery-discount', 'lottery-filing', 'lottery-game',
+  eq(stored, ['lottery-cmp-view', 'lottery-details', 'lottery-discount', 'lottery-filing',
+              'lottery-game', 'lottery-growth', 'lottery-invested',
               'lottery-jackpot-cache', 'lottery-net-takehome', 'lottery-npeople',
               'lottery-payout', 'lottery-portfolio-sections', 'lottery-portfolio-seeded-from',
               'lottery-portfolio-sliders', 'lottery-residence', 'lottery-sched',
@@ -1667,7 +1800,7 @@ t('no schema halt here, and that is the deliberate difference', () => {
    the same panel on every single visit. */
 t('every disclosure on the calculator opens expanded', () => {
   const bare = stripHtmlComments(CALC_SRC);
-  for (const id of ['details', 'wn', 'sched']) {
+  for (const id of ['details', 'wn', 'sched', 'growth']) {
     const btn = (bare.match(new RegExp(`<button[^>]*id="${id}-toggle"`)) || [])[0]
       || (bare.match(new RegExp(`<button[^>]*aria-controls="${id}-body"[^>]*>`)) || [])[0] || '';
     ok(/aria-expanded="true"/.test(btn),
@@ -1682,11 +1815,11 @@ t('every disclosure on the calculator opens expanded', () => {
 });
 t('and closing one is remembered, or it has to be closed again every visit', () => {
   const code = CALC_SRC.replace(/\/\*[\s\S]*?\*\//g, '');
-  for (const key of ['lottery-details', 'lottery-winning', 'lottery-sched'])
+  for (const key of ['lottery-details', 'lottery-winning', 'lottery-sched', 'lottery-growth'])
     ok(new RegExp(`setItem\\('${key}'`).test(code), `${key} is never written`);
-  /* Restored the same way round in all three: only a saved '0' collapses, so a
+  /* Restored the same way round in all four: only a saved '0' collapses, so a
      browser that has never expressed a preference gets the default. */
-  eq((code.match(/getItem\('lottery-(?:details|winning|sched)'\)==='0'/g) || []).length, 3,
+  eq((code.match(/getItem\('lottery-(?:details|winning|sched|growth)'\)==='0'/g) || []).length, 4,
      'all three must restore with the "only if you closed it" test — a plain truthiness '
      + 'check would collapse the panel for anyone who had ever opened it');
 });
@@ -1706,14 +1839,19 @@ t('and closing one is remembered, or it has to be closed again every visit', () 
    payouts are on screen and each card carries its own rate, an unqualified
    "Effective total tax rate" read as the answer for the comparison rather than for
    one side of it. */
-t('the discount rate is only on screen for Compare, where it decides the answer', () => {
+t('the investment fields are only on screen for Compare, where they decide the answer', () => {
+  /* The discount rate's rule, inherited by the two fields that replaced it on
+     2026-09-13: nothing on the Annuity tab is invested either. */
   const code = CALC_SRC.replace(/\/\*[\s\S]*?\*\//g, '');
-  const line = (code.match(/fld-discount'\)\.style\.display *= *[^;]+;/) || [''])[0];
-  ok(line, 'the show/hide line for the discount field has gone');
-  ok(/payout *=== *'compare'/.test(line),
-    "it must key off Compare. Keyed off `payout === 'lump'` it also shows on the annuity "
-    + 'tab, where nothing on screen is discounted: ' + line);
-  ok(!/payout *=== *'lump'/.test(line), 'still keyed off the lump sum: ' + line);
+  ok(!/fld-discount/.test(code), 'the discount-rate field is back beside the fields that replaced it');
+  for (const id of ['fld-return', 'fld-invested']) {
+    const line = (code.match(new RegExp(`${id}'\\)\\.style\\.display *= *[^;]+;`)) || [''])[0];
+    ok(line, `the show/hide line for ${id} has gone`);
+    ok(/payout *=== *'compare'/.test(line),
+      `${id} must key off Compare. Keyed off \`payout === 'lump'\` it also shows on the annuity `
+      + 'tab, where nothing on screen is invested: ' + line);
+    ok(!/payout *=== *'lump'/.test(line), 'still keyed off the lump sum: ' + line);
+  }
 });
 t('and the effective rate says which payout it belongs to when there are two', () => {
   const bare = stripHtmlComments(CALC_SRC);
@@ -1759,7 +1897,7 @@ t('one decision picks the winner, and everything that must agree reads it', () =
     'the cards are deciding it for themselves again');
   /* Ties go to the annuity, as they always did in the tiles. Pinned because a
      flip from >= to > moves which payout the whole page describes at break-even. */
-  ok(/annuityAhead *= *\(a && b\) \? \(a\.pvNet >= b\.net\)/.test(code),
+  ok(/annuityAhead *= *g \? \(g\.annToday >= g\.lumpToday\)/.test(code),
     'the tie-break moved — at exactly the break-even rate the annuity is ahead');
 });
 t('the breakdown and its effective rate always describe the same payout', () => {
@@ -1783,7 +1921,8 @@ t('every help dot has an entry, and every entry has a dot', () => {
   const bare = stripHtmlComments(CALC_SRC);
   const dots = [...bare.matchAll(/data-help="([a-z]+)"/g)].map((m) => m[1]).sort();
   ok(dots.length >= 4, 'the help dots have gone: ' + dots.join(', '));
-  ok(dots.includes('discount'), 'the discount rate must carry one — it is the reason this exists');
+  ok(dots.includes('growth'), 'the investment return must carry one — the rate is the reason this exists');
+  ok(dots.includes('invested'), 'and so must the holding: it decides when the growth is taxed');
   const keys = [...(CALC_SRC.match(/var HELP = \{[\s\S]*?\n\};/) || [''])[0]
     .matchAll(/^  ([a-z]+): \[/gm)].map((m) => m[1]).sort();
   eq(keys, dots, 'a dot with no entry opens nothing and says nothing; an entry with no dot '

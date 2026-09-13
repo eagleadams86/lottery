@@ -137,8 +137,46 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   Lotto pays 26 equal ones, and **the plan follows the winning-numbers game selector**, which
   is the page's one "which game" answer. The first payment is the jackpot over the SUM OF THE
   GROWTH FACTORS (66.44 for 30 at 5%), not over 30 — getting that wrong overstates the first
-  cheque by a third. `breakEvenRate()` bisects rather than solving, because an after-tax
-  annuity stream is not a closed form once every payment has been through a bracket table.
+  cheque by a third. `breakEvenRate()` bisects rather than solving, because thirty years of
+  payments, dividends and a sale, each through a bracket table, is not a closed form.
+- **COMPARE INVESTS BOTH PAYOUTS (2026-09-13), and it replaced a discount rate.** Charles
+  asked why Compare shrank the annuity to "today's money" instead of growing the lump sum
+  forward, and pointed at tiles mixing the two. What to know before touching any of it:
+  - **Growing only the lump sum is the wrong model and will look tempting again.** Set
+    against the annuity's raw total it picks the lump sum at almost any return, because it
+    forgets that every annuity cheque can be invested too. `growthCompare()` runs BOTH
+    paths through `growPath()`: a payment arrives and its own tax comes off (the
+    breakdown's figure), the balance earns the return, the dividend or interest is taxed
+    ON THE SAME RETURN as that year's payment (`yearTax()` in `tax.js`, which stacks
+    qualified income over ordinary and adds NIIT only on investment income), and after
+    the last year the lot is sold against a tracked basis. Reinvested dividends after tax
+    are basis; price growth never is — the portfolio page's trap, from the other side.
+  - **Taxing the growth MOVED the answer, and that is correct.** The old after-tax
+    discount rate left thirty years of tax to the reader. Tax on growth falls hardest on
+    the lump sum (most invested, longest), so the $251M Powerball in Charles's screenshot
+    went from a 5.65% break-even to 6.76% in stock funds and ~11% in bonds. A test pins
+    the 6–7.5% band for that case.
+  - **Today's Money is the same run read backwards**: `annToday = ann.end × lumpNet /
+    lump.end` — what you would invest today, in the same account, to finish where the
+    annuity does. The lump sum's today figure is exactly its after-tax net, so the two
+    views CANNOT crown different winners, and `annuityAhead` reads `g.annToday >=
+    g.lumpToday`. A plain present value at some separate rate would break that.
+  - **The tiles are one kind of money per view.** They were lump after tax / annuity RAW
+    total / annuity in today's money / gap, and the raw $133.9M — the biggest figure, the
+    only one counted differently — read as the annuity winning under a verdict saying it
+    lost. The raw total lives only in the annuity card's sentence. A frame test pins that
+    no tile says "after tax" and that each tile equals its card in both views.
+  - **Legacy names on purpose:** the return is still stored as `lottery-discount` and
+    carried as `d` in a share link, so a saved rate and an old link keep working (read as
+    a before-tax return now). New keys: `lottery-invested`, `lottery-cmp-view` (both
+    through `remember()`, both in the link as `iv`/`cv`), and `lottery-growth` for the
+    Invested Year by Year disclosure. `presentValue()` left `tax.js` with its last caller.
+  - `.situation` is a fixed TWO-column grid now: its fields come and go as a pair, and
+    auto-fit made three-and-a-straggler of four fields in the half-width column.
+  - Deliberately not modelled, and the `invested` help note says so: brackets changing
+    over thirty years, tax-free munis, holding past the end, and the months between
+    withholding and the rest of a year's tax. `DIVIDEND_YIELD` is 1.4%, the portfolio
+    page's VTI default.
 - **Six games in the winning numbers, and two of New York's are deliberately absent.** Cash 4
   Life's dataset is still served but the GAME IS RETIRED, so it would pin "the latest results"
   to a February draw for ever; Millionaire for Life is its replacement and is in. Quick Draw is
@@ -204,9 +242,10 @@ NY Lottery take-home calculator + investment portfolio model. Two no-build HTML 
   nothing about a lump sum" — which quietly assumed the annuity view discounted
   something. It does not: its four tiles are the first payment, the share, the tax over
   the run and the net over the run, all undiscounted, and the schedule under them is
-  per-year gross/tax/net. It is now `payout === 'compare'` only. **The one place it still
-  reaches from another tab is the CSV**, which carries an "Annuity in today's money at
-  N%" row — that row names its own rate, so it stays honest with the field off screen.
+  per-year gross/tax/net. It is now `payout === 'compare'` only — and so are the return
+  and holding fields that replaced it on 2026-09-13. **The one place they still reach
+  from another tab is the CSV**, whose invested rows sit beside a row naming the return
+  and one naming the holding, so it stays honest with the fields off screen.
   Separately, the effective rate and the breakdown beneath it **follow the winner on
   Compare** (2026-08-22). `annuityAhead` is decided ONCE, near the top of the render,
   and everything that has to agree reads it: the tiles, the cards' "Ahead here" badge,
