@@ -397,8 +397,8 @@
      A circled "i" beside the thing it explains, opening one window off a
      `data-help` key. This page had no help at all until it was added, and it is
      the page in the family that asks the most of a reader who has not met the
-     vocabulary — a discount rate decides which payout it recommends, and
-     nothing on screen said what one was.
+     vocabulary — an investment return decides which payout it recommends (a
+     discount rate, until 2026-09-13), and nothing on screen said what one was.
 
      THE SAME BLOCK IS IN EVERY APP THAT HAS ONE, PROPERTY BY PROPERTY
      (2026-08-23). It was copied from Golf Handicap when it arrived here — a "?"
@@ -575,12 +575,17 @@
   .seg-btn:hover { color: var(--text-primary); }
   .seg-btn[aria-pressed="true"] { background: var(--unit-active-bg); color: var(--unit-active-txt); }
 
-  /* Who you are, for tax purposes. Two selects and — only while the annuity is
-     on screen — the discount rate that decides the argument between the two
-     payouts. Auto-fit rather than a fixed column count, because the third field
-     comes and goes. */
-  .situation { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  /* Who you are, for tax purposes. Two selects and — only on Compare — the two
+     facts about investing that decide the argument between the payouts. TWO
+     COLUMNS, always (2026-09-13): the fields come and go as a pair, so this is a
+     1 × 2 row or a 2 × 2 block and never three-and-a-straggler, which is what
+     auto-fit made of four fields in a half-width column. */
+  .situation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
                gap: 10px; margin-top: 0.9rem; }
+  /* ONE column on a phone. At two, "Investment return" wrapped its info dot onto
+     a second line — so its box sat lower than its neighbour's — and the holding's
+     select cut "Stock index funds" off mid-word. */
+  @media (max-width: 520px) { .situation { grid-template-columns: minmax(0, 1fr); } }
   .fld { min-width: 0; }
   .fld > label { display: block; font-size: var(--fs-xs); font-weight: 600; color: var(--text-hint);
                  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
@@ -614,6 +619,11 @@
   .cmp-badge { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: var(--radius-pill);
                font-size: var(--fs-xs); font-weight: 600; background: var(--ok-bg); color: var(--ok); }
   .verdict { margin: 12px 0 0; font-size: var(--fs-sm); color: var(--text-primary); line-height: 1.7; }
+  /* Which end of the run Compare's figures are read from. It changes the tiles in
+     the left column as well as the cards under it, and sits here because the
+     cards are the answer it changes. */
+  .cmp-view { margin-bottom: 12px; }
+  .growth-note { font-size: var(--fs-xs); color: var(--text-hint); margin: 0 0 8px; line-height: 1.6; }
 
   /* The 30-year schedule. Its own scroll box, so a long table never widens the
      page — the family rule for any wide block. */
@@ -913,23 +923,36 @@
       </div>
       <!-- ONLY on screen for Compare. Hidden rather than disabled: a control that
            cannot affect the answer is noise, not a locked door — and that test is
-           what moved it here on 2026-08-22. It used to show for the annuity too,
-           on the reasoning that it decides nothing about a LUMP sum, which quietly
-           assumed the annuity view discounted something. It does not: those four
-           tiles are the first payment, the share, the tax over the run and the net
-           over the run, all undiscounted, and the schedule below them is gross,
-           tax and net per year. Typing in this box changed nothing a reader could
-           see. (One place it still reaches from that tab: the CSV export carries an
-           "Annuity in today's money at N%" row, which names its own rate and so
-           stays honest without the field on screen.) -->
-      <div class="fld" id="fld-discount" style="display:none">
-        <label for="discount">Your discount rate<button class="tile-help" type="button"
-          data-help="discount" aria-label="What the discount rate is and how to pick one"
+           what moved the discount rate here on 2026-08-22, off the Annuity tab,
+           whose tiles and schedule are all undiscounted and uninvested. Typing in
+           it there changed nothing a reader could see.
+
+           These two REPLACED that discount rate on 2026-09-13. It was an after-tax
+           figure, which left the reader to do thirty years of tax on the growth
+           in their head. Compare now follows both payouts invested and takes that
+           tax off itself, so what it needs is what the money earns BEFORE tax, and
+           how it is held — which decides when the growth is taxed and at what
+           rate. (The CSV still carries both from the Annuity tab, beside the
+           figures they produced, so it stays honest with the fields off screen.) -->
+      <div class="fld" id="fld-return" style="display:none">
+        <label for="return-rate">Investment return<button class="tile-help" type="button"
+          data-help="growth" aria-label="What the investment return is and how to pick one"
           >i</button></label>
-        <input type="number" id="discount" min="0" max="20" step="0.25" value="4"
-          inputmode="decimal" oninput="onDiscount()" aria-describedby="discount-hint" />
-        <div class="hint" id="discount-hint">What future money is worth to you today.
-          Higher favours the lump sum, lower favours the annuity.</div>
+        <input type="number" id="return-rate" min="0" max="20" step="0.25" value="6"
+          inputmode="decimal" oninput="onReturn()" aria-describedby="return-hint" />
+        <div class="hint" id="return-hint">A year, before tax. Higher favours the lump
+          sum, lower favours the annuity.</div>
+      </div>
+      <div class="fld" id="fld-invested" style="display:none">
+        <label for="invested">Invested in<button class="tile-help" type="button"
+          data-help="invested" aria-label="How the way it is invested changes the tax"
+          >i</button></label>
+        <select id="invested" onchange="setInvested(this.value)" aria-describedby="invested-hint">
+          <option value="stocks" selected>Stock index funds</option>
+          <option value="bonds">Bonds or savings</option>
+        </select>
+        <div class="hint" id="invested-hint">Decides when the growth is taxed, and at
+          what rate. Both payouts are invested the same way.</div>
       </div>
     </div>
   </div>
@@ -1008,6 +1031,14 @@
          thing there because it is the answer to the question that mode asks —
          the breakdowns below are the working. -->
     <div id="cmp-section" style="display:none">
+      <!-- The same answer read from either end of the run: what each payout is
+           worth now, or what it has grown to once the last payment is in and the
+           lot is sold. The second label is rewritten by the script, because NY
+           Lotto's run is 26 years rather than 30. -->
+      <div class="seg cmp-view" role="group" aria-label="Show the comparison">
+        <button type="button" class="seg-btn" id="view-today" onclick="setCmpView('today')" aria-pressed="true">Today&rsquo;s Money</button>
+        <button type="button" class="seg-btn" id="view-future" onclick="setCmpView('future')" aria-pressed="false">In 30 Years</button>
+      </div>
       <div class="cmp" id="cmp-cards"></div>
       <p class="verdict" id="cmp-verdict"></p>
       <hr>
@@ -1063,6 +1094,26 @@
           <table><thead><tr><th scope="col">Year</th><th scope="col" style="text-align:right">Payment</th>
             <th scope="col" style="text-align:right">Tax</th><th scope="col" style="text-align:right">After tax</th></tr></thead>
           <tbody id="schedbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Both payouts invested, a row a year (2026-09-13) — the working behind BOTH
+         of Compare's views, since today's money is read off the same run. Compare
+         only, and open by default like every section here; closing it sticks. -->
+    <div id="growth-section" style="display:none">
+      <h2 class="sec-hd"><button class="details-btn" onclick="toggleGrowth()" aria-expanded="true" aria-controls="growth-body" id="growth-toggle">
+        <span class="details-chevron open" id="growth-chevron" aria-hidden="true">&#9654;</span>
+        Invested Year by Year
+      </button></h2>
+      <div class="details-body open" id="growth-body">
+        <p class="growth-note" id="growth-note"></p>
+        <div class="sched-wrap">
+          <table><thead><tr><th scope="col">Year</th><th scope="col" style="text-align:right">Lump sum</th>
+            <th scope="col" style="text-align:right" aria-label="Tax on the lump sum">Tax</th>
+            <th scope="col" style="text-align:right">Annuity</th>
+            <th scope="col" style="text-align:right" aria-label="Tax on the annuity">Tax</th></tr></thead>
+          <tbody id="growthbody"></tbody></table>
         </div>
       </div>
     </div>
@@ -1213,7 +1264,17 @@ var WORKER = 'https://lottery-proxy.charlie-adams-176.workers.dev';
 var payout='lump';            // 'lump' | 'annuity' | 'compare'
 var filing='single';          // see filingStatus() in tax.js
 var lives='ny';               // 'ny' | 'nyc' | 'yonkers' — see residence()
-var discount=0.04;            // the annuity comparison's discount rate
+/* What the money earns once it is invested — a year, BEFORE tax. Compare follows
+   both payouts invested at it (see growthCompare). It was an after-tax DISCOUNT
+   RATE until 2026-09-13; its stored key and share-link field are still
+   `lottery-discount` and `d`, so a rate someone chose, or a link they sent,
+   keeps working. */
+var DEFAULT_RETURN=0.06;
+var invReturn=DEFAULT_RETURN;
+var INVEST_STYLES=['stocks','bonds'];
+var invStyle='stocks';        // how it is held — decides when growth is taxed; see growPath()
+var CMP_VIEWS=['today','future'];
+var cmpView='today';          // Compare read in today's money, or at the end of the run
 var fromShare=false;          // opened from a link: don't overwrite their prefs
 /* fromShare says whose PREFERENCES these are; this says whose FIGURES are in
    the two amount boxes. They come apart: a link that carried no amounts has
@@ -1327,7 +1388,11 @@ function restoreState(){
   filing = filingStatus(localStorage.getItem('lottery-filing'));
   lives  = residence(localStorage.getItem('lottery-residence'));
   var dr = parseFloat(localStorage.getItem('lottery-discount'));
-  if(!isNaN(dr) && dr>=0 && dr<=0.2) discount = dr;
+  if(!isNaN(dr) && dr>=0 && dr<=0.2) invReturn = dr;
+  var iv=localStorage.getItem('lottery-invested');
+  if(INVEST_STYLES.indexOf(iv)>=0) invStyle = iv;
+  var cv=localStorage.getItem('lottery-cmp-view');
+  if(CMP_VIEWS.indexOf(cv)>=0) cmpView = cv;
   // Open by default; only collapse if this visitor closed it before. It was the
   // other way round — shut unless you had opened it — which made the page's whole
   // answer to "where does the money go" something you had to know to ask for.
@@ -1341,6 +1406,12 @@ function restoreState(){
     document.getElementById('sched-body').classList.remove('open');
     document.getElementById('sched-chevron').classList.remove('open');
     setExpanded('sched-toggle', false);
+  }
+  // Open by default; only collapse if this visitor closed it before.
+  if(localStorage.getItem('lottery-growth')==='0'){
+    document.getElementById('growth-body').classList.remove('open');
+    document.getElementById('growth-chevron').classList.remove('open');
+    setExpanded('growth-toggle', false);
   }
   // Open by default; only collapse if this visitor closed it before.
   if(localStorage.getItem('lottery-winning')==='0'){
@@ -1386,10 +1457,14 @@ function syncSetup(){
   }
   document.getElementById('filing').value=filing;
   document.getElementById('residence').value=lives;
-  document.getElementById('discount').value=+(discount*100).toFixed(2);
-  /* Compare only — see the note on the field. On the other two tabs nothing on
-     screen is discounted, so the box would be a control with no effect. */
-  document.getElementById('fld-discount').style.display = payout==='compare' ? '' : 'none';
+  document.getElementById('return-rate').value=+(invReturn*100).toFixed(2);
+  document.getElementById('invested').value=invStyle;
+  /* Compare only — see the note on the fields. On the other two tabs nothing on
+     screen is invested, so either one would be a control with no effect. */
+  document.getElementById('fld-return').style.display = payout==='compare' ? '' : 'none';
+  document.getElementById('fld-invested').style.display = payout==='compare' ? '' : 'none';
+  for(var v=0;v<CMP_VIEWS.length;v++)
+    document.getElementById('view-'+CMP_VIEWS[v]).setAttribute('aria-pressed', String(cmpView===CMP_VIEWS[v]));
   for(var g in WN_GAMES){
     if(!Object.prototype.hasOwnProperty.call(WN_GAMES,g)) continue;
     document.getElementById('wg-'+g).setAttribute('aria-pressed', String(wnGame===g));
@@ -1415,13 +1490,21 @@ function setPayout(p){
 }
 function setFiling(v){ filing=filingStatus(v); remember('lottery-filing',filing); syncSetup(); calc(); }
 function setResidence(v){ lives=residence(v); remember('lottery-residence',lives); syncSetup(); calc(); }
-function onDiscount(){
-  var v=parseFloat(document.getElementById('discount').value);
+function setInvested(v){
+  invStyle = INVEST_STYLES.indexOf(v)>=0 ? v : 'stocks';
+  remember('lottery-invested',invStyle); syncSetup(); calc();
+}
+function setCmpView(v){
+  if(CMP_VIEWS.indexOf(v)<0) return;
+  cmpView=v; remember('lottery-cmp-view',v); syncSetup(); calc();
+}
+function onReturn(){
+  var v=parseFloat(document.getElementById('return-rate').value);
   /* Out of range or unreadable leaves the last good rate in place rather than
      jumping to a default — the box is stepped with arrow keys, and a moment of
      emptiness mid-edit should not redraw the verdict at 0%. */
   if(isNaN(v)||v<0||v>20) return;
-  discount=v/100; remember('lottery-discount',discount); calc();
+  invReturn=v/100; remember('lottery-discount',invReturn); calc();
 }
 
 function toggleSched(){
@@ -1435,8 +1518,14 @@ function toggleSched(){
      "only if you closed it" restore as the two sections above it. */
   localStorage.setItem('lottery-sched', open ? '1' : '0');
 }
+function toggleGrowth(){
+  var open=document.getElementById('growth-body').classList.toggle('open');
+  document.getElementById('growth-chevron').classList.toggle('open', open);
+  setExpanded('growth-toggle', open);
+  localStorage.setItem('lottery-growth', open ? '1' : '0');
+}
 
-/* One decimal is right for a tax rate and wrong for a discount rate, where 4%
+/* One decimal is right for a tax rate and wrong for a rate of return, where 4%
    and 4.25% are a different answer and "4.0%" and "4.3%" would hide it. */
 function pctN(r){
   var v=r*100;
@@ -1504,7 +1593,18 @@ function copyCSV(){
     rows.push(['Annuity gross total', Math.round(a.gross)]);
     rows.push(['Annuity tax total', Math.round(a.tax)]);
     rows.push(['Annuity after tax', Math.round(a.net)]);
-    rows.push(['Annuity in today’s money at '+pctN(discount), Math.round(a.pvNet)]);
+    /* The invested figures need the lump sum to measure against, which the
+       Annuity tab does not otherwise work out — so it is worked out here. Each
+       row names the return and the holding it came from, so it stays honest with
+       the two fields off screen. */
+    if(lump!==null){
+      var g=growthCompare(taxBreakdown(lump,np).share, a);
+      rows.push(['Investment return before tax', pctN(invReturn)]);
+      rows.push(['Invested in', INVEST_WORDS[invStyle]]);
+      rows.push(['Lump sum in '+g.soldIn+' after all tax', Math.round(g.lump.end)]);
+      rows.push(['Annuity in '+g.soldIn+' after all tax', Math.round(g.ann.end)]);
+      rows.push(['Annuity in today’s money', Math.round(g.annToday)]);
+    }
     rows.push([]);
     rows.push(['Year','Payment','Tax','After tax']);
     for(var i=0;i<a.rows.length;i++)
@@ -1549,7 +1649,7 @@ function b64urlDecode(tok){
 
 function sharePayload(){
   return { v:SHARE_V, g:activeGame, w:wnGame, p:payout, f:filing, r:lives,
-           d:Math.round(discount*10000)/10000, n:winnersValue(),
+           d:Math.round(invReturn*10000)/10000, iv:invStyle, cv:cmpView, n:winnersValue(),
            j:document.getElementById('jackpot-input').value, ju:jUnit,
            l:document.getElementById('lump-input').value, lu:lUnit };
 }
@@ -1582,7 +1682,12 @@ function readShare(hash){
     p: PAYOUTS.indexOf(p.p)>=0 ? p.p : 'lump',
     f: filingStatus(p.f),
     r: residence(p.r),
-    d: (typeof p.d==='number' && isFinite(p.d) && p.d>=0 && p.d<=0.2) ? p.d : 0.04,
+    d: (typeof p.d==='number' && isFinite(p.d) && p.d>=0 && p.d<=0.2) ? p.d : DEFAULT_RETURN,
+    /* indexOf is strict equality, so an object, an array or '__proto__' matches
+       nothing on these lists and falls back. A link from before 2026-09-13 has
+       neither field and gets the defaults. */
+    iv: INVEST_STYLES.indexOf(p.iv)>=0 ? p.iv : 'stocks',
+    cv: CMP_VIEWS.indexOf(p.cv)>=0 ? p.cv : 'today',
     n: Math.min(1000, Math.max(1, Math.round(Number(p.n))||1)),
     ju: unit(p.ju), lu: unit(p.lu),
     j: amt(p.j, unit(p.ju)), l: amt(p.l, unit(p.lu))
@@ -1593,7 +1698,8 @@ function applyShareLink(){
   var p=readShare(location.hash);
   if(!p) return;
   fromShare=true;
-  activeGame=p.g; wnGame=p.w||p.g; payout=p.p; filing=p.f; lives=p.r; discount=p.d;
+  activeGame=p.g; wnGame=p.w||p.g; payout=p.p; filing=p.f; lives=p.r;
+  invReturn=p.d; invStyle=p.iv; cmpView=p.cv;
   document.getElementById('npeople').value=p.n;
   jUnit=p.ju; lUnit=p.lu;
   document.getElementById('jackpot-input').value=p.j;
@@ -1688,32 +1794,46 @@ closeOnBackdropClick(document.getElementById('share-dialog'));
 /* ── Help ───────────────────────────────────────────────────────────────────
    The family's `data-help` map: a key per "?" button, [title, html]. Written as
    prose that answers the question the reader actually has, not as a definition
-   — the discount rate one is the reason this exists, because the page recommends
-   a payout on the strength of a number it never explained.
+   — the rate one is the reason this exists, because the page recommends a payout
+   on the strength of a number it never explained. (It was the discount rate's
+   until 2026-09-13; the investment return and the holding replaced it.)
 
    The html here is a LITERAL in this file, never anything a reader typed, so
    innerHTML is writing our own markup. Keep it that way: nothing from a share
    link, a field or an API may ever reach this sink. */
 var HELP = {
-  discount: ['Your Discount Rate',
-    '<p>Money later is worth less than money now — you could have spent, invested or ' +
-    'paid down debt with it in the meantime. The <strong>discount rate</strong> is how ' +
-    'much less, per year. It is the one number that decides the argument between the ' +
-    'two payouts, which is why it only appears when an annuity is on screen.</p>' +
-    '<p><strong>A higher rate</strong> says money now matters a lot to you — you would ' +
-    'earn well on it, or you have debts to clear. Payments thirty years out get shrunk ' +
-    'hard, so <strong>the lump sum wins</strong>.</p>' +
-    '<p><strong>A lower rate</strong> says you are patient and would not do much with it ' +
-    'anyway. Future payments keep most of their value, so <strong>the annuity wins</strong>.</p>' +
-    '<p><strong>You do not have to pick the right number.</strong> Compare names the rate ' +
-    'at which the two payouts are exactly level — below it the annuity is ahead, above it ' +
-    'the lump sum is. All you have to decide is which side of that rate you are on.</p>' +
-    '<p>If you want a figure to start from: roughly what you would genuinely earn on the ' +
-    'lump sum after tax. Around 3–5% for something conservative; 7% or more only if you ' +
-    'would really put the lot in shares and leave it there. The default here is 4%.</p>' +
-    '<p>One thing the rate does not capture: the annuity is often ahead on <em>tax</em> ' +
-    'alone, because thirty tax returns each start at the bottom of the brackets where one ' +
-    'does not. That is already in the figures on the cards.</p>'],
+  growth: ['Your Investment Return',
+    '<p>Whichever payout you take, the money does not sit still — you invest it. ' +
+    'Compare follows <strong>both</strong> payouts invested: the lump sum all on day one, ' +
+    'and every annuity payment the year it arrives. The <strong>investment return</strong> ' +
+    'is what you expect that money to earn in a year, <em>before</em> tax. Do not shrink ' +
+    'it for tax yourself — the page takes the tax off, year by year.</p>' +
+    '<p><strong>A higher return favours the lump sum</strong>, because all of it is ' +
+    'growing from the start while the annuity’s later payments miss the early years. ' +
+    '<strong>A lower return favours the annuity</strong>, which is often ahead on tax ' +
+    'alone: every year is its own tax return, starting at the bottom of the brackets.</p>' +
+    '<p><strong>You do not have to pick the right number.</strong> Compare names the ' +
+    'return at which the two payouts are exactly level — below it the annuity is ahead, ' +
+    'above it the lump sum is. All you have to decide is which side of it you expect to be on.</p>' +
+    '<p>If you want a figure to start from: around 4–5% for bonds or savings, and 6–8% ' +
+    'for stock index funds held for decades. The default here is 6%.</p>'],
+  invested: ['How It Is Invested',
+    '<p>How the money is held decides <strong>when its growth is taxed</strong>, and at ' +
+    'what rate — and over thirty years that matters almost as much as the return itself. ' +
+    'Both payouts are invested the same way, so neither is flattered.</p>' +
+    '<p><strong>Stock index funds.</strong> A 1.4% dividend is paid each year and taxed ' +
+    'that year: the federal long-term capital-gains rate, the 3.8% net investment income ' +
+    'tax, and New York (and city) tax as ordinary income. The rest of the growth is not ' +
+    'taxed until the shares are sold, when the last payment is in — so most of the tax ' +
+    'waits, and the money it would have been keeps growing in the meantime.</p>' +
+    '<p><strong>Bonds or savings.</strong> All of the return is interest, taxed every year ' +
+    'as ordinary income plus the 3.8%. It is the heaviest treatment, and there is nothing ' +
+    'left to pay at the end.</p>' +
+    '<p>Each year’s investment income goes on the <strong>same tax return</strong> as ' +
+    'that year’s annuity payment, so it is taxed at the rate the payment has already ' +
+    'pushed you to. What the page leaves out: tax-free municipal bonds, brackets changing ' +
+    'over the years, holding the shares beyond the end instead of selling, and the few ' +
+    'months between a payment’s withholding and the rest of its tax falling due.</p>'],
   effrate: ['Effective Total Tax Rate',
     '<p>Every dollar of tax on this prize, added up and divided by the prize — the ' +
     'withholding taken at payment <em>and</em> whatever is settled at your return, ' +
@@ -2239,9 +2359,78 @@ function annuityBreakdown(advertised, np, plan){
   for(i=0;i<rows.length;i++){ gross+=rows[i].gross; tax+=rows[i].tax; net+=rows[i].net; }
   return { rows:rows, plan:plan, gross:gross, tax:tax, net:net,
            first:rows.length?rows[0]:null,
-           pvGross:presentValue(sched, discount),
-           pvNet:presentValue(rows.map(function(r){return r.net;}), discount),
            eff: gross>0 ? tax/gross : 0 };
+}
+
+/* ── Both payouts, invested (2026-09-13) ─────────────────────────────────────
+   Charles asked why Compare shrank the annuity to "today's money" rather than
+   growing the lump sum forward. Growing it forward FAIRLY means investing BOTH
+   payouts — each annuity cheque as it arrives, not just the lump sum on day one
+   — and taxing the growth the way and in the year it really is taxed. Setting a
+   grown lump sum against the annuity's raw total would have picked the lump sum
+   at almost any return, and been wrong.
+
+   This replaced a plain present value at an after-tax discount rate, and the
+   answer MOVED: tax on the growth falls harder on the lump sum, which has more
+   invested for longer, so the break-even return sits well above the old
+   discount-rate break-even (about 6.8% against 5.65% on a $251M Powerball).
+
+   One year of one path, in order:
+   1. Any lottery payment arrives and its own tax comes straight off it — the
+      same figure the tax breakdown and the schedule show.
+   2. The balance earns the return. In STOCKS, DIVIDEND_YIELD of it is paid as a
+      qualified dividend and the rest is price growth nobody is taxed on yet; in
+      BONDS all of it is interest.
+   3. The dividend or interest is taxed ON THE SAME RETURN as that year's lottery
+      payment (yearTax in tax.js), so an annuity year's dividends land straight in
+      the top bands; the tax comes out of the balance. What is reinvested after
+      tax is new cost basis. Price growth never is — the portfolio page's lesson.
+   After the last year the lot is sold, on a return of its own, and the gain over
+   basis is taxed as a long-term gain.
+
+   TODAY'S MONEY is the same run read from the other end: what you would have to
+   invest today, in the same account, to finish where each payout finishes. For
+   the lump sum that is exactly its after-tax figure, because that is what went
+   in — so only the annuity is scaled, and the two views cannot disagree about
+   the winner. At a 0% return both collapse to the after-tax totals.
+
+   Left out, and the help note says so: bracket changes over the years (the same
+   assumption as the schedule), tax-free bonds, holding beyond the end, and the
+   months between withholding and the rest of a year's tax falling due. */
+var DIVIDEND_YIELD=0.014; // a US total-market fund — the portfolio page's VTI default
+var INVEST_WORDS={ stocks:'stock index funds', bonds:'bonds or savings' };
+
+function growPath(payments, years, rate, style){
+  var bal=0, basis=0, growthTax=0, rows=[], i;
+  var yieldRate = style==='bonds' ? rate : Math.min(DIVIDEND_YIELD, rate);
+  for(i=0;i<years;i++){
+    var pay = payments[i]||0;
+    var own = pay>0 ? ordinaryTax(pay, filing, lives).total : 0;
+    bal += pay-own; basis += pay-own;
+    var income = bal*yieldRate, price = bal*(rate-yieldRate);
+    var tax = income>0
+      ? yearTax(pay, style==='bonds'?income:0, style==='bonds'?0:income, filing, lives).total - own
+      : 0;
+    bal += income+price-tax; basis += income-tax; growthTax += tax;
+    rows.push({ balance:bal, tax:tax });
+  }
+  var gain = Math.max(0, bal-basis);
+  var saleTax = gain>0 ? yearTax(0, 0, gain, filing, lives).total : 0;
+  return { rows:rows, balance:bal, gain:gain, growthTax:growthTax, saleTax:saleTax,
+           end:bal-saleTax };
+}
+
+function growthCompare(lumpShare, a, rate, style){
+  if(rate===undefined) rate=invReturn;
+  if(style===undefined) style=invStyle;
+  /* At least a year, so a lump sum set against an empty annuity is still
+     invested somewhere rather than never entering the loop. */
+  var n=Math.max(1, a.rows.length);
+  var lump=growPath([lumpShare], n, rate, style);
+  var ann=growPath(a.rows.map(function(r){ return r.gross; }), n, rate, style);
+  var lumpNet=lumpShare-ordinaryTax(lumpShare, filing, lives).total;
+  return { years:n, soldIn:TAX_YEAR+n, lump:lump, ann:ann, lumpToday:lumpNet,
+           annToday: lump.end>0 ? ann.end*lumpNet/lump.end : ann.end };
 }
 
 /* Which annuity a game pays. Powerball and Mega Millions both pay 30 payments
@@ -2298,13 +2487,16 @@ function calc(){
      and `lumpWins` in the compare block, complements of each other — which was
      survivable while nothing else consulted it and is not now that the breakdown
      follows it too. Annuity wins ties, as it did in the tiles. */
-  var annuityAhead = (a && b) ? (a.pvNet >= b.net) : false;
+  var g = (a && b) ? growthCompare(b.share, a) : null;
+  var annuityAhead = g ? (g.annToday >= g.lumpToday) : false;
+  var be = (payout==='compare' && g) ? breakEvenRate(b.share, a, invStyle) : null;
   /* WHETHER THE ANNUITY IS WHAT THIS PAGE IS CURRENTLY DESCRIBING, and so the one
      answer behind the effective rate, the tax breakdown AND the payment schedule.
      In annuity mode there is only one candidate. On Compare it FOLLOWS the winner,
      so the working under the answer is the working for the answer — all of it
-     changing over together as the discount rate crosses the break-even rate the
-     verdict names.
+     changing over together as the investment return crosses the break-even the
+     verdict names. It is read off the invested run (growthCompare), which is the
+     same winner in both of Compare's views by construction.
 
      The schedule used to key off a `wantsAnnuity` of its own (annuity OR compare),
      which left thirty rows of annuity payments sitting under a verdict recommending
@@ -2326,31 +2518,57 @@ function calc(){
       mc('Tax over the run',fmtM1(a.tax),'red')+
       mc('Net over the run',fmtM1(a.net),'grn');
   } else {
+    /* ONE KIND OF MONEY PER VIEW (2026-09-13, reported by Charles). The tiles were
+       the lump sum after tax, the annuity's RAW thirty-year total, the annuity in
+       today's money and the gap — and the biggest of them, the raw total, was the
+       only one counted differently, so it read as the annuity winning beside a
+       verdict saying it lost. Every tile now matches the view the cards are in;
+       the raw total lives in the annuity card's sentence, named as what it is. */
+    var futTiles = cmpView==='future';
     mgrid.innerHTML=
-      mc('Lump sum, after tax',fmtM1(b.net),annuityAhead?'':'grn')+
-      mc('Annuity, after tax',fmtM1(a.net),'')+
-      mc('Annuity in today’s money',fmtM1(a.pvNet),annuityAhead?'grn':'')+
-      mc('Ahead by',fmtM1(Math.abs(a.pvNet-b.net)),'');
+      mc(futTiles?'Lump sum in '+g.soldIn:'Lump sum, today',
+         fmtM1(futTiles?g.lump.end:g.lumpToday),annuityAhead?'':'grn')+
+      mc(futTiles?'Annuity in '+g.soldIn:'Annuity, today',
+         fmtM1(futTiles?g.ann.end:g.annToday),annuityAhead?'grn':'')+
+      mc('Ahead by',fmtZ(futTiles?Math.abs(g.ann.end-g.lump.end):Math.abs(g.annToday-g.lumpToday)),'')+
+      mc('Break-even return',levelAt(be),'');
   }
 
   /* ── Compare ─────────────────────────────────────────────────────────────
      Two cards and a sentence. The sentence is the point: the cards can only
-     show that one number is bigger, and the reason it is bigger is the
-     discount rate the reader chose a moment ago. */
+     show that one number is bigger, and the reason it is bigger is the return
+     the reader chose a moment ago — and how the money is held, which decides
+     when its growth is taxed. */
   var cmpSec=document.getElementById('cmp-section');
   if(payout==='compare'&&b&&a){
     var lumpWins = !annuityAhead;
-    document.getElementById('cmp-cards').innerHTML =
-      cmpCard('Lump sum', fmtM1(b.net), 'Paid once, taxed once. '+
-        pct(b.eff)+' of it goes in tax.', lumpWins) +
-      cmpCard('Annuity', fmtM1(a.pvNet), fmtM1(a.net)+' over '+a.rows.length+
-        ' years, worth this much in today’s money at '+pctN(discount)+
-        '. Each year is its own tax return, so the effective rate is '+pct(a.eff)+'.', !lumpWins);
+    var fut = cmpView==='future', n = a.rows.length, held = INVEST_WORDS[invStyle];
+    document.getElementById('view-future').textContent = 'In '+g.years+' Years';
+    var taxWords = function(p){
+      return fmtZ(p.growthTax)+' of tax on its growth along the way'+
+        (p.saleTax>0 ? ', and '+fmtM1(p.saleTax)+' when it is sold.'
+                     : ', and nothing left to pay when it is cashed in.');
+    };
+    document.getElementById('cmp-cards').innerHTML = fut
+      ? cmpCard('Lump sum in '+g.soldIn, fmtM1(g.lump.end), fmtM1(b.net)+
+          ' after tax, all invested on day one. '+taxWords(g.lump), lumpWins) +
+        cmpCard('Annuity in '+g.soldIn, fmtM1(g.ann.end), 'Each of the '+n+
+          ' payments invested as it arrives, after its own tax. '+taxWords(g.ann), !lumpWins)
+      : cmpCard('Lump sum', fmtM1(g.lumpToday), 'Paid once, taxed once. '+
+          pct(b.eff)+' of it goes in tax.', lumpWins) +
+        cmpCard('Annuity', fmtM1(g.annToday), fmtM1(a.net)+' after tax over '+n+
+          ' years. Invested as it arrives, that finishes where this much invested today would. '+
+          'Each year is its own tax return, so the effective rate is '+pct(a.eff)+'.', !lumpWins);
+    var who = 'the <strong>'+(lumpWins?'lump sum':'annuity')+'</strong>';
     document.getElementById('cmp-verdict').innerHTML =
-      'At a discount rate of <strong>'+pctN(discount)+'</strong> the <strong>'+
-      (lumpWins?'lump sum':'annuity')+'</strong> is ahead by '+fmtM1(Math.abs(b.net-a.pvNet))+
-      '. The two are level at about <strong>'+pctN(breakEvenRate(b.net,a))+'</strong> — '+
-      'below that the annuity wins, above it the lump sum does.' +
+      (fut
+        ? 'Invested in '+held+' at <strong>'+pctN(invReturn)+'</strong> a year before tax and '+
+          (invStyle==='bonds'?'cashed in':'sold')+' in <strong>'+g.soldIn+'</strong>, '+who+
+          ' finishes '+fmtZ(Math.abs(g.ann.end-g.lump.end))+' ahead. Those are '+g.soldIn+
+          ' dollars, and prices will have risen by then, so Today’s Money is the fairer way to weigh the gap. '
+        : 'Invested in '+held+' at <strong>'+pctN(invReturn)+'</strong> a year before tax, '+who+
+          ' is ahead by '+fmtZ(Math.abs(g.annToday-g.lumpToday))+' in today’s money. ') +
+      levelWords(be) +
       (estJack!==null||jack===null&&lump!==null ? ' The advertised jackpot was estimated from the cash value.' : '');
     cmpSec.style.display='block';
   } else {
@@ -2365,7 +2583,7 @@ function calc(){
      always the lump sum's, which meant that on the tab whose whole job is to pick
      a winner, the working underneath could be the working for the payout that
      lost. Now the answer and its arithmetic are about the same thing, and both
-     change over together the moment the discount rate crosses the break-even rate
+     change over together the moment the investment return crosses the break-even
      the verdict names. */
   var t = showingAnnuity && a ? a.first : (b ? payoutYear(b.share,filing,lives) : null);
   if(t){
@@ -2416,6 +2634,37 @@ function calc(){
     schedSec.style.display='none';
   }
 
+  /* ── Invested year by year ───────────────────────────────────────────────
+     Compare only, in BOTH views: today's money is read off this same run, so it
+     is the working for either. Balances are end-of-year, after that year's tax on
+     its growth; the tax an annuity payment pays on itself is already off before it
+     goes in, and is the schedule's figure. */
+  var growSec=document.getElementById('growth-section');
+  if(payout==='compare'&&g){
+    document.getElementById('growth-note').textContent =
+      'Both payouts invested in '+INVEST_WORDS[invStyle]+' at '+pctN(invReturn)+
+      ' a year before tax. Each row is the balance at the end of the year, after that ' +
+      'year’s tax on its growth. Annuity payments go in after their own tax.';
+    var gh='', k;
+    for(k=0;k<g.years;k++){
+      gh+='<tr><td>'+(TAX_YEAR+k)+'</td><td class="r">'+fmtZ(g.lump.rows[k].balance)+'</td>'+
+          '<td class="neg">−'+fmtZ(g.lump.rows[k].tax)+'</td>'+
+          '<td class="r">'+fmtZ(g.ann.rows[k].balance)+'</td>'+
+          '<td class="neg">−'+fmtZ(g.ann.rows[k].tax)+'</td></tr>';
+    }
+    gh+='<tr class="totrow"><td>Tax on growth</td><td></td><td class="neg">−'+fmtZ(g.lump.growthTax)+
+        '</td><td></td><td class="neg">−'+fmtZ(g.ann.growthTax)+'</td></tr>';
+    gh+='<tr><td>'+(invStyle==='bonds'?'Cashed in, ':'Sold in ')+g.soldIn+'</td><td></td>'+
+        '<td class="neg">−'+fmtZ(g.lump.saleTax)+'</td><td></td>'+
+        '<td class="neg">−'+fmtZ(g.ann.saleTax)+'</td></tr>';
+    gh+='<tr class="totrow"><td>After all tax</td><td class="r">'+fmtZ(g.lump.end)+'</td><td></td>'+
+        '<td class="r">'+fmtZ(g.ann.end)+'</td><td></td></tr>';
+    document.getElementById('growthbody').innerHTML=gh;
+    growSec.style.display='block';
+  } else {
+    growSec.style.display='none';
+  }
+
   // Shared with lottery-portfolio.html, which seeds its portfolio size from it.
   // Always the LUMP figure even when the annuity is on screen: that page models
   // a sum invested on day one, which is what a lump sum is and what an annuity
@@ -2437,21 +2686,32 @@ function calc(){
   document.getElementById('results-section').style.display='block';
 }
 
-/* The discount rate at which the two payouts are worth the same. Bisection
-   rather than algebra: the after-tax annuity stream is not a closed form once
-   every payment has been through a bracket table. 60 halvings takes a 0–100%
-   span well past the precision anything on screen is shown to. */
-function breakEvenRate(lumpNet, a){
-  var nets=a.rows.map(function(r){return r.net;});
+/* The investment return at which the two payouts finish level. Bisection rather
+   than algebra: thirty years of payments, dividends and a sale, each through a
+   bracket table, is not a closed form. 50 halvings takes a 0–100% span well past
+   the precision anything on screen is shown to. 0 means the lump sum is ahead
+   even at a 0% return; 1 means the annuity is ahead all the way to 100%. */
+function breakEvenRate(lumpShare, a, style){
+  var diff=function(r){ var g=growthCompare(lumpShare, a, r, style); return g.ann.end-g.lump.end; };
   var lo=0, hi=1, mid, i;
-  if(presentValue(nets,lo)<lumpNet) return 0;
-  if(presentValue(nets,hi)>lumpNet) return hi;
-  for(i=0;i<60;i++){
+  if(diff(lo)<0) return 0;
+  if(diff(hi)>0) return hi;
+  for(i=0;i<50;i++){
     mid=(lo+hi)/2;
-    if(presentValue(nets,mid)>lumpNet) lo=mid; else hi=mid;
+    if(diff(mid)>0) lo=mid; else hi=mid;
   }
   return (lo+hi)/2;
 }
+function levelAt(be){ return be<=0 ? 'None' : be>=1 ? 'Over 100%' : pctN(be); }
+function levelWords(be){
+  if(be<=0) return 'The lump sum is ahead at any return, even 0%.';
+  if(be>=1) return 'The annuity is ahead at any return up to 100% a year.';
+  return 'The two are level at a return of about <strong>'+pctN(be)+'</strong> — '+
+    'below that the annuity wins, above it the lump sum does.';
+}
+/* fmtM1 shows a dash for zero, which is right for a missing figure and wrong for a
+   real $0 of tax at a 0% return. */
+function fmtZ(n){ return n>0 ? fmtM1(n) : '$0'; }
 
 function cmpCard(title,big,sub,win){
   return '<div class="cmp-card'+(win?' win':'')+'"><div class="cmp-ttl">'+title+'</div>'+

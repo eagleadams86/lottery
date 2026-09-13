@@ -238,16 +238,6 @@ function annuitySchedule(advertised, plan) {
   return out;
 }
 
-/* Present value of a stream whose first element is paid today.
-   The discount rate is the user's, and it is the whole argument between the
-   two options: at 0% the annuity's bigger headline always wins, and there is
-   some rate above which the lump sum always does. */
-function presentValue(payments, rate) {
-  var pv = 0;
-  for (var i = 0; i < payments.length; i++) pv += payments[i] / Math.pow(1 + rate, i);
-  return pv;
-}
-
 /* ── Investment income, for the portfolio ────────────────────────────────── */
 
 /* The marginal rate a dollar of long-term capital gain or qualified dividend
@@ -269,6 +259,51 @@ function ordinaryMarginalRate(income, status, where) {
   var a = ordinaryTax(income, status, where);
   var b = ordinaryTax(income + 1, status, where);
   return b.total - a.total;
+}
+
+/* ONE WHOLE TAX RETURN with investment income on it as well as a lottery
+   payment — the calculator's Compare view, which follows both payouts invested
+   for thirty years (2026-09-13). The marginal-rate helpers above answer "what
+   does the next dollar cost?"; this answers "what does the year cost?", which
+   is what a simulation has to pay out of the balance.
+
+   Three kinds of income, because the law treats them three ways:
+   • `lottery` — ordinary income, and NOT net investment income, so no NIIT.
+   • `interest` — ordinary income AND net investment income.
+   • `qualified` — dividends and long-term gains: the capital-gain bands
+     federally, STACKED ON TOP of the ordinary income (so a year with an
+     annuity payment in it puts its dividends straight into the 20% band),
+     plus NIIT, and ordinary income to New York and the city.
+   The standard deduction comes off the ordinary income first and only the
+   rest of it off the gains, which is the order the federal worksheet uses.
+
+   With nothing but `lottery` it is exactly ordinaryTax(lottery).total — a test
+   pins that, so the growth view and the tax breakdown can never disagree about
+   what a payment costs. */
+function yearTax(lottery, interest, qualified, status, where) {
+  status = filingStatus(status);
+  where = residence(where);
+  lottery = Math.max(0, lottery || 0);
+  interest = Math.max(0, interest || 0);
+  qualified = Math.max(0, qualified || 0);
+  var ordinary = lottery + interest, income = ordinary + qualified;
+  var std = FED_STD[status], ltcg = LTCG_BRACKETS[status];
+  var ordTaxable = Math.max(0, ordinary - std);
+  var allTaxable = Math.max(0, income - std);
+  var fed = bracketTax(ordTaxable, FED_BRACKETS[status]) +
+            bracketTax(allTaxable, ltcg) - bracketTax(ordTaxable, ltcg);
+  /* NIIT is 3.8% of the SMALLER of the investment income and how far total
+     income is over the (unindexed) threshold. */
+  var niit = NIIT_RATE * Math.min(interest + qualified,
+                                  Math.max(0, income - NIIT_FLOOR[status]));
+  var ny = nyTax(income, status);
+  var city = where === 'nyc' ? nycTax(income, status) : 0;
+  var yonkers = where === 'yonkers' ? ny * YONKERS_SURCHARGE : 0;
+  return {
+    fed: fed, niit: niit, ny: ny, city: city, yonkers: yonkers,
+    local: city + yonkers,
+    total: fed + niit + ny + city + yonkers
+  };
 }
 
 /* The STATE-and-local marginal rate only — no federal. Capital gains are
