@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 172;
+const EXPECTED = 180;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -3138,6 +3138,70 @@ t('the full-screen button is furniture, so it never prints', () => {
   ok(PORT_SRC.includes('.maxi-nav[hidden] { display: none; }'),
     'and the arrows go the same way the button does when there is nothing to walk');
 });
+
+/* ── The header controls are one scrolling line at every width (2026-09-14) ──
+   Charles, 2026-09-14, family-wide: "should we just make them both always single
+   line side scrollers?" Neither page has a tab bar, so it is the header row only.
+   Two controls fit almost anywhere, so the narrow frame is deliberately tiny —
+   narrow enough that they cannot — and the wide one is where nothing may have
+   changed. Mouse-driven frames, so the touch media query leaves the arrows be. */
+async function headerFrame(page, width) {
+  const f = document.createElement('iframe');
+  f.setAttribute('data-lottery-tests', '');   // or the page busts out of the frame
+  f.setAttribute('aria-hidden', 'true');
+  f.style.cssText = 'position:absolute;left:-9999px;width:' + width + 'px;height:800px;border:0';
+  await new Promise((resolve) => {
+    f.onload = resolve;
+    f.src = page + '?rowscroll=' + Date.now();
+    document.body.appendChild(f);
+  });
+  await new Promise((r) => setTimeout(r, 150));
+  return f;
+}
+for (const [label, page, srcOf] of [['the calculator', 'index.html', () => CALC_SRC],
+                                     ['the portfolio', 'lottery-portfolio.html', () => PORT_SRC]]) {
+  t(label + ': a narrow window scrolls the header row on one line, with arrows; a wide one is untouched', async () => {
+    const lines = (W, el) => new Set([...el.children]
+      .filter((c) => c.getClientRects().length && W.getComputedStyle(c).display !== 'none')
+      .map((c) => Math.round(c.getBoundingClientRect().top))).size;
+    let f = await headerFrame(page, 170);
+    try {
+      const W = f.contentWindow, D = W.document;
+      const ctl = D.querySelector('.top-actions'), nav = D.querySelector('.headrow > .rownav');
+      ok(nav, 'the arrows live beside the row, inside .headrow');
+      ok(ctl.scrollWidth > ctl.clientWidth, '170px: the controls overflow — otherwise nothing is being measured',
+         ctl.scrollWidth + ' vs ' + ctl.clientWidth);
+      eq(lines(W, ctl), 1, 'and they stay on ONE line rather than wrapping');
+      ok(!nav.hidden && W.getComputedStyle(nav).display !== 'none', 'so the arrows show');
+      const [prev, next] = nav.querySelectorAll('button');
+      ok(prev.disabled && !next.disabled, 'at the start, ‹ is off and › is on');
+      next.click();
+      ok(ctl.scrollLeft > 0, 'pressing › scrolls the row', ctl.scrollLeft);
+      await new Promise((r) => setTimeout(r, 50));
+      ok(!prev.disabled, 'and ‹ comes on');
+      f.remove();
+
+      f = await headerFrame(page, 1280);
+      const D2 = f.contentWindow.document;
+      const wctl = D2.querySelector('.top-actions');
+      ok(wctl.scrollWidth - wctl.clientWidth <= 1, '1280px: the controls fit',
+         wctl.scrollWidth + ' vs ' + wctl.clientWidth);
+      ok(D2.querySelector('.headrow > .rownav').hidden, 'so no arrows');
+      ok(Math.abs(wctl.getBoundingClientRect().top - D2.querySelector('.brand').getBoundingClientRect().top) < 16,
+         'and the controls sit beside the name, on its line, as they always have');
+    } finally { f.remove(); }
+    const src = srcOf();
+    ok(src, page + ' was not read — loadSources must run first');
+    ok(/@media \(hover: none\), \(pointer: coarse\) \{ \.rownav \{ display: ?none !important; \} \}/.test(src),
+       'the arrows are for a mouse or trackpad — a finger swipes the row');
+    const rule = (src.match(/\.top-actions \{ ?display: ?flex;[^}]*\}/) || [''])[0];
+    ok(/flex-wrap: ?nowrap/.test(rule) && /overflow-x: ?auto/.test(rule), 'the row is a nowrap scroller', rule);
+    ok(!/justify-content/.test(rule),
+       'with NO flex-end: in a row that overflows it pushes the left-hand controls out of reach', rule);
+    ok(/\.top-actions \{ overflow: visible !important; flex-wrap: wrap !important; \}/.test(src),
+       'and on paper, which cannot scroll, the row wraps');
+  });
+}
 
 /* `async`, and every body is AWAITED below. Two of the tests on this page are
    async — the full-screen chart and the chart-hover group both have to boot a

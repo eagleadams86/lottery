@@ -191,9 +191,38 @@
      its buttons sat visibly tighter together than the same buttons in the app
      beside it. The five apps put their controls straight in `.headbar` at
      `gap: 12px`; the pages with a nested row have to say it themselves.
-     Reported 2026-08-23. */
-  .top-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-                 justify-content: flex-end; }
+     Reported 2026-08-23.
+     ONE LINE THAT SCROLLS SIDEWAYS, AT EVERY WIDTH (Charles, 2026-09-14,
+     family-wide: "should we just make them both always single line side
+     scrollers?"). Money Map's shape, ported the same day. `.headrow` is the row
+     and its arrows; `.top-actions` is what scrolls. Content-sized, the row sits
+     beside the name while it fits — pushed right by the name's auto margin — and
+     flex-wrap takes the whole row onto a line of its own when it does not, where
+     it shrinks and scrolls rather than wrapping. NO `justify-content: flex-end`
+     on the scroller, and that is load-bearing: in a row that overflows it pushes
+     the overflow off the LEFT edge, where no scroll can reach it. The 4px padding
+     and matching negative margin are room for the focus ring, so no control
+     moves; no scrollbar, because the arrows are the sign there is more. Two
+     controls rarely overflow — a very narrow window is the case this covers. */
+  .headrow { display: flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; }
+  .top-actions { display: flex; align-items: center; gap: 12px; flex-wrap: nowrap; flex: 0 1 auto;
+                 min-width: 0; overflow-x: auto; padding: 4px; margin: -4px; scrollbar-width: none; }
+  .top-actions::-webkit-scrollbar { display: none; }
+  .top-actions > * { flex: 0 0 auto; }
+  /* The two arrows beside the row: a plain box that sets no `display`, so
+     `hidden` — which `wireScrollRow()` sets whenever the row has nothing to
+     scroll — still hides it. Plain glyph buttons in this page's tokens. */
+  .rownav { flex: none; white-space: nowrap; }
+  .rownav button { background: none; border: 0; border-radius: var(--radius-sm);
+    padding: 4px 10px; cursor: pointer; color: var(--text-secondary); font-family: inherit;
+    font-size: var(--fs-md); line-height: 1.1; min-height: auto; }
+  .rownav button:hover:not(:disabled) { background: var(--surface-alt); color: var(--text-primary); }
+  .rownav button:disabled { opacity: .35; cursor: default; }
+  .rownav button:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
+  /* For a mouse or a trackpad only: a finger swipes the row, and on touch the
+     arrows grew Money Map's header. `!important` because `wireScrollRow()`
+     clears `hidden` whenever the row overflows. */
+  @media (hover: none), (pointer: coarse) { .rownav { display: none !important; } }
   /* Section titles are real <h2>/<h3> for screen-reader navigation; these rules
      keep them looking like the small uppercase labels they've always been.
      .sec-hd wraps a disclosure <button> so the section is both navigable as a
@@ -776,6 +805,8 @@
     .details-body, .wn-body, .manual-inputs, .sched-body { display: block !important; }
     .sched-wrap { max-height: none; overflow: visible; }
     .details-chevron, .chevron { display: none; }
+    /* Paper cannot scroll: what is left of the header row wraps instead. */
+    .top-actions { overflow: visible !important; flex-wrap: wrap !important; }
   }
 </style>
 </head>
@@ -788,6 +819,11 @@
          Bump it on every reference in both pages when make_favicon.py is re-run. -->
     <h1 class="brand"><img src="favicon.ico?v=4" width="22" height="22" alt=""
       >NY&nbsp;Lottery <span>&middot; Charlie&rsquo;s Epic After-Tax Calculator</span></h1>
+    <!-- `.headrow` holds the scroller and its two arrows; the arrows cannot go
+         inside the thing they scroll. The arrows ship `hidden`, and
+         wireScrollRow() shows them only while the row has something off an end
+         (2026-09-14: the row is one sideways-scrolling line at every width). -->
+    <div class="headrow">
     <div class="top-actions">
       <!-- The four unified themes, written out here rather than built by the
            script at the foot of the page. The header paints long before that
@@ -811,6 +847,13 @@
         <option value="midnight">✦ Midnight</option>
         <option value="sepia">📜 Sepia</option>
       </select>
+    </div>
+    <!-- Out of the Tab order and hidden from a screen reader on purpose: both
+         controls are reachable with Tab, and focusing one scrolls it into view.
+         The arrows are for a pointer. -->
+    <div class="rownav" hidden><button type="button" tabindex="-1" aria-hidden="true"
+      title="Scroll the controls left">‹</button><button type="button" tabindex="-1"
+      aria-hidden="true" title="Scroll the controls right">›</button></div>
     </div>
   </div>
 </header>
@@ -1359,6 +1402,36 @@ function setTheme(theme) {
    It is also where a retired id lands. <html data-theme="auto"> in the markup is
    the same answer for a browser that never gets this far. */
 setTheme(localStorage.getItem('lottery-theme') || 'auto');
+
+/* ── A row that scrolls sideways, and the two arrows beside it ───────────────
+   The header's controls are a single scrolling line at every width (2026-09-14,
+   family-wide; Money Map's function, verbatim — the portfolio page carries its
+   own copy, as these are separate single-file pages). A mouse wheel does not
+   scroll sideways and a Mac hides its scroll bars, so a control past the edge
+   would be one nobody knew was there. The arrows show only while the row has
+   something off an end, each is disabled at its own end, and a press moves the
+   row most of its own width. A ResizeObserver, a MutationObserver, the row's
+   scroll and the window's resize keep it true without anyone calling it. */
+function wireScrollRow(row, nav) {
+  if (!row || !nav) return;
+  const [prev, next] = nav.querySelectorAll('button');
+  const sync = () => {
+    const room = row.scrollWidth - row.clientWidth;
+    nav.hidden = room <= 1;
+    prev.disabled = row.scrollLeft <= 1;
+    next.disabled = row.scrollLeft >= room - 1;
+  };
+  const step = (dir) => { row.scrollLeft += dir * Math.max(80, Math.round(row.clientWidth * 0.8)); };
+  prev.onclick = () => step(-1);
+  next.onclick = () => step(1);
+  row.addEventListener('scroll', sync, { passive: true });
+  if ('ResizeObserver' in window) new ResizeObserver(sync).observe(row);
+  new MutationObserver(sync).observe(row, { subtree: true, childList: true, characterData: true,
+    attributes: true, attributeFilter: ['hidden', 'class', 'style'] });
+  window.addEventListener('resize', sync);
+  sync();
+}
+wireScrollRow(document.querySelector('.top-actions'), document.querySelector('.headrow > .rownav'));
 
 /* On Auto the palette can change with nobody touching the picker — the reader's phone
    switches to dark at sunset and theme.css follows on its own, because the whole rule

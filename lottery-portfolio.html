@@ -216,8 +216,26 @@ header { position:sticky; top:0; z-index:20; background:var(--surface);
    its buttons sat visibly tighter together than the same buttons in the app
    beside it. The five apps put their controls straight in `.headbar` at
    `gap: 12px`; the pages with a nested row have to say it themselves.
-   Reported 2026-08-23. */
-.top-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
+   Reported 2026-08-23.
+   ONE LINE THAT SCROLLS SIDEWAYS, AT EVERY WIDTH (Charles, 2026-09-14,
+   family-wide) — the calculator's rule, and Money Map's shape; see the fuller
+   note there. `.headrow` is the row and its arrows, `.top-actions` scrolls, and
+   there is NO `justify-content:flex-end` on it: in a row that overflows that
+   pushes the overflow off the left edge, where no scroll can reach it. */
+.headrow { display:flex; align-items:center; gap:4px; flex:0 1 auto; min-width:0; }
+.top-actions { display:flex; align-items:center; gap:12px; flex-wrap:nowrap; flex:0 1 auto;
+  min-width:0; overflow-x:auto; padding:4px; margin:-4px; scrollbar-width:none; }
+.top-actions::-webkit-scrollbar { display:none; }
+.top-actions > * { flex:0 0 auto; }
+/* The arrows: a box that sets no `display`, so `hidden` still hides it, holding
+   two plain glyph buttons in this page's tokens. Mouse and trackpad only. */
+.rownav { flex:none; white-space:nowrap; }
+.rownav button { background:none; border:0; border-radius:var(--radius-sm); padding:4px 10px;
+  cursor:pointer; color:var(--text2); font-family:inherit; font-size:var(--fs-md); line-height:1.1; min-height:auto; }
+.rownav button:hover:not(:disabled) { background:var(--surface-alt); color:var(--text); }
+.rownav button:disabled { opacity:.35; cursor:default; }
+.rownav button:focus-visible { outline:2px solid var(--focus-border); outline-offset:2px; }
+@media (hover: none), (pointer: coarse) { .rownav { display:none !important; } }
 /* The tax basis every figure on the page is worked out on. It sat in the header as
    a second line under the title until 2026-08-21; it belongs with the numbers it
    qualifies, and the header is one line now. */
@@ -598,6 +616,8 @@ body.maxi-open { overflow: hidden; }
     .sliders input[type=range] { display: none !important; }
     .sec-body { display: block !important; }
     .sec-chevron { display: none; }
+    /* Paper cannot scroll: what is left of the header row wraps instead. */
+    .top-actions { overflow: visible !important; flex-wrap: wrap !important; }
   }
 
 </style>
@@ -611,6 +631,9 @@ body.maxi-open { overflow: hidden; }
          Bump it on every reference in both pages when make_favicon.py is re-run. -->
     <h1 class="brand"><img src="favicon.ico?v=4" width="22" height="22" alt=""
       >Lottery&nbsp;Portfolio <span>&middot; Charlie&rsquo;s Epic Income Model</span></h1>
+    <!-- `.headrow` holds the scroller and its two arrows — see the calculator's
+         header for the note (2026-09-14). -->
+    <div class="headrow">
     <div class="top-actions">
       <!-- The four unified themes, written out here rather than built by the
            script at the foot of the page. The header paints long before that
@@ -632,6 +655,12 @@ body.maxi-open { overflow: hidden; }
         <option value="midnight">✦ Midnight</option>
         <option value="sepia">📜 Sepia</option>
       </select>
+    </div>
+    <!-- Out of the Tab order and hidden from a screen reader: both controls are
+         reachable with Tab. The arrows are for a pointer. -->
+    <div class="rownav" hidden><button type="button" tabindex="-1" aria-hidden="true"
+      title="Scroll the controls left">‹</button><button type="button" tabindex="-1"
+      aria-hidden="true" title="Scroll the controls right">›</button></div>
     </div>
   </div>
 </header>
@@ -1234,6 +1263,30 @@ function setTheme(theme) {
    <html data-theme="auto"> in the markup is the same answer for a browser that never
    gets this far. */
 setTheme(localStorage.getItem('lottery-theme') || 'auto');
+
+/* ── A row that scrolls sideways, and the two arrows beside it ───────────────
+   Money Map's function, verbatim, and the calculator's — see the note there.
+   This page is its own single file, so it carries its own copy. */
+function wireScrollRow(row, nav) {
+  if (!row || !nav) return;
+  const [prev, next] = nav.querySelectorAll('button');
+  const sync = () => {
+    const room = row.scrollWidth - row.clientWidth;
+    nav.hidden = room <= 1;
+    prev.disabled = row.scrollLeft <= 1;
+    next.disabled = row.scrollLeft >= room - 1;
+  };
+  const step = (dir) => { row.scrollLeft += dir * Math.max(80, Math.round(row.clientWidth * 0.8)); };
+  prev.onclick = () => step(-1);
+  next.onclick = () => step(1);
+  row.addEventListener('scroll', sync, { passive: true });
+  if ('ResizeObserver' in window) new ResizeObserver(sync).observe(row);
+  new MutationObserver(sync).observe(row, { subtree: true, childList: true, characterData: true,
+    attributes: true, attributeFilter: ['hidden', 'class', 'style'] });
+  window.addEventListener('resize', sync);
+  sync();
+}
+wireScrollRow(document.querySelector('.top-actions'), document.querySelector('.headrow > .rownav'));
 
 /* On Auto the palette can change with nobody touching the picker — the reader's phone
    switches to dark at sunset and theme.css follows on its own, because the whole rule
