@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 180;
+const EXPECTED = 186;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -3145,11 +3145,11 @@ t('the full-screen button is furniture, so it never prints', () => {
    Two controls fit almost anywhere, so the narrow frame is deliberately tiny —
    narrow enough that they cannot — and the wide one is where nothing may have
    changed. Mouse-driven frames, so the touch media query leaves the arrows be. */
-async function headerFrame(page, width) {
+async function headerFrame(page, width, height = 800) {
   const f = document.createElement('iframe');
   f.setAttribute('data-lottery-tests', '');   // or the page busts out of the frame
   f.setAttribute('aria-hidden', 'true');
-  f.style.cssText = 'position:absolute;left:-9999px;width:' + width + 'px;height:800px;border:0';
+  f.style.cssText = 'position:absolute;left:-9999px;width:' + width + 'px;height:' + height + 'px;border:0';
   await new Promise((resolve) => {
     f.onload = resolve;
     f.src = page + '?rowscroll=' + Date.now();
@@ -3200,6 +3200,101 @@ for (const [label, page, srcOf] of [['the calculator', 'index.html', () => CALC_
        'with NO flex-end: in a row that overflows it pushes the left-hand controls out of reach', rule);
     ok(/\.top-actions \{ overflow: visible !important; flex-wrap: wrap !important; \}/.test(src),
        'and on paper, which cannot scroll, the row wraps');
+  });
+
+  /* Charles, 2026-09-14: "keep buttons beside the name". These two controls are
+     narrower than Money Map's 15rem floor, so a bare 15rem would have wrapped them
+     under the name at widths where they fit beside it (620–670px in Chromium). The
+     floor here is the smaller of 15rem and the controls' own width. This cannot be
+     red on the previous commit — a content-sized row already stayed beside the
+     name wherever it fitted — so it is red against Money Map's rule, copied bare. */
+  t(label + ': the controls stay beside the name wherever they fit there, never wrapping early', async () => {
+    const f = await headerFrame(page, 660);
+    try {
+      const W = f.contentWindow, D = W.document;
+      const ctl = D.querySelector('.top-actions'), brand = D.querySelector('.brand'), bar = D.querySelector('.headbar');
+      const cs = W.getComputedStyle(bar);
+      const room = bar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+        - brand.getBoundingClientRect().width - parseFloat(cs.columnGap);
+      const need = ctl.scrollWidth - 8;   // the scroller's 4px ring padding sits inside a -4px margin
+      ok(room >= need && room < 240, 'set up: the controls fit beside the name with less than 15rem to spare',
+         'room ' + room.toFixed(1) + ', controls ' + need);
+      const dy = ctl.getBoundingClientRect().top - brand.getBoundingClientRect().top;
+      ok(Math.abs(dy) < 16, 'so they sit on the name\'s line rather than on a line of their own', dy);
+      ok(ctl.scrollWidth - ctl.clientWidth <= 1, 'whole, with nothing to scroll', ctl.scrollWidth + ' vs ' + ctl.clientWidth);
+    } finally { f.remove(); }
+  });
+
+  /* The browser scrolls a focused element into view only when it is ENTIRELY
+     hidden, so Tab onto a control half past the edge left it half past the edge.
+     Two controls only overflow in a very narrow window, and the test needs one
+     where the row overflows yet is still wider than the theme picker, so the
+     picker CAN land whole. That band is a few pixels wide and moves with the
+     platform's scroll bar (none on a Mac, 15px on a Linux runner), so the frame
+     is SIZED from measurement: 6px short of the controls' width. Red on the
+     previous commit. */
+  t(label + ': a control half past the row\'s edge, focused from the keyboard, is brought WHOLE into the row', async () => {
+    const f = await headerFrame(page, 400);
+    try {
+      const W = f.contentWindow, D = W.document;
+      const row = D.querySelector('.top-actions');
+      const bar = W.innerWidth - D.documentElement.clientWidth;
+      const width = bar + 32 + (row.scrollWidth - 8) - 6;
+      f.style.width = width + 'px';
+      await new Promise((r) => setTimeout(r, 250));
+      ok(row.scrollWidth > row.clientWidth, 'set up: ' + width + 'px: the row overflows', row.scrollWidth + ' vs ' + row.clientWidth);
+      const items = [...row.querySelectorAll('button, select')].filter((c) => c.getClientRects().length && !c.hidden);
+      row.scrollLeft = 0;
+      let box = row.getBoundingClientRect();
+      const half = items.find((el) => el.getBoundingClientRect().right > box.right - 1);
+      ok(half, 'set up: a control reaches past the row\'s edge');
+      const r0 = half.getBoundingClientRect();
+      row.scrollLeft += Math.max(0, r0.left + r0.width / 2 - box.right);
+      box = row.getBoundingClientRect();
+      const r1 = half.getBoundingClientRect();
+      ok(r1.left < box.right && r1.right > box.right, 'set up: ' + half.id + ' straddles the edge',
+         r1.left.toFixed(1) + '..' + r1.right.toFixed(1) + ' vs ' + box.right.toFixed(1));
+      ok(r1.width <= box.width - 8, 'set up: and is narrower than the row, so it can land whole',
+         r1.width.toFixed(1) + ' vs ' + box.width.toFixed(1));
+      half.focus();
+      ok(half.matches(':focus-visible'), 'set up: a focus the page treats as a keyboard one');
+      const r = half.getBoundingClientRect(), b2 = row.getBoundingClientRect();
+      ok(b2.right - r.right >= 3 && r.left - b2.left >= 3,
+         'focused, ' + half.id + ' is scrolled fully inside the row with its focus ring\'s room',
+         (r.left - b2.left).toFixed(1) + ' left / ' + (b2.right - r.right).toFixed(1) + ' right');
+    } finally { f.remove(); }
+    ok(/if \(t === row \|\| !t\.matches\(':focus-visible'\)\) return;/.test(srcOf()),
+       'only a keyboard focus scrolls the row — a mouse press needs no help');
+  });
+
+  /* A sticky bar covers whatever a jump link lands on. <main>'s scroll-margin was a
+     fixed 96px, and at 390px the name wraps to two lines and the bar is 114px, so
+     the skip link landed its target 18px under the bar. It reads the header's
+     MEASURED height now. Started scrolled down: from the very top the browser may
+     not need to move at all. Red on the previous commit. */
+  t(label + ': the skip link lands <main> below the header, whatever the header\'s height', async () => {
+    const f = await headerFrame(page, 390, 300);
+    try {
+      const W = f.contentWindow, D = W.document;
+      const head = D.querySelector('header'), main = D.querySelector('main');
+      const hh = head.getBoundingClientRect().height;
+      ok(hh > 96, 'set up: at 390px the header is taller than the old fixed 96px', hh);
+      W.scrollTo(0, 400);
+      ok(W.scrollY > 0, 'set up: the page has somewhere to scroll back from', W.scrollY);
+      D.querySelector('.skip').click();
+      await new Promise((r) => setTimeout(r, 150));
+      const hb = head.getBoundingClientRect().bottom, mt = main.getBoundingClientRect().top;
+      ok(mt >= hb - 0.5, '<main> lands BELOW the sticky header, not under it',
+         'main top ' + mt.toFixed(1) + ' vs header bottom ' + hb.toFixed(1));
+      ok(mt - hb <= 21, 'and just clear of it, where it sits under the bar at the top of the page', (mt - hb).toFixed(1));
+      /* The clearance follows the header: widen the window and the bar drops to one line. */
+      f.style.width = '1280px';
+      await new Promise((r) => setTimeout(r, 250));
+      const h2 = head.getBoundingClientRect().height;
+      ok(h2 < hh, 'set up: at 1280px the bar is shorter', h2);
+      eq(W.getComputedStyle(main).scrollMarginTop, (Math.ceil(h2) + 20) + 'px',
+         'and the clearance followed it — measured, not a number written down');
+    } finally { f.remove(); }
   });
 }
 

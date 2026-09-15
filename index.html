@@ -145,8 +145,13 @@
   main:focus { outline: none; }
   /* A sticky bar covers whatever a jump link lands on, so the first thing a
      keyboard user is sent to would be hidden under the header they just skipped.
-     Generous enough for the two-line row a phone gets. */
-  main { scroll-margin-top: 96px; }
+     THE CLEARANCE IS THE HEADER'S MEASURED HEIGHT, not a guess (2026-09-14):
+     `trackHeaderHeight()` writes `--header-h` and keeps it true, plus the 20px the
+     bar keeps below itself — so the skip link lands <main> exactly where it sits
+     under the bar at the top of the page. It was a fixed 96px, and an upright
+     phone's header is 114px (the name wraps to two lines), so there the target
+     landed under the bar. The 96px fallback is for a page whose script never ran. */
+  main { scroll-margin-top: calc(var(--header-h, 96px) + 20px); }
 
   /* ── Header ───────────────────────────────────────────────────────────────
      The sibling apps' shape: a bar the full width of the window that STAYS at
@@ -195,16 +200,30 @@
      ONE LINE THAT SCROLLS SIDEWAYS, AT EVERY WIDTH (Charles, 2026-09-14,
      family-wide: "should we just make them both always single line side
      scrollers?"). Money Map's shape, ported the same day. `.headrow` is the row
-     and its arrows; `.top-actions` is what scrolls. Content-sized, the row sits
-     beside the name while it fits — pushed right by the name's auto margin — and
-     flex-wrap takes the whole row onto a line of its own when it does not, where
-     it shrinks and scrolls rather than wrapping. NO `justify-content: flex-end`
-     on the scroller, and that is load-bearing: in a row that overflows it pushes
-     the overflow off the LEFT edge, where no scroll can reach it. The 4px padding
-     and matching negative margin are room for the focus ring, so no control
-     moves; no scrollbar, because the arrows are the sign there is more. Two
-     controls rarely overflow — a very narrow window is the case this covers. */
-  .headrow { display: flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; }
+     and its arrows; `.top-actions` is what scrolls. THE ROW STAYS BESIDE THE NAME
+     AND SCROLLS THERE (Charles, the same evening: "keep buttons beside the name")
+     rather than taking a line of its own the moment it does not fit: it takes
+     whatever the name leaves (`flex: 1 1 0%`), its controls packed to the right by
+     `justify-content: flex-end` on the ROW, and wraps under the name only when too
+     little is left. NO `justify-content: flex-end` on the SCROLLER, and that is
+     load-bearing: in a row that overflows it pushes the overflow off the LEFT
+     edge, where no scroll can reach it (on the row it is safe — the row never
+     overflows, the scroller inside it shrinks). The 4px padding and matching
+     negative margin are room for the focus ring, so no control moves; no
+     scrollbar, because the arrows are the sign there is more. Two controls rarely
+     overflow — a very narrow window is the case this covers.
+     THE FLOOR IS THE SMALLER OF 15rem AND THE CONTROLS' OWN WIDTH, and that is
+     the one place this departs from Money Map's rule (`min-width: min(15rem,
+     100%)`). Money Map's row is wider than 15rem; these two controls are 195px
+     (209 on touch), so a bare 15rem floor wrapped them under the name in every
+     window from 620 to 670px — windows where they had always fitted beside it,
+     the exact opposite of what was asked. `width: 15rem` with the default
+     `min-width: auto` gives the smaller of the two: for a flex item whose basis
+     is not `auto`, the automatic minimum is the lesser of its specified width
+     and its content's minimum, capped by `max-width`. Measured in Chromium and
+     WebKit: the row wraps at exactly the old width. */
+  .headrow { display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+             flex: 1 1 0%; width: 15rem; max-width: 100%; }
   .top-actions { display: flex; align-items: center; gap: 12px; flex-wrap: nowrap; flex: 0 1 auto;
                  min-width: 0; overflow-x: auto; padding: 4px; margin: -4px; scrollbar-width: none; }
   .top-actions::-webkit-scrollbar { display: none; }
@@ -1424,6 +1443,24 @@ function wireScrollRow(row, nav) {
   const step = (dir) => { row.scrollLeft += dir * Math.max(80, Math.round(row.clientWidth * 0.8)); };
   prev.onclick = () => step(-1);
   next.onclick = () => step(1);
+  /* A CONTROL REACHED FROM THE KEYBOARD LANDS WHOLE INSIDE THE ROW. The
+     browser scrolls a focused element into view only when it is entirely
+     hidden, so Tab onto a button half past the edge left it half past the
+     edge (measured on PAPTrack at 480px: Back Up focused with 21px still
+     clipped), and an arrow key along a tab bar did the same. Measured against
+     the PADDING edge, so the 4px bought for the focus ring stays the ring's —
+     the tab nudge's lesson. Only a `:focus-visible` focus: a mouse press
+     needs no help, and scrolling under it would move a tab that is about to
+     be dragged. */
+  row.addEventListener('focusin', (e) => {
+    const t = e.target;
+    if (t === row || !t.matches(':focus-visible')) return;
+    const cs = getComputedStyle(row);
+    const padL = parseFloat(cs.paddingLeft) || 0, padR = parseFloat(cs.paddingRight) || 0;
+    const box = row.getBoundingClientRect(), tr = t.getBoundingClientRect();
+    if (tr.left < box.left + padL) row.scrollLeft += tr.left - box.left - padL;
+    else if (tr.right > box.right - padR) row.scrollLeft += tr.right - box.right + padR;
+  });
   row.addEventListener('scroll', sync, { passive: true });
   if ('ResizeObserver' in window) new ResizeObserver(sync).observe(row);
   new MutationObserver(sync).observe(row, { subtree: true, childList: true, characterData: true,
@@ -1432,6 +1469,27 @@ function wireScrollRow(row, nav) {
   sync();
 }
 wireScrollRow(document.querySelector('.top-actions'), document.querySelector('.headrow > .rownav'));
+
+/* ── The skip link clears the header, whatever its height ───────────────────
+   A sticky bar covers whatever a jump link lands on, and this bar is not one
+   height: one line on a laptop, the name above the controls on an upright
+   phone, the name itself on two lines on a narrow one, taller again at a larger
+   text size. So `main`'s scroll-margin reads `--header-h`, written here from the
+   header's own box and kept true by a ResizeObserver (the window, the zoom, a
+   label that changes) — rounded UP, so it never lands a fraction short. The
+   header is static markup above this script. (2026-09-14: it replaces a fixed
+   96px, which was shorter than an upright phone's header on the lottery pages.
+   The same function, byte for byte, in PAPTrack and both lottery pages.) */
+function trackHeaderHeight() {
+  const head = document.querySelector('header');
+  if (!head) return;
+  const set = () => document.documentElement.style.setProperty('--header-h',
+    Math.ceil(head.getBoundingClientRect().height) + 'px');
+  if ('ResizeObserver' in window) new ResizeObserver(set).observe(head);
+  window.addEventListener('resize', set);
+  set();
+}
+trackHeaderHeight();
 
 /* On Auto the palette can change with nobody touching the picker — the reader's phone
    switches to dark at sunset and theme.css follows on its own, because the whole rule
