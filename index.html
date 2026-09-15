@@ -143,15 +143,21 @@
      a focus ring around the entire page — the link itself already showed where
      focus went. */
   main:focus { outline: none; }
-  /* A sticky bar covers whatever a jump link lands on, so the first thing a
-     keyboard user is sent to would be hidden under the header they just skipped.
-     THE CLEARANCE IS THE HEADER'S MEASURED HEIGHT, not a guess (2026-09-14):
-     `trackHeaderHeight()` writes `--header-h` and keeps it true, plus the 20px the
-     bar keeps below itself — so the skip link lands <main> exactly where it sits
-     under the bar at the top of the page. It was a fixed 96px, and an upright
-     phone's header is 114px (the name wraps to two lines), so there the target
-     landed under the bar. The 96px fallback is for a page whose script never ran. */
-  main { scroll-margin-top: calc(var(--header-h, 96px) + 20px); }
+  /* NOTHING THE PAGE SCROLLS TO LANDS UNDER THE STICKY BAR (2026-09-14). Scrolling
+     something into view lines it up with the top of the window, which is where the
+     header sits: the skip link's <main>, and every control a keyboard focus brings
+     into view — Shift+Tab back up the page most of all (Charles: "fix the sticky
+     header shift+tab issue too"; Golf Handicap's 8935363). Measured before: 15 of
+     134 Shift+Tab stops behind the bar at 1280x800, 20 on a 390px phone, 5 on a
+     sideways one. So the ROOT carries the clearance, as scroll-padding: the
+     header's MEASURED height (`trackHeaderHeight()` writes `--header-h` and keeps
+     it true — the bar is 51px wide and 114px on an upright phone, where the name
+     wraps to two lines) plus 8px for the focus ring. On the root and NOT on <main>
+     as well: an element's scroll-margin and the root's scroll-padding ADD, and
+     <main> carried a `scroll-margin-top` of its own (a fixed 96px, shorter than
+     that phone header; then the header + 20px) until the clearance moved here.
+     The 96px fallback is for a page whose script never ran. */
+  html { scroll-padding-top: calc(var(--header-h, 96px) + 8px); }
 
   /* ── Header ───────────────────────────────────────────────────────────────
      The sibling apps' shape: a bar the full width of the window that STAYS at
@@ -1470,16 +1476,19 @@ function wireScrollRow(row, nav) {
 }
 wireScrollRow(document.querySelector('.top-actions'), document.querySelector('.headrow > .rownav'));
 
-/* ── The skip link clears the header, whatever its height ───────────────────
-   A sticky bar covers whatever a jump link lands on, and this bar is not one
-   height: one line on a laptop, the name above the controls on an upright
-   phone, the name itself on two lines on a narrow one, taller again at a larger
-   text size. So `main`'s scroll-margin reads `--header-h`, written here from the
-   header's own box and kept true by a ResizeObserver (the window, the zoom, a
-   label that changes) — rounded UP, so it never lands a fraction short. The
-   header is static markup above this script. (2026-09-14: it replaces a fixed
-   96px, which was shorter than an upright phone's header on the lottery pages.
-   The same function, byte for byte, in PAPTrack and both lottery pages.) */
+/* ── Nothing scrolled into view lands under the header ──────────────────────
+   A sticky bar covers whatever the page scrolls up to meet it: the skip link's
+   target, and every control a keyboard focus brings into view — Shift+Tab back
+   up the page most of all, which lines each one up with the top of the window.
+   And this bar is not one height: one line on a laptop, the name above the
+   controls on an upright phone, the name itself on two lines on a narrow one,
+   taller again at a larger text size. So the root's scroll-padding reads
+   `--header-h`, written here from the header's own box and kept true by a
+   ResizeObserver (the window, the zoom, a label that changes) — rounded UP, so
+   it never lands a fraction short. The header is static markup above this
+   script. (2026-09-14: it replaces a fixed 96px on <main>, which was shorter
+   than an upright phone's header on the lottery pages and did nothing for a
+   focus. The same function, byte for byte, in PAPTrack and both lottery pages.) */
 function trackHeaderHeight() {
   const head = document.querySelector('header');
   if (!head) return;

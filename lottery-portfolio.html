@@ -177,11 +177,14 @@ body { background:var(--bg); color:var(--text); font: var(--fw-normal) var(--fs-
 /* Focus lands on <main id="maincontent" tabindex="-1">, which must not then draw a
    focus ring around the entire page. */
 main:focus { outline:none; }
-/* A sticky bar covers whatever a jump link lands on. The clearance is the header's
-   MEASURED height (`trackHeaderHeight()` writes `--header-h`) plus the 20px gap the
-   bar keeps below itself — the calculator's rule, see the note there. It was a fixed
-   96px, shorter than an upright phone's header; 96px is now only the fallback. */
-main { scroll-margin-top:calc(var(--header-h, 96px) + 20px); }
+/* Nothing the page scrolls to lands under the sticky bar — the skip link's <main>,
+   or a control Shift+Tab brings back into view (2026-09-14; measured before: 19 of
+   138 Shift+Tab stops behind the bar at 1280x800, 33 on a 390px phone, 24 on a
+   sideways one). The ROOT carries the clearance as scroll-padding: the header's
+   MEASURED height (`trackHeaderHeight()` writes `--header-h`) plus 8px for the focus
+   ring — the calculator's rule, see the note there. Not on <main> as well: an
+   element's scroll-margin and the root's scroll-padding ADD. 96px is the fallback. */
+html { scroll-padding-top:calc(var(--header-h, 96px) + 8px); }
 
 /* ── Header ───────────────────────────────────────────────────────────────────
    The sibling apps' shape: a bar the full width of the window that STAYS at the
@@ -1317,16 +1320,19 @@ function wireScrollRow(row, nav) {
 }
 wireScrollRow(document.querySelector('.top-actions'), document.querySelector('.headrow > .rownav'));
 
-/* ── The skip link clears the header, whatever its height ───────────────────
-   A sticky bar covers whatever a jump link lands on, and this bar is not one
-   height: one line on a laptop, the name above the controls on an upright
-   phone, the name itself on two lines on a narrow one, taller again at a larger
-   text size. So `main`'s scroll-margin reads `--header-h`, written here from the
-   header's own box and kept true by a ResizeObserver (the window, the zoom, a
-   label that changes) — rounded UP, so it never lands a fraction short. The
-   header is static markup above this script. (2026-09-14: it replaces a fixed
-   96px, which was shorter than an upright phone's header on the lottery pages.
-   The same function, byte for byte, in PAPTrack and both lottery pages.) */
+/* ── Nothing scrolled into view lands under the header ──────────────────────
+   A sticky bar covers whatever the page scrolls up to meet it: the skip link's
+   target, and every control a keyboard focus brings into view — Shift+Tab back
+   up the page most of all, which lines each one up with the top of the window.
+   And this bar is not one height: one line on a laptop, the name above the
+   controls on an upright phone, the name itself on two lines on a narrow one,
+   taller again at a larger text size. So the root's scroll-padding reads
+   `--header-h`, written here from the header's own box and kept true by a
+   ResizeObserver (the window, the zoom, a label that changes) — rounded UP, so
+   it never lands a fraction short. The header is static markup above this
+   script. (2026-09-14: it replaces a fixed 96px on <main>, which was shorter
+   than an upright phone's header on the lottery pages and did nothing for a
+   focus. The same function, byte for byte, in PAPTrack and both lottery pages.) */
 function trackHeaderHeight() {
   const head = document.querySelector('header');
   if (!head) return;

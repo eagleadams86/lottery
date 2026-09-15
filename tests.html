@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 186;
+const EXPECTED = 188;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -3286,15 +3286,56 @@ for (const [label, page, srcOf] of [['the calculator', 'index.html', () => CALC_
       const hb = head.getBoundingClientRect().bottom, mt = main.getBoundingClientRect().top;
       ok(mt >= hb - 0.5, '<main> lands BELOW the sticky header, not under it',
          'main top ' + mt.toFixed(1) + ' vs header bottom ' + hb.toFixed(1));
-      ok(mt - hb <= 21, 'and just clear of it, where it sits under the bar at the top of the page', (mt - hb).toFixed(1));
+      ok(mt - hb <= 9, 'and just clear of it — the root\'s 8px for the focus ring, nothing added on top', (mt - hb).toFixed(1));
       /* The clearance follows the header: widen the window and the bar drops to one line. */
       f.style.width = '1280px';
       await new Promise((r) => setTimeout(r, 250));
       const h2 = head.getBoundingClientRect().height;
       ok(h2 < hh, 'set up: at 1280px the bar is shorter', h2);
-      eq(W.getComputedStyle(main).scrollMarginTop, (Math.ceil(h2) + 20) + 'px',
+      eq(W.getComputedStyle(D.documentElement).scrollPaddingTop, (Math.ceil(h2) + 8) + 'px',
          'and the clearance followed it — measured, not a number written down');
+      eq(W.getComputedStyle(main).scrollMarginTop, '0px',
+         '<main> adds no scroll-margin of its own: it would ADD to the root\'s padding');
     } finally { f.remove(); }
+  });
+
+  /* Charles, 2026-09-14: "fix the sticky header shift+tab issue too". Scrolling a
+     focused control into view lines it up with the top of the window, where the
+     sticky header sits, so Shift+Tab back up the page parked control after control
+     behind the bar (on a 390px phone, 20 of 134 stops on the calculator and 33 of
+     138 on the portfolio). The root's scroll-padding is the header's measured
+     height plus 8px now. A plain focus() — no preventScroll — from a page scrolled
+     past the control. THE FRAME IS 200px TALL ON PURPOSE: Chrome CENTRES a control
+     a script focuses (a real Tab lines it up with the top edge), and in a taller
+     window the centre is already below the bar, so the check passed on the broken
+     page too. In 200px the centre is above the 114px header's bottom. Red on the
+     previous commit, on the live check. */
+  t(label + ': a control focused from above the window lands below the sticky header, not behind it', async () => {
+    const f = await headerFrame(page, 390, 200);
+    try {
+      const W = f.contentWindow, D = W.document;
+      const head = D.querySelector('header');
+      const docTop = (el) => el.getBoundingClientRect().top + W.scrollY;
+      const hh = head.getBoundingClientRect().height;
+      const maxScroll = D.documentElement.scrollHeight - W.innerHeight;
+      const target = [...D.querySelectorAll('main a[href], main button, main select, main input, footer a[href]')]
+        .find((el) => el.getClientRects().length && !el.hidden && el.tabIndex >= 0 && !el.closest('dialog')
+          && docTop(el) > hh + 150 && docTop(el) + el.getBoundingClientRect().height + 40 < maxScroll);
+      ok(target, 'set up: a focusable control well down a page that scrolls past it');
+      W.scrollTo(0, docTop(target) + target.getBoundingClientRect().height + 40);
+      const before = target.getBoundingClientRect();
+      ok(before.bottom < 0, 'set up: ' + (target.id || target.textContent.trim()) + ' is scrolled above the window', before.bottom.toFixed(1));
+      target.focus();
+      await new Promise((r) => setTimeout(r, 100));
+      ok(D.activeElement === target, 'set up: it took the focus');
+      const r = target.getBoundingClientRect(), hb = head.getBoundingClientRect().bottom;
+      ok(r.top >= hb - 0.5, 'it lands BELOW the sticky header, not behind it',
+         'control top ' + r.top.toFixed(1) + ' vs header bottom ' + hb.toFixed(1));
+      ok(r.bottom <= W.innerHeight, 'and inside the window', r.bottom.toFixed(1) + ' > ' + W.innerHeight);
+    } finally { f.remove(); }
+    ok(/html \{ ?scroll-padding-top: ?calc\(var\(--header-h, 96px\) \+ 8px\); \}/.test(srcOf()),
+       'the clearance is on the root, from the measured header plus 8px for the ring');
+    ok(!/main \{ ?scroll-margin-top/.test(srcOf()), 'and <main> carries no scroll-margin of its own to add on top of it');
   });
 }
 
