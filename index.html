@@ -715,6 +715,9 @@
   .btn:hover { border-color: var(--text-muted); }
   .btn.primary { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
   .btn.primary:hover { opacity: .88; }
+  /* The pack's rule 20 dims a disabled button at zero specificity, so the hover
+     above would brighten a switched-off primary back up: re-assert it here. */
+  .btn.primary:disabled:hover { opacity: .45; }
   .btn.small { padding: 4px 9px; font-size: var(--fs-xs); min-height: var(--chrome-h); }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .sub { color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.7; }
