@@ -1,6 +1,6 @@
 {
   "id": "/lottery/",
-  "name": "NY Lottery Calculator & Portfolio",
+  "name": "NY Lottery",
   "short_name": "NY Lottery",
   "description": "What a Powerball or Mega Millions win pays a New York State resident after tax, and a what-if model of investing the lump sum.",
   "start_url": "./",

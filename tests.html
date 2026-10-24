@@ -3207,13 +3207,20 @@ for (const [label, page, srcOf] of [['the calculator', 'index.html', () => CALC_
      under the name at widths where they fit beside it (620–670px in Chromium). The
      floor here is the smaller of 15rem and the controls' own width. This cannot be
      red on the previous commit — a content-sized row already stayed beside the
-     name wherever it fitted — so it is red against Money Map's rule, copied bare. */
+     name wherever it fitted — so it is red against Money Map's rule, copied bare.
+     The frame is SIZED from measurement — 20px more than the controls need — since
+     the name's width sets where that band is: a fixed 660px stopped landing in it
+     when the subtitle left the name on 2026-10-24. */
   t(label + ': the controls stay beside the name wherever they fit there, never wrapping early', async () => {
     const f = await headerFrame(page, 660);
     try {
       const W = f.contentWindow, D = W.document;
       const ctl = D.querySelector('.top-actions'), brand = D.querySelector('.brand'), bar = D.querySelector('.headbar');
       const cs = W.getComputedStyle(bar);
+      const spare = (bar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+        - brand.getBoundingClientRect().width - parseFloat(cs.columnGap)) - (ctl.scrollWidth - 8);
+      f.style.width = Math.round(660 - spare + 20) + 'px';
+      await new Promise((r) => setTimeout(r, 250));
       const room = bar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
         - brand.getBoundingClientRect().width - parseFloat(cs.columnGap);
       const need = ctl.scrollWidth - 8;   // the scroller's 4px ring padding sits inside a -4px margin
@@ -3268,17 +3275,20 @@ for (const [label, page, srcOf] of [['the calculator', 'index.html', () => CALC_
   });
 
   /* A sticky bar covers whatever a jump link lands on. <main>'s scroll-margin was a
-     fixed 96px, and at 390px the name wraps to two lines and the bar is 114px, so
-     the skip link landed its target 18px under the bar. It reads the header's
+     fixed 96px, and at 390px the name wrapped to two lines and the bar was 114px, so
+     the skip link landed its target 18px under the bar. (The frame is 320px, and
+     the check is two lines rather than >96px, since the subtitle left the name on
+     2026-10-24: the bar is shorter now, and the 1280px leg below is what proves the
+     clearance FOLLOWS the height.) It reads the header's
      MEASURED height now. Started scrolled down: from the very top the browser may
      not need to move at all. Red on the previous commit. */
   t(label + ': the skip link lands <main> below the header, whatever the header\'s height', async () => {
-    const f = await headerFrame(page, 390, 300);
+    const f = await headerFrame(page, 320, 300);
     try {
       const W = f.contentWindow, D = W.document;
       const head = D.querySelector('header'), main = D.querySelector('main');
       const hh = head.getBoundingClientRect().height;
-      ok(hh > 96, 'set up: at 390px the header is taller than the old fixed 96px', hh);
+      ok(hh > 70, 'set up: at 320px the controls take a line of their own, so the bar is two lines tall', hh);
       W.scrollTo(0, 400);
       ok(W.scrollY > 0, 'set up: the page has somewhere to scroll back from', W.scrollY);
       D.querySelector('.skip').click();

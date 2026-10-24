@@ -134,7 +134,7 @@ Targeted at **Niagara County, NY residents** who want to model what a lottery lu
 
 ---
 
-### NY Lottery Calculator
+### NY Lottery
 - **Live jackpot data** — auto-fetches current Powerball and Mega Millions jackpots from `usamega.com` (with `lotteryusa.com` as fallback), via a Cloudflare Worker proxy
 - **Cached for 6 hours** — fetched jackpots are stored in `localStorage`; page loads/refreshes within 6 hours render instantly from the cache without re-scraping. The **Refresh** button always forces a live fetch (e.g. right after a draw) — and also force-refreshes the winning numbers when that section is open. Caps redundant scraping from repeated visits on a device
 - **Next draw dates** — shows upcoming draw date for each game (Powerball: Mon/Wed/Sat, Mega Millions: Tue/Fri), computed client-side in ET
