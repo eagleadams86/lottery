@@ -588,6 +588,47 @@ the same day, so a change belongs in both.
 Its own `t()` with its own 1280x900 frame, so a walk that breaks does not take
 the assertions about getting up there down with it.
 
+## Content wells (2026-10-31)
+
+Theme pack rule 21: a box of content set inside a card is `--surface-alt`, edged
+`1px solid var(--border)`, rounded `--radius-sm` — one fill for tiles, tables and
+plot areas in every theme. Never `--bg` or a bare `--surface` (the pack's ladder runs
+the other way in Light and Sepia, so each looks right in exactly one theme), never
+`--accent-bg` behind rows of text. This repo was the one the family sweep missed.
+
+- **Calculator (`index.html`).** The four tiles stood straight on the page, so
+  `.metrics-grid` IS the card now and each `.mc` is a well. The Compare pair was
+  already `--surface-alt` but also bare on the page: `.cmp-panel` is a card around
+  the two cards AND the verdict (the badge/height test still measures `#cmp-cards`
+  and `#cmp-verdict`, which kept their ids). The two breakdown tables are wrapped in
+  `.tbl-well`; the payment schedule and Invested Year by Year `.sched-wrap` boxes are
+  wells too. Inside a well the heading band is `--surface`; these tables have no row
+  hover. **Left alone:** the jackpot game cards and the manual-amount cards (they are
+  controls), the setup card, the winning-numbers card (one draw of balls, not a box
+  of records), and the Share/help dialogs.
+- **Portfolio (`lottery-portfolio.html`).** `.metrics` is the tiles' card, `.panel`
+  wraps the breakdown table (`.card` is the well; heading band, row hover and the
+  total row are `--surface`) and the waterfall (`.wf` is the well; the tracks moved
+  `--surface2` → `--surface`, or they would vanish on it). Every `.chartbox` is a
+  well, **content-box** so the inline 190/210/230px stays the chart's own height;
+  the full-screen view keeps it. On a phone `.panel`/`.metrics`/`.wf` take less
+  padding and the waterfall label column is 130px — the 190px column had already
+  left a 45px track at 390px, and the extra padding would have halved it.
+- **Painted:** the doughnut's wedge outlines read `chartWellFill()` — `--surface-alt`
+  on screen, `--surface` while printing (the box prints white, the canvas does not).
+  `printForPaper.printing` carries that, and printForPaper now redraws in Light and
+  Sepia too (and clears `_chartsTheme` to force the rebuild), dedupes on the flag,
+  and only restores the theme it changed. **Not changed:** `tint()` still mixes bars
+  toward `--surface` (rule 3 — an open family item, a slight shade, not a patch);
+  the tooltip stays `--surface-alt` with its `--border-strong` edge.
+- The info dot's hover is `--border-strong` (family-wide the same day): the old
+  `--surface-alt` fill is the well's colour and vanished on a tile.
+- `ny-lottery-calculator.html` is a redirect stub and `privacy.html` is prose — no
+  cards, no wells, nothing to do. `tests.html` has two four-theme tests (one per
+  page) that every well equals `--surface-alt`, the heading band and the cards differ,
+  and the doughnut outline follows the print swap; both are red on the previous
+  commit.
+
 ## Fields (2026-08-20)
 
 - **A box you land on has its contents SELECTED**, so typing replaces the figure

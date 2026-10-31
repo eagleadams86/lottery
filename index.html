@@ -432,9 +432,18 @@
      Four cards, one per step of the maths, so they go four-across or pair into a 2x2 —
      never 3+1. Same rule as Team Dashboard's tiles; unlike that app these labels are
      small enough to stay on one line at 2-up on a phone, so there's no 1-column step. */
-  .metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  /* THE CONTENT WELL (theme pack rule 21, 2026-10-31). The four tiles sat straight
+     on the page; a tile is a well, and a well sits INSIDE a card. So the grid
+     itself is the card (--bg-card, edged and rounded like every other card here)
+     and each tile is --surface-alt with a --border edge and --radius-sm — the one
+     fill a tile, a table and the Compare pair share in all four themes. Never
+     --bg or a bare --surface for a well: the pack's ladder runs bg < surface <
+     surfaceAlt in the dark themes and surfaceAlt ≈ bg < surface in the light
+     two, so only --surface-alt is the same role everywhere. No shadow (rule 14). */
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.25rem;
+                  padding: 0.9rem 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
   @media (max-width: 720px) { .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .mc { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); padding: 0.9rem 1rem; text-align: center; }
+  .mc { background: var(--surface-alt); border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 0.9rem 1rem; text-align: center; }
   .ml { font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
   /* Below ~360px three of the four labels wrap to a second line and the fourth doesn't,
      which left the numbers on different baselines across a 2x2 row. Reserving two lines
@@ -474,7 +483,7 @@
     background: transparent; color: var(--text-secondary);
     font-family: inherit; font-size: var(--fs-xs); font-weight: 700;
     line-height: 1; text-transform: none; cursor: pointer; vertical-align: 1px; }
-  .tile-help:hover { background: var(--surface-alt); border-color: var(--text-secondary);
+  .tile-help:hover { background: var(--border-strong); border-color: var(--text-secondary);
     color: var(--text-primary); }
   /* -5px, NOT -4: `inset` resolves against the PADDING box, and the circle is a
      16px BORDER box with a 1px border — so the padding box is 14px and -4px grew
@@ -531,7 +540,20 @@
   .details-chevron.open { transform: rotate(90deg); }
   .details-body { display: none; padding: 1.1rem 1.2rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
   .details-body.open { display: block; }
-  .details-body table:last-child { margin-bottom: 0; }
+  /* Each breakdown table is a content well (pack rule 21): --surface-alt, a
+     --border edge, --radius-sm, set inside the card. Inside a well the heading
+     band is --surface — the card's colour — so the column names read as a band
+     in every theme (it runs darker than the well in Midnight and Dark, lighter
+     in Light and Sepia, which is the pack's expected direction). The schedule
+     and Invested Year by Year boxes below are the same well; their sticky
+     heading was already card-coloured. These tables have no row hover, so there
+     is none to move. On paper the fill drops with every background (rule 13). */
+  .tbl-well { background: var(--surface-alt); border: 1px solid var(--border);
+              border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 1.1rem; }
+  .tbl-well table { margin: 0; }
+  .details-body .tbl-well:last-child { margin-bottom: 0; }
+  :is(.tbl-well, .sched-wrap) thead th { background: var(--surface); }
+  :is(.tbl-well, .sched-wrap) tbody tr:last-child td { border-bottom: 0; }
 
   hr { border: none; border-top: 1px solid var(--border); margin: 1.1rem 0; }
   .sec-title { font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
@@ -659,9 +681,14 @@
   /* Lump sum against annuity, side by side. Two cards on a laptop, stacked on a
      phone — and the verdict line underneath belongs to both of them, so it sits
      outside the grid rather than inside the winner's card. */
+  /* The pair and its verdict sit in ONE card (pack rule 21, 2026-10-31): the two
+     payout cards were already --surface-alt, but stood straight on the page —
+     a well belongs inside a card, like the tiles. --radius-sm, like every well. */
+  .cmp-panel { padding: 0.9rem 1rem; background: var(--bg-card); border: 1px solid var(--border);
+               border-radius: var(--radius); }
   .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-  .cmp-card { position: relative; padding: 0.9rem 1rem; background: var(--bg-card-alt); border: 1px solid var(--border);
-              border-radius: var(--radius); }
+  .cmp-card { position: relative; padding: 0.9rem 1rem; background: var(--surface-alt); border: 1px solid var(--border);
+              border-radius: var(--radius-sm); }
   .cmp-card.win { border-color: var(--ok); }
   .cmp-ttl { font-size: var(--fs-xs); font-weight: 600; color: var(--text-hint); text-transform: uppercase;
              letter-spacing: 0.06em; margin-bottom: 6px; }
@@ -690,9 +717,9 @@
   /* The 30-year schedule. Its own scroll box, so a long table never widens the
      page — the family rule for any wide block. */
   .sched-wrap { max-height: 340px; overflow: auto; border: 1px solid var(--border);
-                border-radius: var(--radius-sm); margin-bottom: 1.1rem; }
+                border-radius: var(--radius-sm); margin-bottom: 1.1rem; background: var(--surface-alt); }
   .sched-wrap table { margin: 0; }
-  .sched-wrap thead th { position: sticky; top: 0; background: var(--bg-card); z-index: 1; }
+  .sched-wrap thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
 
   /* ── Buttons and the dialog, copied from the family rather than invented ──
      This page had no button and no dialog at all before 2026-08-22 — every
@@ -1118,8 +1145,10 @@
         <button type="button" class="seg-btn" id="view-today" onclick="setCmpView('today')" aria-pressed="true">Today&rsquo;s Money</button>
         <button type="button" class="seg-btn" id="view-future" onclick="setCmpView('future')" aria-pressed="false">In 30 Years</button>
       </div>
-      <div class="cmp" id="cmp-cards"></div>
-      <p class="verdict" id="cmp-verdict"></p>
+      <div class="cmp-panel">
+        <div class="cmp" id="cmp-cards"></div>
+        <p class="verdict" id="cmp-verdict"></p>
+      </div>
       <hr>
     </div>
 
@@ -1142,14 +1171,18 @@
       <h3 class="sec-title"><span id="wt-title">Withheld at Payment</span><button
         class="tile-help" type="button" data-help="withheld"
         aria-label="Why tax is taken in two stages">i</button></h3>
-      <table><thead><tr><th scope="col">Item</th><th scope="col">Rate</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
-      <tbody id="wtbody"></tbody></table>
+      <div class="tbl-well">
+        <table><thead><tr><th scope="col">Item</th><th scope="col">Rate</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
+        <tbody id="wtbody"></tbody></table>
+      </div>
       <hr>
       <h3 class="sec-title"><span id="rt-title">Settled at Your Next Tax Return</span><button
         class="tile-help" type="button" data-help="settled"
         aria-label="What is still owed, or refunded, at your tax return">i</button></h3>
-      <table><thead><tr><th scope="col">Item</th><th scope="col">Details</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
-      <tbody id="rtbody"></tbody></table>
+      <div class="tbl-well">
+        <table><thead><tr><th scope="col">Item</th><th scope="col">Details</th><th scope="col" style="text-align:right">Amount</th></tr></thead>
+        <tbody id="rtbody"></tbody></table>
+      </div>
     </div>
 
     <!-- The payment-by-payment schedule. Only present while an annuity is what

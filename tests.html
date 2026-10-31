@@ -89,7 +89,7 @@ function ok(cond, note, detail) {
    registers today, so ADDING a test never fails the build; removing one does,
    which is the moment to ask whether it should have gone. Lower it deliberately
    when a test is deliberately retired. */
-const EXPECTED = 188;
+const EXPECTED = 190;
 /* HTML comments explain things by naming them — including the very elements
    these assertions look for, and one of those notes lives in a <style> block a
    strip does not reach. So the comments come out before the page is matched
@@ -1115,6 +1115,82 @@ t('the swap is idempotent, because both listeners can fire', () => {
   }
 });
 
+group('Content wells — one fill for tiles, tables and charts (pack rule 21)');
+/* Charles, 2026-10-31, family-wide. A box of content set inside a card — a tile,
+   a table, a chart's plot area — is --surface-alt, so every one of them is the
+   same colour in every theme. --bg matched in Light and fell a step darker in the
+   dark themes; a bare --surface matched in Midnight and was the lightest thing on
+   the page in Light. Measured in all four, because each wrong answer looks right
+   in exactly one. A probe is appended where the renderer would put a tile or a
+   Compare card, so the check does not depend on which payout the frame is on. */
+const WELL_THEMES = ['midnight', 'dark', 'light', 'sepia'];
+function wellProbe(W, parentSel, cls) {
+  const d = W.document.createElement('div');
+  d.className = cls;
+  W.document.querySelector(parentSel).appendChild(d);
+  return d;
+}
+t('calculator: tiles, the Compare pair and every table are one fill, inside cards', () => {
+  const W = wc, D = W.document, el = D.documentElement, was = el.getAttribute('data-theme');
+  const bg = (e) => W.getComputedStyle(e).backgroundColor;
+  const tile = wellProbe(W, '#mgrid', 'mc'), pair = wellProbe(W, '#cmp-cards', 'cmp-card');
+  try {
+    for (const th of WELL_THEMES) {
+      el.setAttribute('data-theme', th);
+      const wells = [tile, pair, ...D.querySelectorAll('.tbl-well, .sched-wrap')];
+      eq(wells.length, 6, 'two tables in the breakdown, the schedule and the year-by-year run');
+      const fills = wells.map(bg);
+      ok(fills.every((f) => f === fills[0]), th + ': every well the same — ' + fills.join(' / '));
+      const probe = D.createElement('div'); probe.style.background = 'var(--surface-alt)';
+      D.body.appendChild(probe); const alt = bg(probe); probe.remove();
+      eq(fills[0], alt, th + ': and that fill is --surface-alt');
+      for (const w of [...D.querySelectorAll('.tbl-well, .sched-wrap')])
+        ok(bg(w.querySelector('thead th')) !== fills[0], th + ': the heading band stands apart from the well');
+      for (const card of ['#mgrid', '.cmp-panel', '#details-body', '#sched-body', '#growth-body'])
+        ok(bg(D.querySelector(card)) !== fills[0], th + ': ' + card + ' is a card around the wells, not one of them');
+      eq(W.getComputedStyle(tile).borderTopLeftRadius, W.getComputedStyle(el).getPropertyValue('--radius-sm').trim(),
+         th + ': a well is rounded --radius-sm');
+    }
+  } finally {
+    tile.remove(); pair.remove();
+    if (was === null) el.removeAttribute('data-theme'); else el.setAttribute('data-theme', was);
+  }
+});
+t('portfolio: tiles, the breakdown, the waterfall and all four plot areas are one fill', () => {
+  const W = wp, D = W.document, el = D.documentElement, saved = el.getAttribute('data-theme');
+  const bg = (e) => W.getComputedStyle(e).backgroundColor;
+  try {
+    for (const th of WELL_THEMES) {
+      W.setTheme(th);
+      const wells = [...D.querySelectorAll('.met, .card[role="table"], .wf, .chartbox')];
+      eq(wells.length, 4 + 1 + 1 + 4, 'four tiles, the table, the waterfall and four charts');
+      const fills = wells.map(bg);
+      ok(fills.every((f) => f === fills[0]), th + ': every well the same — ' + fills.join(' / '));
+      eq(W.Chart.getChart(D.getElementById('c2')).data.datasets[0].borderColor, W.cssVar('--surface-alt'),
+         th + ': the doughnut outlines its wedges in the well colour, not the card’s');
+      ok(bg(D.querySelector('.tbl-head')) !== fills[0], th + ': the heading band stands apart from the well');
+      ok(bg(D.querySelector('.tbl-row.tot')) !== fills[0], th + ': so does the total row');
+      ok(bg(D.querySelector('.wfb')) !== fills[0], th + ': a waterfall track still shows on the well');
+      for (const card of ['.metrics', '.panel', '.chart-card'])
+        ok(bg(D.querySelector(card)) !== fills[0], th + ': ' + card + ' is a card around the wells');
+      eq(W.getComputedStyle(D.querySelector('.chartbox')).boxSizing, 'content-box',
+         th + ': the plot keeps its full height inside the box');
+    }
+    /* On paper the box prints white and the canvas prints as painted, so the
+       outline goes to the CARD colour while printing — in Sepia too, which keeps
+       its palette but still loses the fill. */
+    W.setTheme('sepia');
+    W.dispatchEvent(new W.Event('beforeprint'));
+    eq(W.Chart.getChart(D.getElementById('c2')).data.datasets[0].borderColor, W.cssVar('--surface'),
+       'while printing the wedge outlines are the card colour');
+    W.dispatchEvent(new W.Event('afterprint'));
+    eq(W.Chart.getChart(D.getElementById('c2')).data.datasets[0].borderColor, W.cssVar('--surface-alt'),
+       'and back to the well after');
+  } finally {
+    W.setTheme(saved || 'auto');
+  }
+});
+
 /* ── The two ball colours are the ONE palette divergence this repo has ─────────
    Powerball red and Mega Millions gold are the games' own brand colours, and
    they are product identity rather than palette: a Powerball is red the way a
@@ -1980,7 +2056,9 @@ t('every dot is a circled "i", never a "?"', () => {
   ok(/\.tile-help::after \{ content: ''; position: absolute; inset: -5px; \}/.test(CALC_SRC),
      "a true 24px tap target: -5px, because `inset` grows from the PADDING box "
        + "and the 1px border made -4px a 22px target");
-  ok(/\.tile-help:hover \{ background: var\(--surface-alt\); border-color: var\(--text-secondary\);/
+  /* --border-strong, family-wide since 2026-10-31: the old --surface-alt fill is
+     the content well's colour (pack rule 21), so on a tile or a table it vanished. */
+  ok(/\.tile-help:hover \{ background: var\(--border-strong\); border-color: var\(--text-secondary\);/
      .test(CALC_SRC),
      'and the hover fills rather than borrowing --focus-border, which would say '
      + '"focused" to anybody reading the two states side by side');

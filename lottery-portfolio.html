@@ -302,26 +302,41 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 .sl-row input[type=range] { flex:1; min-width:0; accent-color:var(--text); cursor:pointer; }
 .sl-val { font-size:var(--fs-xs); font-weight:500; color:var(--text); width:62px; text-align:right; flex-shrink:0; background:none; border:none; border-bottom:1px solid transparent; outline:none; padding:1px 2px; cursor:text; font-family:inherit; border-radius:2px; }
 .sl-val:focus { border-bottom-color:var(--border2); background:var(--surface2); }
+/* THE CONTENT WELL (theme pack rule 21, 2026-10-31). A box of content set inside a
+   card — the four tiles, the breakdown table, the waterfall, every chart's plot
+   area — is --surface-alt with a --border edge and --radius-sm, so all of them
+   read as ONE fill in every theme. They used to stand on the page as cards of
+   their own (--surface), so each now sits in a card: `.metrics` IS that card for
+   the tiles, `.panel` for the table and the waterfall, `.chart-card` for a chart.
+   Never --bg or a bare --surface for a well: the pack's ladder climbs bg <
+   surface < surfaceAlt in Midnight and Dark but sits surfaceAlt ≈ bg < surface in
+   Light and Sepia, so only --surface-alt is the same role in all four. Inside a
+   well the heading band, hover and the total row are --surface (the old hover
+   colour IS the well now) — a shade darker than the well in the dark themes,
+   lighter in the light two, as the pack expects. On paper every one of these
+   fills drops with the other backgrounds (rule 13) and the wells print white.
+   No new colour and no shadow (rule 14). */
+.panel, .metrics { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:12px; }
 .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
 @media (max-width:580px) { .metrics { grid-template-columns:1fr 1fr; } }
-.met { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
+.met { background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; }
 /* A <button> so it's keyboard-reachable, reset to sit flush with the other cards.
    Its children are spans (a <button> may not contain <div>), so restore stacking. */
 .met-click { cursor:pointer; transition:border-color 0.15s, background 0.15s; width:100%; text-align:left; font-family:inherit; color:inherit; display:block; }
 .met-click .ml, .met-click .mv, .met-click .ms { display:block; }
-.met-click:hover { border-color:var(--border2); background:var(--surface2); }
+.met-click:hover { border-color:var(--border2); background:var(--surface); }
 .met .ml { font-size:var(--fs-xs); color:var(--text3); margin-bottom:3px; }
 .met .mv { font-size:var(--fs-xl); font-weight:600; letter-spacing:-0.4px; }
 .met .ms { font-size:var(--fs-xs); color:var(--text3); margin-top:2px; }
-.card { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); overflow:hidden; }
-.tbl-head { display:grid; grid-template-columns:2fr 1fr 1fr 1.1fr 1.3fr 1.1fr; padding:7px 14px; background:var(--surface2); border-bottom:0.5px solid var(--border); }
+.card { background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
+.tbl-head { display:grid; grid-template-columns:2fr 1fr 1fr 1.1fr 1.3fr 1.1fr; padding:7px 14px; background:var(--surface); border-bottom:0.5px solid var(--border); }
 .tbl-head span { font-size:var(--fs-xs); font-weight:500; color:var(--text3); text-transform:uppercase; letter-spacing:0.06em; }
 .tbl-head span:not(:first-child) { text-align:right; }
 .tbl-row { display:grid; grid-template-columns:2fr 1fr 1fr 1.1fr 1.3fr 1.1fr; padding:9px 14px; border-bottom:0.5px solid var(--border); align-items:center; transition:background 0.1s; }
-.tbl-row:hover { background:var(--surface2); }
+.tbl-row:hover { background:var(--surface); }
 .tbl-row:last-child { border-bottom:none; }
-.tbl-row.tot { background:var(--surface2); }
-.tbl-row.tot:hover { background:var(--surface2); }
+.tbl-row.tot { background:var(--surface); }
+.tbl-row.tot:hover { background:var(--surface); }
 .tbl-mid { display:contents; }
 .tbl-row span { font-size:var(--fs-sm); color:var(--text); font-variant-numeric:tabular-nums; }
 .tbl-row > span:not(:first-child), .tbl-mid > span { text-align:right; }
@@ -344,16 +359,32 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 .tf { color:var(--green)!important; font-size:var(--fs-xs)!important; }
 .tp { color:var(--amber)!important; font-size:var(--fs-xs)!important; }
 .to { color:var(--red)!important; font-size:var(--fs-xs)!important; }
-.wf { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:14px 18px; }
+.wf { background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; }
 .wfr { display:flex; align-items:center; gap:10px; margin-bottom:5px; }
 .wfl { font-size:var(--fs-xs); color:var(--text2); width:190px; flex-shrink:0; }
-.wfb { flex:1; height:16px; background:var(--surface2); border-radius:3px; overflow:hidden; }
+/* The track is --surface now: it was --surface2, which IS the well's fill, so
+   on the well it would have vanished and taken "out of how much" with it. */
+.wfb { flex:1; height:16px; background:var(--surface); border-radius:3px; overflow:hidden; }
+/* On a phone the card and the well each take their padding out of the row, and
+   the 190px label column left a 45px track before the wells existed — 20-odd px
+   after. Thinner card padding and a narrower label column give the bars back
+   their length (the longest label, "NY state tax drag" indented, fits in 130). */
+@media (max-width:600px) { .panel, .metrics { padding:8px; } .wf { padding:10px 12px; } .wfl { width:130px; } }
 .wfbi { height:100%; border-radius:3px; transition:width 0.3s; }
 .wfv { font-size:var(--fs-xs); font-weight:500; width:64px; text-align:right; font-variant-numeric:tabular-nums; flex-shrink:0; }
 .wfd { border:none; border-top:0.5px solid var(--border); margin:7px 0; }
 .chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 @media (max-width:600px) { .chart-grid { grid-template-columns:1fr; } }
 .chart-card { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:14px 16px; min-width:0; overflow:hidden; }
+/* CHARTS ARE WELLS TOO (rule 21): the card keeps the chart's name, legend and
+   note; the box the canvas sits in is the well. CONTENT-BOX on purpose — the
+   inline height on each box (190/210/230px) is the CHART's height, and Chart.js
+   sizes to its parent's content box, so the padding and edge go on the outside
+   and no chart drew a pixel smaller. The full-screen view keeps the box (it is
+   the same card, moved), and what the charts PAINT in a card colour reads
+   chartWellFill(). */
+.chartbox { box-sizing:content-box; padding:10px 12px; background:var(--surface-alt);
+  border:1px solid var(--border); border-radius:var(--radius-sm); }
 .chart-card h3 { font-size:var(--fs-xs); font-weight:500; color:var(--text3); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
 
 /* ── One chart, filling the window ───────────────────────────────────────────
@@ -532,7 +563,7 @@ body.maxi-open { overflow: hidden; }
     background: transparent; color: var(--text-secondary);
     font-family: inherit; font-size: var(--fs-xs); font-weight: 700;
     line-height: 1; text-transform: none; cursor: pointer; vertical-align: 1px; }
-  .tile-help:hover { background: var(--surface-alt); border-color: var(--text-secondary);
+  .tile-help:hover { background: var(--border-strong); border-color: var(--text-secondary);
     color: var(--text-primary); }
   /* -5px, NOT -4: `inset` resolves against the PADDING box, and the circle is a
      16px BORDER box with a 1px border — so the padding box is 14px and -4px grew
@@ -757,6 +788,7 @@ body.maxi-open { overflow: hidden; }
          the table semantics back so screen readers get labelled cells instead
          of a stream of bare numbers; the rows built in render() carry the
          matching row/cell roles. -->
+    <div class="panel">
     <div class="card" role="table" aria-label="Portfolio breakdown">
       <div class="tbl-head" role="row">
         <span role="columnheader">Holding</span><span role="columnheader">Allocation</span><span role="columnheader">% total</span>
@@ -766,12 +798,13 @@ body.maxi-open { overflow: hidden; }
     </div>
     <p class="alloc-warn" id="alloc-warn" role="status" hidden></p>
     </div>
+    </div>
   </div>
 
   <div class="section">
     <h2 class="sec-hd"><button type="button" class="sec-lbl" onclick="toggleSection('waterfall')" aria-expanded="true" aria-controls="body-waterfall"><span class="sec-chevron open" id="chev-waterfall" aria-hidden="true">&#9654;</span>Income Waterfall</button></h2>
     <div class="sec-body" id="body-waterfall">
-    <div class="wf" id="waterfall"></div>
+    <div class="panel"><div class="wf" id="waterfall"></div></div>
     </div>
   </div>
 
@@ -1383,6 +1416,13 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (
    captured on the way in, so both firing costs nothing. */
 function printForPaper(on) {
   const el = document.documentElement;
+  /* Both events can fire for one print; only a CHANGE redraws. */
+  if (printForPaper.printing === on) return;
+  /* chartWellFill() reads this: the plot's well prints white, so painted
+     outlines must be the card colour on paper (rule 21). Which is also why
+     Light and Sepia now redraw for print — their palette stays, their ground
+     does not. */
+  printForPaper.printing = on;
   if (on) {
     if (printForPaper._was === null) printForPaper._was = el.getAttribute('data-theme');
     /* Light and Sepia are both left alone, and Sepia is the one worth stating:
@@ -1390,18 +1430,17 @@ function printForPaper(on) {
        the way to a printer would be this page telling a reader their own answer
        was wrong. The pack's print block skips the same two, in those words. */
     const now = el.getAttribute('data-theme');
-    if (now === 'light' || now === 'sepia') return;  // nothing to swap, nothing to redraw
-    el.setAttribute('data-theme', 'light');
+    if (now !== 'light' && now !== 'sepia') el.setAttribute('data-theme', 'light');
   } else {
-    if (printForPaper._was === null) return;
     const back = printForPaper._was;
     printForPaper._was = null;
-    if (el.getAttribute('data-theme') === back) return;
-    el.setAttribute('data-theme', back);
+    if (back !== null && el.getAttribute('data-theme') !== back) el.setAttribute('data-theme', back);
   }
+  _chartsTheme = null;   // force a rebuild: the ground changed even where the theme did not
   if (c1) render();   // the charts are the entire reason this function exists
 }
 printForPaper._was = null;
+printForPaper.printing = false;
 
 addEventListener('beforeprint', () => printForPaper(true));
 addEventListener('afterprint', () => printForPaper(false));
@@ -1409,6 +1448,14 @@ const printMedia = window.matchMedia && window.matchMedia('print');
 if (printMedia && printMedia.addEventListener)
   printMedia.addEventListener('change', (e) => printForPaper(e.matches));
 
+/* The ground a chart is drawn on: the content well's fill (theme pack rule 21),
+   not the card's. Anything a chart PAINTS to sit on its own background — here,
+   the doughnut's wedge outlines — reads this, or it shows as a ring of the card's
+   colour on the well. On paper the box prints white (its fill is a background,
+   and backgrounds drop) while the canvas prints as painted, so while printing
+   it is the CARD colour instead — see `printing` in printForPaper(). Money Map's
+   function of the same name, same reasoning. */
+function chartWellFill() { return cssVar(printForPaper.printing ? '--surface' : '--surface-alt'); }
 function tc() { return cssVar('--chart-tick'); }
 function gc() { return cssVar('--chart-grid'); }
 /* ── The tooltip wears the theme (2026-08-30) ────────────────────────────────
@@ -1756,9 +1803,12 @@ function render() {
            from EACH OTHER rather than from the card, and a tint compresses exactly
            that — the two violets and the two greens converge into a pale ring. The
            tint rule is for a large mark sitting on a card, not for small adjacent
-           ones whose whole job is mutual discrimination. Card-coloured outline for
-           the same reason: it separates the wedges without adding a sixth colour. */
-        datasets: [{ data:allocData, backgroundColor:rows.map(r => r.color), borderWidth:2, borderColor: cssVar('--bg-card') }]
+           ones whose whole job is mutual discrimination. An outline in the plot's
+           own ground for the same reason: it separates the wedges without adding a
+           sixth colour. That ground is the WELL's since 2026-10-31 (rule 21), so it
+           reads chartWellFill() — the card's colour would ring each wedge in a
+           patch that matches nothing around it. */
+        datasets: [{ data:allocData, backgroundColor:rows.map(r => r.color), borderWidth:2, borderColor: chartWellFill() }]
       },
       options: {
         responsive:true, maintainAspectRatio:false, cutout:'64%', animation:false,
