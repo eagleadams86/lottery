@@ -863,6 +863,17 @@
     /* Paper cannot scroll: what is left of the header row wraps instead. */
     .top-actions { overflow: visible !important; flex-wrap: wrap !important; }
   }
+
+/* A FIELD SITS ONE STEP OFF WHAT IS BEHIND IT (theme pack rule 21, 2026-10-31).
+   On a card that step is the tile shade, --surface-alt. A dialog section
+   (.formpanel) is itself filled with --surface-alt, so a field inside one
+   takes the card colour back — otherwise it melts into the box and only its
+   edge says it is there. A read-only box has no fill of its own: it sits flush
+   with whatever is behind it, which is what tells it apart from a box you type
+   in. background-color, not background: a select's arrow may be an image. */
+:is(.formpanel) :is(input, select, textarea):not([type=checkbox], [type=radio], [type=range], [readonly]) {
+  background-color: var(--surface); }
+:is(.formpanel) :is(input, textarea)[readonly] { background-color: transparent; }
 </style>
 </head>
 <body>
