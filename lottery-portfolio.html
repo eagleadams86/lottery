@@ -295,7 +295,12 @@ input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid 
 .sec-chevron.open { transform:rotate(90deg); }
 .sec-body.collapsed { display:none; }
 .section { margin-bottom:26px; }
-.sliders { display:grid; grid-template-columns:1fr 1fr; gap:10px 32px; background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
+/* The sliders are a box of content, so they sit in a WELL inside a card, the
+   same way the Summary tiles sit inside .metrics (rule 21, 2026-10-31). They
+   were the card itself, which left the one section on the page with no tile
+   shade in it. */
+.slider-card { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius); padding:12px; }
+.sliders { display:grid; grid-template-columns:1fr 1fr; gap:10px 32px; background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; }
 @media (max-width:600px) { .sliders { grid-template-columns:1fr; } }
 .sl-row { display:flex; align-items:center; gap:8px; min-width:0; }
 .sl-row label { font-size:var(--fs-xs); color:var(--text2); width:145px; flex-shrink:0; }
@@ -766,6 +771,7 @@ body.maxi-open { overflow: hidden; }
         </select>
       </div>
     </div>
+    <div class="slider-card">
     <div class="sliders">
       <div class="sl-row"><label for="sl-tot">Take-home (lump sum)</label><input type="range" min="0" max="1000" step="any" value="459" id="sl-tot" oninput="render()"><input type="text" class="sl-val" id="o-tot" value="$5M" aria-label="Take-home (lump sum) value" onchange="syncSlider(this,'sl-tot',0.1,500,1e6,true)"></div>
       <div class="sl-row"><label for="sl-sp">Annual spending</label><input type="range" min="50" max="5000" step="any" value="125" id="sl-sp" oninput="render()"><input type="text" class="sl-val" id="o-sp" value="$125K" aria-label="Annual spending value" onchange="syncSlider(this,'sl-sp',50,5000,1e3)"></div>
@@ -780,6 +786,7 @@ body.maxi-open { overflow: hidden; }
       <div class="sl-row"><label for="sl-vx">VXUS dividend yield</label><input type="range" min="1" max="5" step="0.1" value="3.1" id="sl-vx" oninput="render()"><input type="text" class="sl-val" id="o-vx" value="3.1%" aria-label="VXUS dividend yield value" onchange="syncSlider(this,'sl-vx',1,5)"></div>
       <div class="sl-row"><label for="sl-gr">VTI/VXUS growth rate</label><input type="range" min="3" max="14" step="0.5" value="8" id="sl-gr" oninput="render()"><input type="text" class="sl-val" id="o-gr" value="8.0%" aria-label="VTI/VXUS growth rate value" onchange="syncSlider(this,'sl-gr',3,14)"></div>
       <div class="sl-row"><label for="sl-split">VTI / VXUS split</label><input type="range" min="40" max="80" step="5" value="60" id="sl-split" oninput="render()"><input type="text" class="sl-val" id="o-split" value="60/40" aria-label="VTI / VXUS split value" onchange="syncSlider(this,'sl-split',40,80)"></div>
+    </div>
     </div>
     </div>
   </div>
